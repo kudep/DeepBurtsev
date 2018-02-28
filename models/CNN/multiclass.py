@@ -30,10 +30,10 @@ from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 
-from models.CNN.intent_model.embedding_inferable import EmbeddingInferableModel
-from models.CNN.intent_model import metrics as metrics_file
-from models.CNN.intent_model.utils import labels2onehot, log_metrics, labels2onehot_one
-from models.CNN.intent_model.metrics import fmeasure_
+from models.CNN.embedding_inferable import EmbeddingInferableModel
+from models.CNN import metrics as metrics_file
+from models.CNN.utils import labels2onehot, log_metrics, labels2onehot_one
+from models.CNN.metrics import fmeasure_
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -57,23 +57,7 @@ class KerasMulticlassModel(object):
         self.opt = copy.deepcopy(opt)
 
         self.model_path_ = Path(self.opt["model_path"])
-
         self.confident_threshold = self.opt['confident_threshold']
-        if 'add_metrics' in self.opt.keys():
-            self.add_metrics = self.opt['add_metrics'].split(' ')
-            self.add_metrics_values = len(self.add_metrics) * [0.]
-        else:
-            self.add_metrics = None
-
-        if self.opt['fasttext_model'] is not None:
-            if Path(self.opt['fasttext_model']).is_file():
-                self.fasttext_model = EmbeddingInferableModel(embedding_fname=self.opt['fasttext_model'],
-                                                              embedding_dim=self.opt['embedding_size'])
-            else:
-                self.fasttext_model = EmbeddingInferableModel(embedding_dim=self.opt['embedding_size'],
-                                                              embedding_url='http://lnsigo.mipt.ru/export/intent/reddit_fasttext_model.tar.gz')
-        else:
-            raise IOError("Error: FastText intent_model file path is not given")
 
         if self.opt['model_from_saved']:
             self.model = self.load(model_name=self.opt['model_name'],
@@ -85,11 +69,8 @@ class KerasMulticlassModel(object):
                                    metrics_names=self.opt['lear_metrics'],
                                    add_metrics_file=metrics_file)
         else:
-            self.classes = np.array(self.opt['classes'].split(" "))
-            # self.classes = self.opt['classes']
-
+            self.classes = self.opt['classes']
             self.n_classes = self.classes.shape[0]
-
             self.model = self.init_model_from_scratch(model_name=self.opt['model_name'],
                                                       optimizer_name=self.opt['optimizer'],
                                                       lr=self.opt['lear_rate'],
@@ -100,27 +81,6 @@ class KerasMulticlassModel(object):
 
         self.metrics_names = self.model.metrics_names
         self.metrics_values = len(self.metrics_names) * [0.]
-
-    def texts2vec(self, sentences):
-        embeddings_batch = []
-        for sen in sentences:
-            embeddings = []
-            tokens = sen.split(' ')
-            tokens = [el for el in tokens if el != '']
-            if len(tokens) > self.opt['text_size']:
-                tokens = tokens[:self.opt['text_size']]
-            for tok in tokens:
-                embeddings.append(self.fasttext_model.infer(tok))
-            if len(tokens) < self.opt['text_size']:
-                pads = [np.zeros(self.opt['embedding_size'])
-                        for _ in range(self.opt['text_size'] - len(tokens))]
-                embeddings = pads + embeddings
-
-            embeddings = np.asarray(embeddings)
-            embeddings_batch.append(embeddings)
-
-        embeddings_batch = np.asarray(embeddings_batch)
-        return embeddings_batch
 
     def train_on_batch(self, batch):
         """

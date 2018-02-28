@@ -16,7 +16,7 @@
 import numpy as np
 from pathlib import Path
 from gensim.models.wrappers.fasttext import FastText
-from models.CNN.intent_model.utils import download_untar
+from models.CNN.utils import download_untar
 
 
 class EmbeddingInferableModel(object):

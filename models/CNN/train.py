@@ -6,9 +6,9 @@ import numpy as np
 from pathlib import Path
 import json
 
-from .intent_model.preprocessing import NLTKTokenizer
-from .intent_model.dataset import Dataset
-from .intent_model.multiclass import KerasMulticlassModel
+from .preprocessing import NLTKTokenizer
+from .dataset import Dataset
+from .multiclass import KerasMulticlassModel
 
 config_file = sys.argv[1]
 data_file = sys.argv[2]
