@@ -1,0 +1,10 @@
+numpy
+nltk
+keras
+tensorflow-gpu
+gensim
+pandas
+sklearn
+h5py
+tqdm
+pymorphy2
