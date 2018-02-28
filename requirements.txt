@@ -8,3 +8,5 @@ sklearn
 h5py
 tqdm
 pymorphy2
+fasttext
+jupyter notebook

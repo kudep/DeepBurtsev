@@ -1,11 +1,7 @@
-import pandas as pd
 import numpy as np
-import re
-import os
 import pymorphy2
 import fasttext
 
-from os.path import join
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, TfidfTransformer
 from utils import tokenization
 
