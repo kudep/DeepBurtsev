@@ -19,8 +19,7 @@ morph = pymorphy2.MorphAnalyzer()
 #     def __init__(self, Data, standartization_function=None, linear_only=False, neural_only=False):
 
 
-
-class Pipeline():
+class Pipeline(object):
     def __init__(self, config=None):
         if config is None:
             self.config = {'nan': True,
