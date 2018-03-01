@@ -15,6 +15,11 @@ from models.CNN.multiclass import KerasMulticlassModel
 morph = pymorphy2.MorphAnalyzer()
 
 
+# class IntentRecognition():
+#     def __init__(self, Data, standartization_function=None, linear_only=False, neural_only=False):
+
+
+
 class Pipeline():
     def __init__(self, config=None):
         if config is None:

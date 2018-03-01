@@ -91,10 +91,9 @@ class KerasMulticlassModel(object):
         Returns:
             loss and metrics values on the given batch
         """
-        texts = list(batch[0])
-        labels = list(batch[1])
-        features = self.texts2vec(texts)
-        # onehot_labels = labels2onehot(labels, classes=self.classes)
+
+        features = batch[0]
+        labels = batch[1]
         onehot_labels = labels2onehot_one(labels, classes=self.classes)
         metrics_values = self.model.train_on_batch(features, onehot_labels)
         return metrics_values
@@ -106,14 +105,13 @@ class KerasMulticlassModel(object):
             dataset: instance of class Dataset
 
         Returns: None
-
         """
         updates = 0
         val_loss = 1e100
         val_increase = 0
         epochs_done = 0
 
-        n_train_samples = len(dataset.data['train'])
+        n_train_samples = len(dataset)
 
         valid_iter_all = dataset.iter_all(data_type='valid')
         valid_x = []

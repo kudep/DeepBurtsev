@@ -77,7 +77,8 @@ class Dataset(object):
             yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
 
     def iter_all(self, data_type: str = 'train') -> Generator:
-        r"""Iterate through all data. It can be used for building dictionary or
+        """
+        Iterate through all data. It can be used for building dictionary or
         Args:
             data_type (str): can be either 'train', 'test', or 'valid'
         Returns:
