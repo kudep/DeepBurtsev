@@ -3,6 +3,8 @@ from copy import deepcopy
 from time import time
 import nltk
 import pymorphy2
+import random
+import pandas as pd
 
 from tqdm import tqdm
 
@@ -90,3 +92,66 @@ class HyperPar:
     def _sample_log(from_, to_):
         sample = np.exp(np.random.uniform(np.log(from_), np.log(to_)))
         return float(sample)
+
+
+def split(data, prop):
+    dd = dict()
+    cd = dict()
+    train = list()
+    valid = list()
+    test = list()
+
+    for x, y in zip(data['request'], data['class']):
+        if y not in dd.keys():
+            dd[y] = list()
+            cd[y] = 0
+            dd[y].append((x, y))
+            cd[y] += 1
+        else:
+            dd[y].append((x, y))
+            cd[y] += 1
+
+    if type(prop) is list:
+        assert len(prop) == 2
+        assert type(prop[0]) is float
+
+        valid_ = dict()
+        test_ = dict()
+
+        for x in dd.keys():
+            num = int(cd[x] * prop[0])
+            valid_[x] = random.sample(dd[x], num)
+            [dd[x].remove(t) for t in valid_[x]]
+
+        for x in dd.keys():
+            num = int(cd[x] * prop[1])
+            test_[x] = random.sample(dd[x], num)
+            [dd[x].remove(t) for t in test_[x]]
+    else:
+        raise ValueError('Split proportion must be list of floats, with length = 2')
+
+    train_ = dd
+
+    for x in train_.keys():
+        for z_, z in zip([train_, valid_, test_], [train, valid, test]):
+            z.extend(z_[x])
+
+    del train_, valid_, test_, dd, cd
+
+    for z in [train, valid, test]:
+        z = random.shuffle(z)
+
+    utrain, uvalid, utest, ctrain, cvalid, ctest = list(), list(), list(), list(), list(), list()
+    for z, n, c in zip([train, valid, test], [utrain, uvalid, utest], [ctrain, cvalid, ctest]):
+        for x in z:
+            n.append(x[0])
+            c.append(x[1])
+
+    train = pd.DataFrame({'request': utrain,
+                          'class': ctrain})
+    valid = pd.DataFrame({'request': uvalid,
+                          'class': cvalid})
+    test = pd.DataFrame({'request': utest,
+                         'class': ctest})
+
+    return train, valid, test

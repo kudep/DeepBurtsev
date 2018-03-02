@@ -1,13 +1,11 @@
-import pandas as pd
-import re
 import random
+import pandas as pd
 from typing import Generator
 from sklearn.model_selection import train_test_split
 
 
 class Dataset(object):
-    def __init__(self, data, seed=None, split=True, splitting_proportions=None,
-                 *args, **kwargs):
+    def __init__(self, data, seed=None, split=True, splitting_proportions=None, *args, **kwargs):
 
         rs = random.getstate()
         random.seed(seed)
@@ -24,19 +22,19 @@ class Dataset(object):
             self.test = data.get('test', [])
             try:
                 self.valid = data.get('valid', [])
-                self.data = {'train': {'base': self.train},
-                             'test': {'base': self.test},
-                             'valid': {'base': self.valid},
+                self.data = {'train': self.train,
+                             'test': self.test,
+                             'valid': self.valid,
                              'all': self.train + self.test}
             except KeyError:
-                self.data = {'train': {'base': self.train},
-                             'test': {'base': self.test},
+                self.data = {'train': self.train,
+                             'test': self.test,
                              'all': self.train + self.test}
         else:
             self.train, self.valid, self.test = self.split_data(data)
-            self.data = {'train': {'base': self.train},
-                         'test': {'base': self.test},
-                         'valid': {'base': self.valid},
+            self.data = {'train': self.train,
+                         'test': self.test,
+                         'valid': self.valid,
                          'all': self.train + self.test}
 
         self.data['classes'] = data['class'].unique()  # np.array
@@ -160,55 +158,3 @@ class Dataset(object):
             data[new_name] += self.data[name]
         self.data = data
         return True
-
-
-def read_dataset(filepath, duplicates=False, clean=True):
-    file = open(filepath, 'r', encoding='ISO-8859-1')
-    data = pd.read_csv(file)
-
-    old_names = data.keys()
-    names = [n.encode('ISO-8859-1').decode('cp1251').encode('utf8') for n in old_names]
-    names = [n.decode('utf-8') for n in names]
-
-    new_data = dict()
-    for old, new in zip(old_names, names):
-        new_data[new] = list()
-        for c in data[old]:
-            try:
-                s = c.encode('ISO-8859-1').decode('cp1251').encode('utf8')
-                s = s.decode('utf-8')
-                new_data[new].append(s)
-            except AttributeError:
-                new_data[new].append(c)
-
-    new_data = pd.DataFrame(new_data, columns=['Описание', 'Категория жалобы'])
-    new_data.rename(columns={'Описание': 'request', 'Категория жалобы': 'class'}, inplace=True)
-    new_data = new_data.dropna()  # dell nan
-    if not duplicates:
-        new_data = new_data.drop_duplicates()  # dell duplicates
-
-    # как отдельную ветвь можно использовать
-    if clean:
-        delete_bad_symbols = lambda x: " ".join(re.sub('[^а-яa-zё0-9]', ' ', x.lower()).split())
-        new_data['request'] = new_data['request'].apply(delete_bad_symbols)
-
-    new_data = new_data.reset_index()
-    new_data = new_data.drop('index', axis=1)
-
-    return new_data
-
-
-path = '../data/vkusvill_all_categories.csv'
-global_data = read_dataset(path)
-
-dataset = Dataset(global_data, seed=42)
-generator = dataset.batch_generator(64)
-
-k = 0
-for x in generator:
-    print(x)
-    k += 1
-    if k == 2:
-        break
-
-

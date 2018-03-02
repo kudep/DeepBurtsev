@@ -20,7 +20,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 class Pipeline(object):
-    def __init__(self, config=None):
+    def __init__(self, dataset, config=None):
         if config is None:
             self.config = {'nan': True,
                            'repeat': False,
@@ -57,6 +57,7 @@ class Pipeline(object):
             raise NotImplementedError('{} is not implemented'.format(self.config['model']['model']))
 
         # vectorizers
+        # TODO support my tokenizator
         if self.config['vectorization']['count']:
             self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
             self.config['tokenization'] = False
@@ -88,6 +89,7 @@ class Pipeline(object):
             data = tokenization(data, morph=self.config['lemma'], ngram=self.config['n-gram'])
         return data
 
+    # TODO fix
     def vectorization(self, data, train=False):
         # cleaning dataset from NaN and repeated requests
         data = self.clean(data)
