@@ -22,11 +22,8 @@ morph = pymorphy2.MorphAnalyzer()
 class Pipeline(object):
     def __init__(self, dataset, config=None):
         if config is None:
-            self.config = {'nan': True,
-                           'repeat': False,
-                           'speller': False,
+            self.config = {'lemma': True,
                            'n-gram': False,
-                           'lemma': True,
                            'vectorization': {'count': True,
                                              'tf-idf': False,
                                              'fasttext': False},

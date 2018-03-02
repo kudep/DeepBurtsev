@@ -13,7 +13,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 def transform(data, lower=True, lemma=True, ngramm=False):
     Tokens = list()
-    for x in data['request']:
+    for x in tqdm(data['request']):
         sent_toks = nltk.sent_tokenize(x)
         word_toks = [nltk.word_tokenize(el) for el in sent_toks]
         tokens = [val for sublist in word_toks for val in sublist]
@@ -25,9 +25,9 @@ def transform(data, lower=True, lemma=True, ngramm=False):
         if ngramm:
             bigram = list(nltk.bigrams(tokens))
             bigram = ['_'.join(x) for x in bigram]
-            Tokens.append(' '.join(bigram))
-        else:
-            Tokens.append(' '.join(tokens))
+            tokens.extend(bigram)
+
+        Tokens.append(' '.join(tokens))
 
     df = pd.DataFrame({'request': Tokens,
                        'class': data['class']})
