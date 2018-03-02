@@ -1,46 +1,32 @@
 import numpy as np
-from copy import deepcopy
-from time import time
 import nltk
 import pymorphy2
 import random
 import pandas as pd
 
+from copy import deepcopy
+from time import time
 from tqdm import tqdm
 
 morph = pymorphy2.MorphAnalyzer()
 
 
-def tokenize(sen):
-    sent_toks = nltk.sent_tokenize(sen)
-    word_toks = [nltk.word_tokenize(el) for el in sent_toks]
-    tokens = [val for sublist in word_toks for val in sublist]
-    tokens = [el for el in tokens if el != '']
-    tokens = [el.lower() for el in tokens]
-    tokens = [morph.parse(el)[0].normal_form for el in tokens]
-    return tokens
+def transform(data, lower=True, lemma=True):
+    Tokens = list()
+    for x in data['request']:
+        sent_toks = nltk.sent_tokenize(x)
+        word_toks = [nltk.word_tokenize(el) for el in sent_toks]
+        tokens = [val for sublist in word_toks for val in sublist]
+        tokens = [el for el in tokens if el != '']
+        if lower:
+            tokens = [el.lower() for el in tokens]
+        if lemma:
+            tokens = [morph.parse(el)[0].normal_form for el in tokens]
+        Tokens.append(' '.join(tokens))
 
-
-def tokenization(data, morph=True, ngram=True):
-    dataset = list()
-    ans = list()
-
-    for x, y in tqdm(zip(data['req'], data['cat'])):
-        if morph:
-            tokens = tokenize(x)
-        else:
-            sent = nltk.sent_tokenize(x)
-            word_toks = [nltk.word_tokenize(el) for el in sent]
-            tokens = [val for sublist in word_toks for val in sublist]
-
-        if ngram:
-            bigrm = nltk.bigrams(tokens)
-            tokens = tokens.extend(bigrm)
-
-        dataset.append(tokens)
-        ans.append(y)
-
-    return dataset, ans
+    df = pd.DataFrame({'request': Tokens,
+                       'class': data['class']})
+    return df
 
 
 class HyperPar:
