@@ -5,7 +5,8 @@ from sklearn.model_selection import train_test_split
 
 
 class Dataset(object):
-    def __init__(self, data, seed=None, split=True, splitting_proportions=None, *args, **kwargs):
+    def __init__(self, data, seed=None, split=True, splitting_proportions=None,
+                 *args, **kwargs):
 
         rs = random.getstate()
         random.seed(seed)
@@ -40,12 +41,11 @@ class Dataset(object):
         self.data['classes'] = data['class'].unique()  # np.array
 
     def batch_generator(self, batch_size: int, data_type: str = 'train', stage: str = 'base') -> Generator:
-        """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
+        r"""This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
          batches
         Args:
             batch_size (int): number of samples in batch
             data_type (str): can be either 'train', 'test', or 'valid'
-            stage (str): can be either 'base', 'mod1', etc
         Returns:
             batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
         """
@@ -70,7 +70,6 @@ class Dataset(object):
         Iterate through all data. It can be used for building dictionary or
         Args:
             data_type (str): can be either 'train', 'test', or 'valid'
-            stage (str): can be either 'base', 'mod1', etc
         Returns:
             samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
         """

@@ -101,7 +101,7 @@ class KerasMulticlassModel(object):
         Method trains the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
-            stage (str): dataset type
+
         Returns: None
         """
         updates = 0
@@ -113,8 +113,11 @@ class KerasMulticlassModel(object):
         valid_x = []
         valid_y = []
         for valid_i, valid_sample in enumerate(valid_iter_all):
-            valid_x.append(self.texts2vec(valid_sample['request']))
-            valid_y.append(labels2onehot_one(valid_sample['class'], classes=self.classes))
+            valid_x.append(valid_sample[0])
+            valid_y.append(valid_sample[1])
+
+        valid_x = self.texts2vec(valid_x)
+        valid_y = labels2onehot_one(valid_y, self.opt['classes'])
 
         # print('\n____Training over {} samples____\n\n'.format(n_train_samples))
 
@@ -122,8 +125,8 @@ class KerasMulticlassModel(object):
             batch_gen = dataset.batch_generator(batch_size=self.opt['batch_size'],
                                                 data_type='train', stage=stage)
             for step, batch in enumerate(batch_gen):
-                vec = self.texts2vec(batch['request'])
-                batch_ = [vec, batch['class'].as_matrix()]
+                vec = self.texts2vec(batch[0])
+                batch_ = [vec, batch[1]]
                 metrics_values = self.train_on_batch(batch_)
                 updates += 1
 
@@ -152,7 +155,7 @@ class KerasMulticlassModel(object):
                     else:
                         val_increase = 0
                         val_loss = valid_metrics_values[0]
-            # print('epochs_done: {}'.format(epochs_done))
+                        # print('epochs_done: {}'.format(epochs_done))
 
         self.save()
 
@@ -410,7 +413,7 @@ class KerasMulticlassModel(object):
                       sample_weight_mode=sample_weight_mode,
                       # weighted_metrics=weighted_metrics,
                       # target_tensors=target_tensors
-                     )
+                      )
         return model
 
     def save(self, fname=None):
@@ -433,7 +436,6 @@ class KerasMulticlassModel(object):
         self.model.save_weights(weights_path)
 
         with open(opt_path, 'w') as outfile:
-
             json.dump(self.opt, outfile)
 
         return True
@@ -442,19 +444,19 @@ class KerasMulticlassModel(object):
         pass
 
 
-batch_size = 64
-seq_len = 25
-emb_dim = 100
-X = np.random.rand(batch_size, seq_len, emb_dim)
-
-y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-Y = np.reshape(np.random.choice(y, batch_size*seq_len), [batch_size, seq_len])
-print(Y)
-print(Y.shape)
-
-y_one = labels2onehot_one(Y[0], y)
-print(y_one)
-print(Y[0])
+# batch_size = 64
+# seq_len = 25
+# emb_dim = 100
+# X = np.random.rand(batch_size, seq_len, emb_dim)
+#
+# y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+# Y = np.reshape(np.random.choice(y, batch_size*seq_len), [batch_size, seq_len])
+# print(Y)
+# print(Y.shape)
+#
+# y_one = labels2onehot_one(Y[0], y)
+# print(y_one)
+# print(Y[0])
 
 
 
