@@ -115,38 +115,34 @@ class Pipeline(object):
     def preprocessing(self, data):
         return transform(data, lower=self.config['lower'], lemma=self.config['lemma'], ngramm=self.config['ngramm'])
 
-    def vectorization(self, data, train=False):
-        # vectorization
-        if not self.config['tokenization']:
-            if train:
-                vec = self.vectorizer.fit_transform(data)
-            else:
-                vec = self.vectorizer.transform(data)
-        else:
-            data = tokenize(data)
-            if self.config['model']['name'] == 'CNN':
-                vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
-                for j, x in enumerate(data):
-                    for i, y in enumerate(x):
-                        if i < self.opt['text_size']:
-                            vec[j, i] = self.vectorizer[y]
-                        else:
-                            break
-            else:
-                raise NotImplementedError()
-
-        self.status += 'Vectorization: done\n'
-        return vec
-
-    def train(self, data, y):
-        self.model.fit(data, y)
-        self.status += 'Train: done\n'
-        return None
+    # def vectorization(self, data, train=False):
+    #     # vectorization
+    #     if not self.config['tokenization']:
+    #         if train:
+    #             vec = self.vectorizer.fit_transform(data)
+    #         else:
+    #             vec = self.vectorizer.transform(data)
+    #     else:
+    #         data = tokenize(data)
+    #         if self.config['model']['name'] == 'CNN':
+    #             vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
+    #             for j, x in enumerate(data):
+    #                 for i, y in enumerate(x):
+    #                     if i < self.opt['text_size']:
+    #                         vec[j, i] = self.vectorizer[y]
+    #                     else:
+    #                         break
+    #         else:
+    #             raise NotImplementedError()
+    #
+    #     self.status += 'Vectorization: done\n'
+    #     return vec
 
     def run(self):
         data_ = self.preprocessing(self.dataset.data['train'])
-        vec = self.vectorization(data_['request'], train=True)
-        self.train(vec, data_['class'])
+        self.status += 'Data transformation: done\n'
+        self.model.fit(data_, self.vectorizer)
+        self.status += 'Train: done\n'
 
     def status(self):
         return self.status
