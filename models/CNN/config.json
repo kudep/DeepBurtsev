@@ -10,6 +10,7 @@
   "lear_rate": 0.1,
   "lear_rate_decay": 0.1,
   "loss": "binary_crossentropy",
+  "last_activation": "softmax",
   "fasttext_model": "",
   "text_size": 25,
   "coef_reg_cnn": 1e-4,

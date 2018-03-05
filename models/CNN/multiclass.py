@@ -29,11 +29,9 @@ from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
-
-from models.CNN.embedding_inferable import EmbeddingInferableModel
 from models.CNN import metrics as metrics_file
-from models.CNN.utils import labels2onehot, log_metrics, labels2onehot_one
-from models.CNN.metrics import fmeasure_
+from utils import log_metrics, labels2onehot_one, tokenize
+
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -46,7 +44,7 @@ class KerasMulticlassModel(object):
     Class builds keras intent_model
     """
 
-    def __init__(self, opt, *args, **kwargs):
+    def __init__(self, opt, vectorizer, *args, **kwargs):
         """
         Method initializes intent_model using parameters from opt
         Args:
@@ -55,6 +53,7 @@ class KerasMulticlassModel(object):
             **kwargs:
         """
         self.opt = copy.deepcopy(opt)
+        self.vectorizer = vectorizer
 
         self.model_path_ = Path(self.opt["model_path"])
         self.confident_threshold = self.opt['confident_threshold']
@@ -82,6 +81,19 @@ class KerasMulticlassModel(object):
         self.metrics_names = self.model.metrics_names
         self.metrics_values = len(self.metrics_names) * [0.]
 
+    # vectorization
+    def texts2vec(self, data):
+        data = tokenize(data)
+        vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
+        for j, x in enumerate(data):
+            for i, y in enumerate(x):
+                if i < self.opt['text_size']:
+                    vec[j, i] = self.vectorizer[y]
+                else:
+                    break
+
+        return vec
+
     def train_on_batch(self, batch):
         """
         Method trains the intent_model on the given batch
@@ -98,7 +110,7 @@ class KerasMulticlassModel(object):
         metrics_values = self.model.train_on_batch(features, onehot_labels)
         return metrics_values
 
-    def train(self, dataset, *args, **kwargs):
+    def fit(self, dataset, stage='base', *args, **kwargs):
         """
         Method trains the intent_model using batches and validation
         Args:
@@ -111,9 +123,7 @@ class KerasMulticlassModel(object):
         val_increase = 0
         epochs_done = 0
 
-        n_train_samples = len(dataset)
-
-        valid_iter_all = dataset.iter_all(data_type='valid')
+        valid_iter_all = dataset.iter_all(data_type='valid', stage=stage)
         valid_x = []
         valid_y = []
         for valid_i, valid_sample in enumerate(valid_iter_all):
@@ -121,16 +131,17 @@ class KerasMulticlassModel(object):
             valid_y.append(valid_sample[1])
 
         valid_x = self.texts2vec(valid_x)
-        # valid_y = labels2onehot(valid_y, classes=self.classes)  # _one
-        valid_y = labels2onehot_one(valid_y, classes=self.classes)
+        valid_y = labels2onehot_one(valid_y, self.opt['classes'])
 
         # print('\n____Training over {} samples____\n\n'.format(n_train_samples))
 
         while epochs_done < self.opt['epochs']:
             batch_gen = dataset.batch_generator(batch_size=self.opt['batch_size'],
-                                                data_type='train')
+                                                data_type='train', stage=stage)
             for step, batch in enumerate(batch_gen):
-                metrics_values = self.train_on_batch(batch)
+                vec = self.texts2vec(batch[0])
+                batch_ = [vec, batch[1]]
+                metrics_values = self.train_on_batch(batch_)
                 updates += 1
 
                 if self.opt['verbose'] and step % 50 == 0:
@@ -158,7 +169,7 @@ class KerasMulticlassModel(object):
                     else:
                         val_increase = 0
                         val_loss = valid_metrics_values[0]
-            # print('epochs_done: {}'.format(epochs_done))
+                        # print('epochs_done: {}'.format(epochs_done))
 
         self.save()
 
@@ -217,7 +228,7 @@ class KerasMulticlassModel(object):
         output = Dense(self.n_classes, activation=None,
                        kernel_regularizer=l2(params['coef_reg_den']))(output)
         output = BatchNormalization()(output)
-        act_output = Activation('sigmoid')(output)
+        act_output = Activation(params['last_activation'])(output)
         model = Model(inputs=inp, outputs=act_output)
         return model
 
@@ -261,7 +272,7 @@ class KerasMulticlassModel(object):
         output = Dense(self.n_classes, activation=None,
                        kernel_regularizer=l2(params['coef_reg_den']))(output)
         output = BatchNormalization()(output)
-        act_output = Activation('sigmoid')(output)
+        act_output = Activation(params['last_activation'])(output)
         model = Model(inputs=inp, outputs=act_output)
         return model
 
@@ -416,7 +427,7 @@ class KerasMulticlassModel(object):
                       sample_weight_mode=sample_weight_mode,
                       # weighted_metrics=weighted_metrics,
                       # target_tensors=target_tensors
-                     )
+                      )
         return model
 
     def save(self, fname=None):
@@ -439,7 +450,6 @@ class KerasMulticlassModel(object):
         self.model.save_weights(weights_path)
 
         with open(opt_path, 'w') as outfile:
-
             json.dump(self.opt, outfile)
 
         return True

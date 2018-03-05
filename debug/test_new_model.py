@@ -16,7 +16,7 @@ from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from models.CNN import metrics as metrics_file
-from models.CNN.utils import labels2onehot, log_metrics, labels2onehot_one
+from utils import labels2onehot, log_metrics, labels2onehot_one, tokenize
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -30,7 +30,7 @@ class KerasMulticlassModel(object):
     Class builds keras intent_model
     """
 
-    def __init__(self, opt, *args, **kwargs):
+    def __init__(self, opt, vectorizer, *args, **kwargs):
         """
         Method initializes intent_model using parameters from opt
         Args:
@@ -39,6 +39,7 @@ class KerasMulticlassModel(object):
             **kwargs:
         """
         self.opt = copy.deepcopy(opt)
+        self.vectorizer = vectorizer
 
         self.model_path_ = Path(self.opt["model_path"])
         self.confident_threshold = self.opt['confident_threshold']
@@ -66,6 +67,19 @@ class KerasMulticlassModel(object):
         self.metrics_names = self.model.metrics_names
         self.metrics_values = len(self.metrics_names) * [0.]
 
+    # vectorization
+    def texts2vec(self, data):
+        data = tokenize(data)
+        vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
+        for j, x in enumerate(data):
+            for i, y in enumerate(x):
+                if i < self.opt['text_size']:
+                    vec[j, i] = self.vectorizer[y]
+                else:
+                    break
+
+        return vec
+
     def train_on_batch(self, batch):
         """
         Method trains the intent_model on the given batch
@@ -82,12 +96,12 @@ class KerasMulticlassModel(object):
         metrics_values = self.model.train_on_batch(features, onehot_labels)
         return metrics_values
 
-    def fit(self, dataset, *args, **kwargs):
+    def fit(self, dataset, stage='base', *args, **kwargs):
         """
         Method trains the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
-
+            stage (str): dataset type
         Returns: None
         """
         updates = 0
@@ -95,26 +109,22 @@ class KerasMulticlassModel(object):
         val_increase = 0
         epochs_done = 0
 
-        n_train_samples = len(dataset)
-
-        valid_iter_all = dataset.iter_all(data_type='valid')
+        valid_iter_all = dataset.iter_all(data_type='valid', stage=stage)
         valid_x = []
         valid_y = []
         for valid_i, valid_sample in enumerate(valid_iter_all):
-            valid_x.append(valid_sample[0])
-            valid_y.append(valid_sample[1])
-
-        valid_x = self.texts2vec(valid_x)
-        # valid_y = labels2onehot(valid_y, classes=self.classes)  # _one
-        valid_y = labels2onehot_one(valid_y, classes=self.classes)
+            valid_x.append(self.texts2vec(valid_sample['request']))
+            valid_y.append(labels2onehot_one(valid_sample['class'], classes=self.classes))
 
         # print('\n____Training over {} samples____\n\n'.format(n_train_samples))
 
         while epochs_done < self.opt['epochs']:
             batch_gen = dataset.batch_generator(batch_size=self.opt['batch_size'],
-                                                data_type='train')
+                                                data_type='train', stage=stage)
             for step, batch in enumerate(batch_gen):
-                metrics_values = self.train_on_batch(batch)
+                vec = self.texts2vec(batch['request'])
+                batch_ = [vec, batch['class'].as_matrix()]
+                metrics_values = self.train_on_batch(batch_)
                 updates += 1
 
                 if self.opt['verbose'] and step % 50 == 0:
@@ -201,7 +211,7 @@ class KerasMulticlassModel(object):
         output = Dense(self.n_classes, activation=None,
                        kernel_regularizer=l2(params['coef_reg_den']))(output)
         output = BatchNormalization()(output)
-        act_output = Activation('sigmoid')(output)
+        act_output = Activation(params['last_activation'])(output)
         model = Model(inputs=inp, outputs=act_output)
         return model
 
@@ -245,7 +255,7 @@ class KerasMulticlassModel(object):
         output = Dense(self.n_classes, activation=None,
                        kernel_regularizer=l2(params['coef_reg_den']))(output)
         output = BatchNormalization()(output)
-        act_output = Activation('sigmoid')(output)
+        act_output = Activation(params['last_activation'])(output)
         model = Model(inputs=inp, outputs=act_output)
         return model
 
@@ -436,35 +446,6 @@ batch_size = 64
 seq_len = 25
 emb_dim = 100
 X = np.random.rand(batch_size, seq_len, emb_dim)
-
-
-def labels2onehot(labels, classes):
-    n_classes = len(classes)
-    eye = np.eye(n_classes)
-    y = []
-    for sample in labels:
-        curr = np.zeros(n_classes)
-        for intent in sample:
-            if intent not in classes:
-                # print('Warning: unknown class {} detected'.format(intent))
-                curr += eye[np.where(classes == 'unknown')[0]].reshape(-1)
-            else:
-                curr += eye[np.where(classes == intent)[0]].reshape(-1)
-        y.append(curr)
-    y = np.asarray(y)
-    return y
-
-
-def labels2onehot_one(labels, classes):
-    n_classes = len(classes)
-    eye = np.eye(n_classes)
-    y = []
-    for sample in labels:
-        curr = eye[sample-1]
-        y.append(curr)
-    y = np.asarray(y)
-    return y
-
 
 y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 Y = np.reshape(np.random.choice(y, batch_size*seq_len), [batch_size, seq_len])

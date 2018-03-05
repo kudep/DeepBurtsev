@@ -22,33 +22,34 @@ class Dataset(object):
             self.test = data.get('test', [])
             try:
                 self.valid = data.get('valid', [])
-                self.data = {'train': self.train,
-                             'test': self.test,
-                             'valid': self.valid,
-                             'all': self.train + self.test}
+                self.data = {'train': {'base': self.train},
+                             'test': {'base': self.test},
+                             'valid': {'base': self.valid},
+                             'all': {'base': self.train + self.test}}
             except KeyError:
-                self.data = {'train': self.train,
-                             'test': self.test,
-                             'all': self.train + self.test}
+                self.data = {'train': {'base': self.train},
+                             'test': {'base': self.test},
+                             'all': {'base': self.train + self.test}}
         else:
             self.train, self.valid, self.test = self.split_data(data)
-            self.data = {'train': self.train,
-                         'test': self.test,
-                         'valid': self.valid,
-                         'all': self.train + self.test}
+            self.data = {'train': {'base': self.train},
+                         'test': {'base': self.test},
+                         'valid': {'base': self.valid},
+                         'all': {'base': self.train + self.test}}
 
         self.data['classes'] = data['class'].unique()  # np.array
 
-    def batch_generator(self, batch_size: int, data_type: str = 'train') -> Generator:
-        r"""This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
+    def batch_generator(self, batch_size: int, data_type: str = 'train', stage: str = 'base') -> Generator:
+        """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
          batches
         Args:
             batch_size (int): number of samples in batch
             data_type (str): can be either 'train', 'test', or 'valid'
+            stage (str): can be either 'base', 'mod1', etc
         Returns:
             batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
         """
-        data = self.data[data_type]
+        data = self.data[data_type][stage]
         data_len = len(data)
         order = list(range(data_len))
 
@@ -64,15 +65,16 @@ class Dataset(object):
             o = order[i * batch_size:(i + 1) * batch_size]
             yield list((list(data['request'][o]), list(data['class'][o])))
 
-    def iter_all(self, data_type: str = 'train') -> Generator:
+    def iter_all(self, data_type: str = 'train', stage: str = 'base') -> Generator:
         """
         Iterate through all data. It can be used for building dictionary or
         Args:
             data_type (str): can be either 'train', 'test', or 'valid'
+            stage (str): can be either 'base', 'mod1', etc
         Returns:
             samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
         """
-        data = self.data[data_type]
+        data = self.data[data_type][stage]
         for x, y in zip(data['request'], data['class']):
             yield (x, y)
 
