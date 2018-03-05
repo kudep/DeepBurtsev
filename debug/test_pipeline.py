@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pymorphy2
 import fasttext
@@ -7,12 +6,9 @@ import os
 import re
 
 from dataset import Dataset
-from utils import transform, tokenize
-from lightgbm import LGBMClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
+from utils import transform
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from models.Classic.models import LinearRegression, GBM, SVM, RandomForest
 from models.CNN.multiclass import KerasMulticlassModel
 morph = pymorphy2.MorphAnalyzer()
 
@@ -75,50 +71,46 @@ class Pipeline(object):
             self.config = config
         self.status = ''
 
+        # vectorizers
+        if self.config['vectorization']['count']:
+            self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
+        elif self.config['vectorization']['tf-idf']:
+            self.vectorizer = TfidfVectorizer()  # tokenizer=self.tokenizer
+        elif self.config['vectorization']['fasttext']:
+            self.vectorizer = fasttext.load_model(self.config['fasttext_model'])
+        else:
+            raise NotImplementedError('Not implemented vectorizer.')
+
         # models
         if self.config['model']['name'] == 'LR':
-            self.model = LogisticRegression(n_jobs=-1, solver='lbfgs')
+            self.model = LinearRegression(self.vectorizer)
         elif self.config['model']['name'] == 'GBM':
-            self.model = LGBMClassifier(n_estimators=200, n_jobs=-1, learning_rate=0.1)
+            self.model = GBM(self.vectorizer)
         elif self.config['model']['name'] == 'SVM':
-            self.model = LinearSVC(C=0.8873076204728344, class_weight='balanced')
+            self.model = SVM(self.vectorizer)
         elif self.config['model']['name'] == 'RF':
-            self.model = RandomForestClassifier(max_depth=5, random_state=0)
-
-        # TODO fix CNN model
+            self.model = RandomForest(self.vectorizer)
         elif self.config['model']['name'] == 'CNN':
             # Reading parameters of intent_model from json
             if os.path.isfile(self.config['model']['model_config']):
                 with open(self.config['model']['model_config'], "r") as f:
                     self.opt = json.load(f)
-                self.model = KerasMulticlassModel(self.opt)
+                self.opt['classes'] = dataset.data['classes']
+                self.model = KerasMulticlassModel(self.opt, self.vectorizer)
             else:
                 raise FileExistsError('File {} is not exist.'.format(self.config['model']['model_config']))
         else:
             raise NotImplementedError('{} is not implemented'.format(self.config['model']['name']))
 
-        # vectorizers
-        if self.config['vectorization']['count']:
-            self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
-            self.config['tokenization'] = False
-        elif self.config['vectorization']['tf-idf']:
-            self.vectorizer = TfidfVectorizer()  # tokenizer=self.tokenizer
-            self.config['tokenization'] = False
-
-        # TODO fix fasttext
-        elif self.config['vectorization']['fasttext']:
-            self.vectorizer = fasttext.load_model(self.config['fasttext_model'])
-            self.config['tokenization'] = True
-        else:
-            raise NotImplementedError('Not implemented vectorizer.')
-
     def preprocessing(self, data):
         return transform(data, lower=self.config['lower'], lemma=self.config['lemma'], ngramm=self.config['ngramm'])
 
     def run(self):
-        data_ = self.preprocessing(self.dataset.data['train'])
+        self.dataset.data['test']['mod'] = self.preprocessing(self.dataset.data['test']['base'])
+        self.dataset.data['valid']['mod'] = self.preprocessing(self.dataset.data['valid']['base'])
+        self.dataset.data['train']['mod'] = self.preprocessing(self.dataset.data['train']['base'])
         self.status += 'Data transformation: done\n'
-        self.model.fit(data_, self.vectorizer)
+        self.model.fit(self.dataset, 'mod')
         self.status += 'Train: done\n'
 
     def status(self):
@@ -136,9 +128,9 @@ conf = {'lemma': True,
         'lower': True,
         'ngramm': False,
         'vectorization': {'count': False,
-                          'tf-idf': True,
-                          'fasttext': False},
-        'model': {'name': 'RF', 'model_config': None},
+                          'tf-idf': False,
+                          'fasttext': True},
+        'model': {'name': 'CNN', 'model_config': '../models/CNN/config.json'},
         'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
 
 pipe = Pipeline(dataset, conf)

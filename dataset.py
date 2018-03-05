@@ -41,11 +41,12 @@ class Dataset(object):
         self.data['classes'] = data['class'].unique()  # np.array
 
     def batch_generator(self, batch_size: int, data_type: str = 'train', stage: str = 'base') -> Generator:
-        r"""This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
+        """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
          batches
         Args:
             batch_size (int): number of samples in batch
             data_type (str): can be either 'train', 'test', or 'valid'
+            stage (str): mod
         Returns:
             batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
         """
@@ -70,6 +71,7 @@ class Dataset(object):
         Iterate through all data. It can be used for building dictionary or
         Args:
             data_type (str): can be either 'train', 'test', or 'valid'
+            stage (str):
         Returns:
             samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
         """

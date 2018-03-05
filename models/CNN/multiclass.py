@@ -17,6 +17,8 @@ import json
 import copy
 from pathlib import Path
 import numpy as np
+from os.path import isdir
+import os
 
 import keras.metrics
 import keras.optimizers
@@ -443,6 +445,11 @@ class KerasMulticlassModel(object):
         fname = self.model_path_.name if fname is None else fname
         opt_fname = str(fname) + '_opt.json'
         weights_fname = str(fname) + '.h5'
+
+        if isdir(fname):
+            pass
+        else:
+            os.makedirs(fname)
 
         opt_path = Path.joinpath(self.model_path_, opt_fname)
         weights_path = Path.joinpath(self.model_path_, weights_fname)
