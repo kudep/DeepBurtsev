@@ -5,12 +5,13 @@ import fasttext
 import json
 import os
 
+from dataset import Dataset
+from utils import transform, tokenize
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from utils import tokenization
 from models.CNN.multiclass import KerasMulticlassModel
 morph = pymorphy2.MorphAnalyzer()
 
@@ -23,11 +24,13 @@ class Pipeline(object):
     def __init__(self, dataset, config=None):
         if config is None:
             self.config = {'lemma': True,
+                           'lower': True
                            'n-gram': False,
                            'vectorization': {'count': True,
                                              'tf-idf': False,
                                              'fasttext': False},
-                           'model': {'name': 'LR', 'model_config': None}}
+                           'model': {'name': 'LR', 'model_config': None},
+                           'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
         else:
             self.config = config
         self.status = ''
@@ -41,6 +44,7 @@ class Pipeline(object):
             self.model = LinearSVC(C=0.8873076204728344, class_weight='balanced')
         elif self.config['model']['name'] == 'RF':
             self.model = RandomForestClassifier(max_depth=5, random_state=0)
+
         # TODO fix CNN model
         elif self.config['model']['name'] == 'CNN':
             # Reading parameters of intent_model from json
@@ -51,50 +55,27 @@ class Pipeline(object):
             else:
                 raise FileExistsError('File {} is not exist.'.format(self.config['model']['model_config']))
         else:
-            raise NotImplementedError('{} is not implemented'.format(self.config['model']['model']))
+            raise NotImplementedError('{} is not implemented'.format(self.config['model']['name']))
 
         # vectorizers
-        # TODO support my tokenizator
         if self.config['vectorization']['count']:
             self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
             self.config['tokenization'] = False
         elif self.config['vectorization']['tf-idf']:
             self.vectorizer = TfidfVectorizer()  # tokenizer=self.tokenizer
             self.config['tokenization'] = False
+
         # TODO fix fasttext
         elif self.config['vectorization']['fasttext']:
-            self.vectorizer = fasttext.load_model(self.opt['fasttext_model'])
+            self.vectorizer = fasttext.load_model(self.config['fasttext_model'])
             self.config['tokenization'] = True
         else:
             raise NotImplementedError('Not implemented vectorizer.')
 
-    def clean(self, data):
-        if self.config['nan']:
-            data = data.dropna()
-        if self.config['repeat']:
-            data = data.drop_duplicates()
-        return data
+    def preprocessing(self, data):
+        return transform(data, lower=self.config['lower'], lemma=self.config['lemma'], ngramm=self.config['ngramm'])
 
-    def tokenizer(self, data):
-        if not self.config['tokenization']:
-            data = tokenization(data, morph=self.config['lemma'], ngram=self.config['n-gram'])
-            new_data = list()
-            for x in data:
-                new_data.append(*map(' '.join, x))
-                data = new_data
-        else:
-            data = tokenization(data, morph=self.config['lemma'], ngram=self.config['n-gram'])
-        return data
-
-    # TODO fix
     def vectorization(self, data, train=False):
-        # cleaning dataset from NaN and repeated requests
-        data = self.clean(data)
-
-        # fix misspelling
-        if self.config['speller']:
-            raise NotImplementedError('Speller is not implemented yet')
-
         # vectorization
         if not self.config['tokenization']:
             if train:
@@ -102,15 +83,15 @@ class Pipeline(object):
             else:
                 vec = self.vectorizer.transform(data)
         else:
-            data = self.tokenizer(data)
+            data = tokenize(data)
             if self.config['model']['name'] == 'CNN':
-                vec = list()
-                for x in data:
-                    v = list()
-                    for y in x:
-                        v.append(self.vectorizer(y))
-                    vec.append(np.asarray(v))
-                vec = np.asarray(vec)
+                vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
+                for j, x in enumerate(data):
+                    for i, y in enumerate(x):
+                        if i < self.opt['text_size']:
+                            vec[j, i] = self.vectorizer[y]
+                        else:
+                            break
             else:
                 raise NotImplementedError()
 
@@ -128,14 +109,3 @@ class Pipeline(object):
 
     def config(self):
         return self.config
-
-
-train = pd.read_csv('./data/X_train.csv')
-test = pd.read_csv('./data/X_test.csv')
-y_train = train['Категория жалобы'].as_matrix()
-y_test = test['Категория жалобы'].as_matrix()
-x_train = train['Lemmatized']
-x_test = test['Lemmatized']
-
-pipe = Pipeline()
-pipe.train(x_train, y_train)

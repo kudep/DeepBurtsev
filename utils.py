@@ -11,6 +11,17 @@ from tqdm import tqdm
 morph = pymorphy2.MorphAnalyzer()
 
 
+def tokenize(data):
+    tok_data = list()
+    for x in data:
+        sent_toks = nltk.sent_tokenize(x)
+        word_toks = [nltk.word_tokenize(el) for el in sent_toks]
+        tokens = [val for sublist in word_toks for val in sublist]
+        tok_data.append(tokens)
+
+    return tok_data
+
+
 def transform(data, lower=True, lemma=True, ngramm=False):
     Tokens = list()
     for x in tqdm(data['request']):

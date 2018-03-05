@@ -1,165 +1,24 @@
+import numpy as np
 import pandas as pd
+import pymorphy2
+import fasttext
+import json
+import os
 import re
-import random
-from typing import Generator
-from sklearn.model_selection import train_test_split
+
+from dataset import Dataset
+from utils import transform, tokenize
+from lightgbm import LGBMClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from models.CNN.multiclass import KerasMulticlassModel
+morph = pymorphy2.MorphAnalyzer()
 
 
-class Dataset(object):
-    def __init__(self, data, seed=None, split=True, splitting_proportions=None,
-                 *args, **kwargs):
-
-        rs = random.getstate()
-        random.seed(seed)
-        self.random_state = random.getstate()
-        random.setstate(rs)
-
-        if splitting_proportions is None:
-            self.splitting_proportions = [0.1, 0.1]
-        else:
-            self.splitting_proportions = splitting_proportions
-
-        if not split:
-            self.train = data.get('train', [])
-            self.test = data.get('test', [])
-            try:
-                self.valid = data.get('valid', [])
-                self.data = {'train': {'base': self.train},
-                             'test': {'base': self.test},
-                             'valid': {'base': self.valid},
-                             'all': self.train + self.test}
-            except KeyError:
-                self.data = {'train': {'base': self.train},
-                             'test': {'base': self.test},
-                             'all': self.train + self.test}
-        else:
-            self.train, self.valid, self.test = self.split_data(data)
-            self.data = {'train': {'base': self.train},
-                         'test': {'base': self.test},
-                         'valid': {'base': self.valid},
-                         'all': self.train + self.test}
-
-        self.data['classes'] = data['class'].unique()  # np.array
-
-    def batch_generator(self, batch_size: int, data_type: str = 'train') -> Generator:
-        r"""This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
-         batches
-        Args:
-            batch_size (int): number of samples in batch
-            data_type (str): can be either 'train', 'test', or 'valid'
-        Returns:
-            batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
-        """
-        data = self.data[data_type]
-        data_len = len(data)
-        order = list(range(data_len))
-
-        rs = random.getstate()
-        random.setstate(self.random_state)
-        random.shuffle(order)
-        self.random_state = random.getstate()
-        random.setstate(rs)
-
-        # for i in range((data_len - 1) // batch_size + 1):
-        #     yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
-        for i in range((data_len - 1) // batch_size + 1):
-            o = order[i * batch_size:(i + 1) * batch_size]
-            yield list((list(data['request'][o]), list(data['class'][o])))
-
-    def iter_all(self, data_type: str = 'train') -> Generator:
-        """
-        Iterate through all data. It can be used for building dictionary or
-        Args:
-            data_type (str): can be either 'train', 'test', or 'valid'
-        Returns:
-            samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
-        """
-        data = self.data[data_type]
-        for x, y in zip(data['request'], data['class']):
-            yield (x, y)
-
-    def _split_data(self, splitting_proportions, field_to_split, splitted_fields):
-        data_to_div = self.data[field_to_split].copy()
-        data_size = len(self.data[field_to_split])
-        for i in range(len(splitted_fields) - 1):
-            self.data[splitted_fields[i]], data_to_div = train_test_split(data_to_div,
-                                                                          test_size=
-                                                                          len(data_to_div) -
-                                                                          int(data_size * splitting_proportions[i]))
-        self.data[splitted_fields[-1]] = data_to_div
-        return True
-
-    def split_data(self, dataset):
-
-        dd = dict()
-        cd = dict()
-        train = list()
-        valid = list()
-        test = list()
-
-        for x, y in zip(dataset['request'], dataset['class']):
-            if y not in dd.keys():
-                dd[y] = list()
-                cd[y] = 0
-                dd[y].append((x, y))
-                cd[y] += 1
-            else:
-                dd[y].append((x, y))
-                cd[y] += 1
-
-        if type(self.splitting_proportions) is list:
-            assert len(self.splitting_proportions) == 2
-            assert type(self.splitting_proportions[0]) is float
-
-            valid_ = dict()
-            test_ = dict()
-
-            for x in dd.keys():
-                num = int(cd[x] * self.splitting_proportions[0])
-                valid_[x] = random.sample(dd[x], num)
-                [dd[x].remove(t) for t in valid_[x]]
-
-            for x in dd.keys():
-                num = int(cd[x] * self.splitting_proportions[1])
-                test_[x] = random.sample(dd[x], num)
-                [dd[x].remove(t) for t in test_[x]]
-        else:
-            raise ValueError('Split proportion must be list of floats, with length = 2')
-
-        train_ = dd
-
-        for x in train_.keys():
-            for z_, z in zip([train_, valid_, test_], [train, valid, test]):
-                z.extend(z_[x])
-
-        del train_, valid_, test_, dd, cd, dataset  # really need ?
-
-        for z in [train, valid, test]:
-            z = random.shuffle(z)
-
-        utrain, uvalid, utest, ctrain, cvalid, ctest = list(), list(), list(), list(), list(), list()
-        for z, n, c in zip([train, valid, test], [utrain, uvalid, utest], [ctrain, cvalid, ctest]):
-            for x in z:
-                n.append(x[0])
-                c.append(x[1])
-
-        train = pd.DataFrame({'request': utrain,
-                              'class': ctrain})
-        valid = pd.DataFrame({'request': uvalid,
-                              'class': cvalid})
-        test = pd.DataFrame({'request': utest,
-                             'class': ctest})
-
-        return train, valid, test
-
-    def _merge_data(self, fields_to_merge):
-        data = self.data.copy()
-        new_name = [s + '_' for s in fields_to_merge]
-        data[new_name] = []
-        for name in fields_to_merge:
-            data[new_name] += self.data[name]
-        self.data = data
-        return True
+# class IntentRecognition():
+#     def __init__(self, Data, standartization_function=None, linear_only=False, neural_only=False):
 
 
 def read_dataset(filepath, duplicates=False, clean=True):
@@ -198,17 +57,118 @@ def read_dataset(filepath, duplicates=False, clean=True):
     return new_data
 
 
-path = '../data/vkusvill_all_categories.csv'
+class Pipeline(object):
+    def __init__(self, dataset, config=None):
+
+        self.dataset = dataset
+
+        if config is None:
+            self.config = {'lemma': True,
+                           'lower': True,
+                           'ngramm': False,
+                           'vectorization': {'count': True,
+                                             'tf-idf': False,
+                                             'fasttext': False},
+                           'model': {'name': 'LR', 'model_config': None},
+                           'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
+        else:
+            self.config = config
+        self.status = ''
+
+        # models
+        if self.config['model']['name'] == 'LR':
+            self.model = LogisticRegression(n_jobs=-1, solver='lbfgs')
+        elif self.config['model']['name'] == 'GBM':
+            self.model = LGBMClassifier(n_estimators=200, n_jobs=-1, learning_rate=0.1)
+        elif self.config['model']['name'] == 'SVM':
+            self.model = LinearSVC(C=0.8873076204728344, class_weight='balanced')
+        elif self.config['model']['name'] == 'RF':
+            self.model = RandomForestClassifier(max_depth=5, random_state=0)
+
+        # TODO fix CNN model
+        elif self.config['model']['name'] == 'CNN':
+            # Reading parameters of intent_model from json
+            if os.path.isfile(self.config['model']['model_config']):
+                with open(self.config['model']['model_config'], "r") as f:
+                    self.opt = json.load(f)
+                self.model = KerasMulticlassModel(self.opt)
+            else:
+                raise FileExistsError('File {} is not exist.'.format(self.config['model']['model_config']))
+        else:
+            raise NotImplementedError('{} is not implemented'.format(self.config['model']['name']))
+
+        # vectorizers
+        if self.config['vectorization']['count']:
+            self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
+            self.config['tokenization'] = False
+        elif self.config['vectorization']['tf-idf']:
+            self.vectorizer = TfidfVectorizer()  # tokenizer=self.tokenizer
+            self.config['tokenization'] = False
+
+        # TODO fix fasttext
+        elif self.config['vectorization']['fasttext']:
+            self.vectorizer = fasttext.load_model(self.config['fasttext_model'])
+            self.config['tokenization'] = True
+        else:
+            raise NotImplementedError('Not implemented vectorizer.')
+
+    def preprocessing(self, data):
+        return transform(data, lower=self.config['lower'], lemma=self.config['lemma'], ngramm=self.config['ngramm'])
+
+    def vectorization(self, data, train=False):
+        # vectorization
+        if not self.config['tokenization']:
+            if train:
+                vec = self.vectorizer.fit_transform(data)
+            else:
+                vec = self.vectorizer.transform(data)
+        else:
+            data = tokenize(data)
+            if self.config['model']['name'] == 'CNN':
+                vec = np.zeros((len(data), self.opt['text_size'], self.opt['embedding_size']))
+                for j, x in enumerate(data):
+                    for i, y in enumerate(x):
+                        if i < self.opt['text_size']:
+                            vec[j, i] = self.vectorizer[y]
+                        else:
+                            break
+            else:
+                raise NotImplementedError()
+
+        self.status += 'Vectorization: done\n'
+        return vec
+
+    def train(self, data, y):
+        self.model.fit(data, y)
+        self.status += 'Train: done\n'
+        return None
+
+    def run(self):
+        data_ = self.preprocessing(self.dataset.data['train'])
+        vec = self.vectorization(data_['request'], train=True)
+        self.train(vec, data_['class'])
+
+    def status(self):
+        return self.status
+
+    def config(self):
+        return self.config
+
+
+# testing
+path = '/home/mks/projects/intent_classification_script/data/vkusvill_all_categories.csv'
 global_data = read_dataset(path)
-
 dataset = Dataset(global_data, seed=42)
-generator = dataset.batch_generator(64)
+conf = {'lemma': True,
+        'lower': True,
+        'ngramm': False,
+        'vectorization': {'count': False,
+                          'tf-idf': True,
+                          'fasttext': False},
+        'model': {'name': 'RF', 'model_config': None},
+        'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
 
-k = 0
-for x in generator:
-    print(x)
-    k += 1
-    if k == 2:
-        break
+pipe = Pipeline(dataset, conf)
 
+pipe.run()
 
