@@ -70,7 +70,7 @@ class KerasMulticlassModel(object):
                                    metrics_names=self.opt['lear_metrics'],
                                    add_metrics_file=metrics_file)
         else:
-            self.classes = self.opt['classes']
+            self.classes = np.array(self.opt['classes'].split(' '))
             self.n_classes = self.classes.shape[0]
             self.model = self.init_model_from_scratch(model_name=self.opt['model_name'],
                                                       optimizer_name=self.opt['optimizer'],
@@ -133,7 +133,8 @@ class KerasMulticlassModel(object):
             valid_y.append(valid_sample[1])
 
         valid_x = self.texts2vec(valid_x)
-        valid_y = labels2onehot_one(valid_y, self.opt['classes'])
+        # valid_y = labels2onehot_one(valid_y, self.opt['classes'])
+        valid_y = labels2onehot_one(valid_y, self.classes)
 
         # print('\n____Training over {} samples____\n\n'.format(n_train_samples))
 
@@ -173,7 +174,7 @@ class KerasMulticlassModel(object):
                         val_loss = valid_metrics_values[0]
                         # print('epochs_done: {}'.format(epochs_done))
 
-        self.save()
+        self.save(self.opt['model_name'])
 
     def infer(self, data, *args):
         """

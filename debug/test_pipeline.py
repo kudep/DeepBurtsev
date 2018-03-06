@@ -95,7 +95,7 @@ class Pipeline(object):
             if os.path.isfile(self.config['model']['model_config']):
                 with open(self.config['model']['model_config'], "r") as f:
                     self.opt = json.load(f)
-                self.opt['classes'] = dataset.data['classes']
+                self.opt['classes'] = ' '.join([str(x) for x in dataset.data['classes']])
                 self.model = KerasMulticlassModel(self.opt, self.vectorizer)
             else:
                 raise FileExistsError('File {} is not exist.'.format(self.config['model']['model_config']))
