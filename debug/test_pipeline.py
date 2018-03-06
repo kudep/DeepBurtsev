@@ -111,6 +111,7 @@ class Pipeline(object):
         self.dataset.data['train']['mod'] = self.preprocessing(self.dataset.data['train']['base'])
         self.status += 'Data transformation: done\n'
         self.model.fit(self.dataset, 'mod')
+        self.model.test(self.dataset, 'mod')
         self.status += 'Train: done\n'
 
     def status(self):

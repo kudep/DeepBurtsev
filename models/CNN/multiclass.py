@@ -176,6 +176,36 @@ class KerasMulticlassModel(object):
 
         self.save(self.opt['model_name'])
 
+    def test(self, dataset, stage='base', *args, **kwargs):
+        """
+        Method trains the intent_model using batches and validation
+        Args:
+            dataset: instance of class Dataset
+
+        Returns: None
+        """
+
+        valid_iter_all = dataset.iter_all(data_type='test', stage=stage)
+        valid_x = []
+        valid_y = []
+        for valid_i, valid_sample in enumerate(valid_iter_all):
+            valid_x.append(valid_sample[0])
+            valid_y.append(valid_sample[1])
+
+        valid_x = self.texts2vec(valid_x)
+        valid_y = labels2onehot_one(valid_y, self.classes)
+
+        # print('\n____Testing over {} samples____\n\n'.format(n_train_samples))
+
+        if 'test' in dataset.data.keys():
+            valid_metrics_values = self.model.test_on_batch(x=valid_x, y=valid_y)
+
+            log_metrics(names=self.metrics_names,
+                        values=valid_metrics_values,
+                        mode='test')
+        else:
+            raise ValueError('In dataset absent {} part of data'.format('test'))
+
     def infer(self, data, *args):
         """
         Method returns predictions on the given data
