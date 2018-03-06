@@ -32,7 +32,7 @@ from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from models.CNN import metrics as metrics_file
-from utils import log_metrics, labels2onehot_one, tokenize
+from utils import log_metrics, labels2onehot_one, tokenize, get_result
 
 
 config = tf.ConfigProto()
@@ -117,7 +117,7 @@ class KerasMulticlassModel(object):
         Method trains the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
-
+            stage:
         Returns: None
         """
         updates = 0
@@ -181,13 +181,14 @@ class KerasMulticlassModel(object):
         Method trains the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
-
+            stage:
         Returns: None
         """
 
         valid_iter_all = dataset.iter_all(data_type='test', stage=stage)
         valid_x = []
         valid_y = []
+
         for valid_i, valid_sample in enumerate(valid_iter_all):
             valid_x.append(valid_sample[0])
             valid_y.append(valid_sample[1])
@@ -199,12 +200,18 @@ class KerasMulticlassModel(object):
 
         if 'test' in dataset.data.keys():
             valid_metrics_values = self.model.test_on_batch(x=valid_x, y=valid_y)
-
             log_metrics(names=self.metrics_names,
                         values=valid_metrics_values,
                         mode='test')
+            # TODO fix, metric takes only labels
+            # y_pred_ = self.model.predict(valid_x)
+            # for x in y_pred_:
+            #     y_pred.append(x.max)
+            # results = get_result(y_pred, valid_y, self.classes)
         else:
             raise ValueError('In dataset absent {} part of data'.format('test'))
+
+        return None
 
     def infer(self, data, *args):
         """

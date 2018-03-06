@@ -2,6 +2,7 @@ from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
+from utils import get_result
 
 
 # TODO write test method in all classes
@@ -15,8 +16,13 @@ class LinearRegression(object):
         if self.train:
             vec = self.vectorizer.fit_transform(data[0])
         else:
-            vec = self.vectorizer.fit(data[0])
+            vec = self.vectorizer.transform(data[0])
         self.model.fit(vec, data[1])
+
+    def test(self, data):
+        vec = self.vectorizer.transform(data[0])
+        y_pred = self.model.predict(vec)
+        result = get_result(y_pred, data[1], )
 
     def params(self):
         return self.model.get_params()
@@ -32,7 +38,7 @@ class RandomForest(object):
         if self.train:
             vec = self.vectorizer.fit_transform(data[0])
         else:
-            vec = self.vectorizer.fit(data[0])
+            vec = self.vectorizer.transform(data[0])
         self.model.fit(vec, data[1])
 
     def params(self):
@@ -49,7 +55,7 @@ class SVM(object):
         if self.train:
             vec = self.vectorizer.fit_transform(data[0])
         else:
-            vec = self.vectorizer.fit(data[0])
+            vec = self.vectorizer.transform(data[0])
         self.model.fit(vec, data[1])
 
     def params(self):
@@ -66,7 +72,7 @@ class GBM(object):
         if self.train:
             vec = self.vectorizer.fit_transform(data[0])
         else:
-            vec = self.vectorizer.fit(data[0])
+            vec = self.vectorizer.transform(data[0])
         self.model.fit(vec, data[1])
 
     def params(self):

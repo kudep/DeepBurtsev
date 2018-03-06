@@ -6,7 +6,7 @@ import os
 import re
 
 from dataset import Dataset
-from utils import transform
+from utils import transform, logging
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from models.Classic.models import LinearRegression, GBM, SVM, RandomForest
 from models.CNN.multiclass import KerasMulticlassModel
@@ -112,7 +112,10 @@ class Pipeline(object):
         self.status += 'Data transformation: done\n'
         self.model.fit(self.dataset, 'mod')
         self.model.test(self.dataset, 'mod')
+        # results, ad = self.model.test(self.dataset, 'mod')
         self.status += 'Train: done\n'
+
+        # logging(results, self.config, self.opt, ad)
 
     def status(self):
         return self.status

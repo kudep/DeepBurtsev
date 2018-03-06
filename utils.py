@@ -5,12 +5,24 @@ import pandas as pd
 import numpy as np
 import sys
 import os
+import json
 import requests
 import tarfile
+# time and date
+import datetime
 
 from copy import deepcopy
 from time import time
 from tqdm import tqdm
+
+# metrics
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
+
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -82,6 +94,52 @@ class NLTKTokenizer(object):
             return tokenized_batch
         else:
             raise AttributeError("Tokenizer %s is not defined in nltk.tokenizer" % tokenizer)
+
+
+def get_result(y_pred, y_test, category_description):
+    results = dict()
+    results['accuracy'] = 'accuracy : {}'.format(accuracy_score(y_test, y_pred))
+    results['f1_macro'] = f1_score(y_test, y_pred, average='macro')
+    results['f1_micro'] = f1_score(y_test, y_pred, average='micro')
+    results['f1_weighted'] = f1_score(y_test, y_pred, average='weighted')
+    results['ROC'] = roc_auc_score(y_test.reshape(-1), y_pred.reshape(-1))
+    results['confusion_matrix'] = confusion_matrix(y_test, y_pred)
+    results['classes'] = []
+
+    for i in range(len(category_description)):
+        y_bin_pred = np.zeros(y_pred.shape)
+        y_bin_pred[y_pred == i] = 1
+        y_bin_answ = np.zeros(y_pred.shape)
+        y_bin_answ[y_test == i] = 1
+
+        precision_tmp = precision_score(y_bin_answ, y_bin_pred)
+        recall_tmp = recall_score(y_bin_answ, y_bin_pred)
+        if recall_tmp == 0 and precision_tmp == 0:
+            f1_tmp = 0.
+        else:
+            f1_tmp = 2 * recall_tmp * precision_tmp / (precision_tmp + recall_tmp)
+
+        string_to_format = '{:7} number_test_objects: {:4}   precision: {:5.3}   recall: {:5.3}  f1: {:5.3}'
+        results['classes'].append(string_to_format.format(category_description[i],
+                                                          y_bin_answ[y_test == i].shape[0],
+                                                          precision_tmp,
+                                                          recall_tmp,
+                                                          f1_tmp))
+
+    return results
+
+
+def logging(res, pipe_conf, model_conf, adres):
+    date = datetime.datetime.now()
+    log = {'pipeline configuration': pipe_conf, 'model configuration': model_conf, 'results': res,
+           'checkpoint adres': adres}
+
+    with open('./results/logs/{}-{}-{}.txt'.format(date.year, date.month, date.day), 'w') as f:
+        s = json.dump(log, f)
+        f.write(s)
+        f.close()
+
+    return None
 
 
 def tokenize(data):
