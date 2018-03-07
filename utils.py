@@ -96,13 +96,15 @@ class NLTKTokenizer(object):
             raise AttributeError("Tokenizer %s is not defined in nltk.tokenizer" % tokenizer)
 
 
-def get_result(y_pred, y_test, category_description):
+def get_result(y_pred, y_test):
+    category_description = list(set(y_test))
+
     results = dict()
     results['accuracy'] = 'accuracy : {}'.format(accuracy_score(y_test, y_pred))
     results['f1_macro'] = f1_score(y_test, y_pred, average='macro')
     results['f1_micro'] = f1_score(y_test, y_pred, average='micro')
     results['f1_weighted'] = f1_score(y_test, y_pred, average='weighted')
-    results['ROC'] = roc_auc_score(y_test.reshape(-1), y_pred.reshape(-1))
+    # results['ROC'] = roc_auc_score(y_test, y_pred)
     results['confusion_matrix'] = confusion_matrix(y_test, y_pred)
     results['classes'] = []
 

@@ -194,6 +194,7 @@ class KerasMulticlassModel(object):
             valid_y.append(valid_sample[1])
 
         valid_x = self.texts2vec(valid_x)
+        y_test = valid_y
         valid_y = labels2onehot_one(valid_y, self.classes)
 
         # print('\n____Testing over {} samples____\n\n'.format(n_train_samples))
@@ -203,15 +204,14 @@ class KerasMulticlassModel(object):
             log_metrics(names=self.metrics_names,
                         values=valid_metrics_values,
                         mode='test')
-            # TODO fix, metric takes only labels
-            # y_pred_ = self.model.predict(valid_x)
-            # for x in y_pred_:
-            #     y_pred.append(x.max)
-            # results = get_result(y_pred, valid_y, self.classes)
+
+            y_pred_ = self.model.predict(valid_x)
+            y_pred = y_pred_.argmax(axis=1)
+            results = get_result(y_pred, y_test)
         else:
             raise ValueError('In dataset absent {} part of data'.format('test'))
 
-        return None
+        return results
 
     def infer(self, data, *args):
         """

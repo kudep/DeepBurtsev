@@ -121,14 +121,6 @@ def fmeasure(y_true, y_pred):
         return fbeta_score_np(y_true, y_pred, beta=1)
 
 
-def fmeasure_(y_true, y_pred):
-    try:
-        _ = K.is_keras_tensor(y_pred)
-        return fbeta_score_K_(y_true, y_pred, beta=1)
-    except ValueError:
-        return fbeta_score_np_(y_true, y_pred, beta=1)
-
-
 def roc_auc_score(y_true, y_pred):
     """Compute Area Under the Curve (AUC) from prediction scores.
 
