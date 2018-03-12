@@ -71,6 +71,8 @@ class Pipeline(object):
             self.config = config
         self.status = ''
 
+        self.opt = None
+
         # vectorizers
         if self.config['vectorization']['count']:
             self.vectorizer = CountVectorizer(min_df=5)  # tokenizer=self.tokenizer,
@@ -110,13 +112,11 @@ class Pipeline(object):
         self.dataset.data['valid']['mod'] = self.preprocessing(self.dataset.data['valid']['base'])
         self.dataset.data['train']['mod'] = self.preprocessing(self.dataset.data['train']['base'])
         self.status += 'Data transformation: done\n'
-        self.model.fit(self.dataset, 'mod')
-        # self.model.test(self.dataset, 'mod')
-        results = self.model.test(self.dataset, 'mod')
-        print(results)
+        adres = self.model.fit(self.dataset, mode='train', stage='mod')
+        results = self.model.test(self.dataset, stage='mod')
         self.status += 'Train: done\n'
 
-        # logging(results, self.config, self.opt, ad)
+        logging(results, self.config, self.opt, adres)
 
     def status(self):
         return self.status
@@ -129,13 +129,13 @@ class Pipeline(object):
 path = '/home/mks/projects/intent_classification_script/data/vkusvill_all_categories.csv'
 global_data = read_dataset(path)
 dataset = Dataset(global_data, seed=42)
-conf = {'lemma': True,
-        'lower': True,
+conf = {'lemma': False,
+        'lower': False,
         'ngramm': False,
         'vectorization': {'count': False,
                           'tf-idf': False,
                           'fasttext': True},
-        'model': {'name': 'CNN', 'model_config': '../models/CNN/config.json'},
+        'model': {'name': 'CNN', 'model_config': '../models/CNN/config.json'},  # '../models/CNN/config.json'
         'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
 
 pipe = Pipeline(dataset, conf)

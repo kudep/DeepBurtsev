@@ -174,7 +174,8 @@ class KerasMulticlassModel(object):
                         val_loss = valid_metrics_values[0]
                         # print('epochs_done: {}'.format(epochs_done))
 
-        self.save(self.opt['model_name'])
+        adres = self.save(self.opt['model_name'])
+        return adres
 
     def test(self, dataset, stage='base', *args, **kwargs):
         """
@@ -205,8 +206,9 @@ class KerasMulticlassModel(object):
                         values=valid_metrics_values,
                         mode='test')
 
-            y_pred_ = self.model.predict(valid_x)
-            y_pred = y_pred_.argmax(axis=1)
+            prediction = self.model.predict(valid_x)
+            y_pred = prediction.argmax(axis=1)
+            y_pred = np.array([x + 1 for x in y_pred])
             results = get_result(y_pred, y_test)
         else:
             raise ValueError('In dataset absent {} part of data'.format('test'))
@@ -497,7 +499,7 @@ class KerasMulticlassModel(object):
         with open(opt_path, 'w') as outfile:
             json.dump(self.opt, outfile)
 
-        return True
+        return str(weights_path)
 
     def reset(self):
         pass

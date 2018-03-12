@@ -102,11 +102,10 @@ def get_result(y_pred, y_test):
     results = dict()
     results['accuracy'] = 'accuracy : {}'.format(accuracy_score(y_test, y_pred))
     results['f1_macro'] = f1_score(y_test, y_pred, average='macro')
-    results['f1_micro'] = f1_score(y_test, y_pred, average='micro')
     results['f1_weighted'] = f1_score(y_test, y_pred, average='weighted')
     # results['ROC'] = roc_auc_score(y_test, y_pred)
-    results['confusion_matrix'] = confusion_matrix(y_test, y_pred)
-    results['classes'] = []
+    results['confusion_matrix'] = confusion_matrix(y_test, y_pred).tolist()
+    results['classes'] = {}
 
     for i in range(len(category_description)):
         y_bin_pred = np.zeros(y_pred.shape)
@@ -121,24 +120,33 @@ def get_result(y_pred, y_test):
         else:
             f1_tmp = 2 * recall_tmp * precision_tmp / (precision_tmp + recall_tmp)
 
-        string_to_format = '{:7} number_test_objects: {:4}   precision: {:5.3}   recall: {:5.3}  f1: {:5.3}'
-        results['classes'].append(string_to_format.format(category_description[i],
-                                                          y_bin_answ[y_test == i].shape[0],
-                                                          precision_tmp,
-                                                          recall_tmp,
-                                                          f1_tmp))
+        results['classes'][str(category_description[i])] = {'number_test_objects': y_bin_answ[y_test == i].shape[0],
+                                                            'precision': precision_tmp,
+                                                            'recall': recall_tmp,
+                                                            'f1': f1_tmp}
+
+    # string_to_format = '{:7} number_test_objects: {:4}   precision: {:5.3}   recall: {:5.3}  f1: {:5.3}'
+    # results['classes'].append(string_to_format.format(category_description[i],
+    #                                                   y_bin_answ[y_test == i].shape[0],
+    #                                                   precision_tmp,
+    #                                                   recall_tmp,
+    #                                                   f1_tmp))
 
     return results
 
 
-def logging(res, pipe_conf, model_conf, adres):
+def logging(res, pipe_conf, model_conf=None, adres=None):
     date = datetime.datetime.now()
     log = {'pipeline configuration': pipe_conf, 'model configuration': model_conf, 'results': res,
            'checkpoint adres': adres}
 
-    with open('./results/logs/{}-{}-{}.txt'.format(date.year, date.month, date.day), 'w') as f:
-        s = json.dump(log, f)
-        f.write(s)
+    if not os.path.isdir('./results/logs/'):
+        os.makedirs('./results/logs/')
+
+    with open('./results/logs/{}-{}-{}.txt'.format(date.year, date.month, date.day), 'a') as f:
+        line = json.dumps(log)
+        f.write(line)
+        f.write('\n')
         f.close()
 
     return None
