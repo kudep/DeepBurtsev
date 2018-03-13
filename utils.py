@@ -33,6 +33,9 @@ from matplotlib import rc
 morph = pymorphy2.MorphAnalyzer()
 
 
+# -------------------------- Hyper search ----------------------------------
+
+
 class HyperPar:
     def __init__(self, **kwargs):
         np.random.seed(int(time()))
@@ -100,6 +103,9 @@ class NLTKTokenizer(object):
             return tokenized_batch
         else:
             raise AttributeError("Tokenizer %s is not defined in nltk.tokenizer" % tokenizer)
+
+
+# -------------------------- Logging ----------------------------------
 
 
 def get_result(y_pred, y_test):
