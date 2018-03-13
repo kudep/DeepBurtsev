@@ -221,6 +221,19 @@ def get_table(dang, savepath='./results/', filename='report', ext='pdf'):
 
     table = pd.pivot_table(table, index='Models', values=['Accuracy', 'F1 macro', 'F1 weighted'], fill_value=0)
 
+    # best model
+    name_best_model = list(table[table['F1 weighted'] == table['F1 weighted'].max()].index)[0]
+    I = dang[name_best_model]['index_of_best']
+    best_model = {}
+    a = dang[name_best_model]['list'][I]['results']['classes']
+    for x in a.keys():
+        for y in a[x].keys():
+            if y not in best_model.keys():
+                best_model[y] = list()
+                best_model[y].append(a[x][y])
+            else:
+                best_model[y].append(a[x][y])
+
     # create pdf table
     env = Environment(loader=FileSystemLoader('/home/mks/projects/intent_classification_script/'))
     template = env.get_template("template.html")
@@ -233,7 +246,7 @@ def get_table(dang, savepath='./results/', filename='report', ext='pdf'):
 
     HTML(string=html_out).write_pdf(adr)
 
-    return table
+    return table, [name_best_model, best_model]
 
 
 def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6), axes_names=['X', 'Y'],
@@ -280,7 +293,7 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     fig.set_figwidth(plot_size[0])
     fig.set_figheight(plot_size[1])
 
-    plt.imshow(matrix, interpolation='nearest', cmap=plt.get_cmap('Blues'))  # plt.cm.Blues
+    plt.imshow(matrix, interpolation='nearest', cmap=plt.get_cmap('Blues'))
     plt.title(plot_name, fontsize=fontsize)
 
     plt.xticks(np.arange(0, len(important_categories)), important_categories, rotation=90, fontsize=ticks_size)
@@ -303,7 +316,7 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
-def results_summarization(date=None, path=None, savepath='./results/'):
+def results_summarization(date=None, path=None, savepath='./results/images/'):
     if path is None:
         path = './debug/results/logs/'
 
@@ -316,10 +329,9 @@ def results_summarization(date=None, path=None, savepath='./results/'):
     info = scrab_data(log)
 
     # make dataframe table
-    table = get_table(info)
+    table, best_model = get_table(info)
 
     # ploting results
-
     model_names = tuple(table.index)
     metrics = list(table.keys())
     x = np.arange(len(table))
@@ -329,15 +341,21 @@ def results_summarization(date=None, path=None, savepath='./results/'):
 
         ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names)
 
-    for i in model_names:
-        I = info[i]['index_of_best']
-        important_categories = list(info[i]['list'][I]['results']['classes'].keys())
+    for n in model_names:
+        I = info[n]['index_of_best']
+        important_categories = list(info[n]['list'][I]['results']['classes'].keys())
         important_categories = np.array([int(x) for x in important_categories])
-        matrix = np.array(info[i]['list'][I]['results']['confusion_matrix'])
+        matrix = np.array(info[n]['list'][I]['results']['confusion_matrix'])
 
         plot_confusion_matrix(matrix, important_categories,
-                              plot_name='Confusion Matrix of {}'.format(i),
+                              plot_name='Confusion Matrix of {}'.format(n),
                               axis_names=['Prediction label', 'True label'])
+
+    best_model_name, stat = best_model
+    classes_names = list(info['LR']['list'][0]['results']['classes'].keys())
+    for i in stat.keys():
+        axes_names = ['Classes', i]
+        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names)
 
     return None
 
