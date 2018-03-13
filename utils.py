@@ -8,12 +8,17 @@ import os
 import json
 import requests
 import tarfile
-# time and date
+import itertools
 import datetime
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from time import time
 from tqdm import tqdm
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+from os.path import join, isdir, isfile
+from os import mkdir
 
 # metrics
 from sklearn.metrics import accuracy_score
@@ -22,6 +27,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import roc_auc_score
+from matplotlib import rc
 
 
 morph = pymorphy2.MorphAnalyzer()
@@ -150,6 +156,190 @@ def logging(res, pipe_conf, model_conf=None, adres=None):
         f.close()
 
     return None
+
+# -------------------------- Results visualization ----------------------------------
+
+
+def scrab_data(path):
+    # reading data
+    info = {}
+
+    with open(path, 'r') as f:
+        for line in f:
+            jline = json.loads(line)
+            name = jline['pipeline configuration']['model']['name']
+            if name not in info.keys():
+                info[name] = dict()
+                info[name]['list'] = list()
+                info[name]['list'].append(jline)
+            else:
+                info[name]['list'].append(jline)
+
+    # analize data
+    for x in info.keys():
+        f1_max = 0
+        acc_max = 0
+        f1w_max = 0
+        ind = 0
+        pipe_conf = None
+        model_conf = None
+
+        for i, y in enumerate(info[x]['list']):
+
+            z = y['results']
+
+            if float(z['f1_macro']) > f1_max:
+                f1_max = float(z['f1_macro'])
+            if float(z['f1_weighted']) >= f1w_max:
+                f1w_max = float(z['f1_weighted'])
+                pipe_conf = y['pipeline configuration']
+                model_conf = y['model configuration']
+                ind = i
+            if float(z['accuracy'].split(' ')[-1]) >= acc_max:  # fix
+                acc_max = float(z['accuracy'].split(' ')[-1])  # fix
+
+        info[x]['max_f1_macro'] = f1_max
+        info[x]['max_f1_weighted'] = f1w_max
+        info[x]['max_acc'] = acc_max
+        info[x]['best_pipe_conf'] = pipe_conf
+        info[x]['best_model_conf'] = model_conf
+        info[x]['index_of_best'] = ind
+
+    return info
+
+
+def get_table(dang, savepath='./results/', filename='report', ext='pdf'):
+    # make dataframe table
+    fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
+    table = pd.DataFrame({'Models': list(dang.keys()),
+                          'Accuracy': fun_0('max_acc'),
+                          'F1 macro': fun_0('max_f1_macro'),
+                          'F1 weighted': fun_0('max_f1_weighted')})
+
+    table = pd.pivot_table(table, index='Models', values=['Accuracy', 'F1 macro', 'F1 weighted'], fill_value=0)
+
+    # create pdf table
+    env = Environment(loader=FileSystemLoader('/home/mks/projects/intent_classification_script/'))
+    template = env.get_template("template.html")
+    template_vars = {"title": "Results ",
+                     "national_pivot_table": table.to_html()}
+
+    html_out = template.render(template_vars)
+
+    adr = join(savepath, '{0}.{1}'.format(filename, ext))
+
+    HTML(string=html_out).write_pdf(adr)
+
+    return table
+
+
+def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6), axes_names=['X', 'Y'],
+                 x_lables=None, y_lables=None, xticks=True, legend=True, ext='png', savepath='./results/images/'):
+    fig, ax = plt.subplots(figsize=plot_size)
+    rects = ax.bar(x, y, width, color=color)
+
+    # add some text for labels, title and axes ticks
+    ax.set_xlabel(axes_names[0])
+    ax.set_ylabel(axes_names[1])
+    ax.set_title(plot_name)
+
+    if xticks and x_lables is not None:
+        ax.set_xticks(x)
+        ax.set_xticklabels(x_lables)
+
+    if legend and y_lables is not None:
+        ax.legend((rects[0],), y_lables)
+
+    def autolabel(rects):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width() / 2., 1.01 * height,
+                    '{0:.3}'.format(float(height)),
+                    ha='center', va='bottom')
+
+    autolabel(rects)
+
+    if not isdir(savepath):
+        mkdir(savepath)
+    adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
+    fig.savefig(adr, dpi=100)
+
+    return None
+
+
+def plot_confusion_matrix(matrix, important_categories, plot_name='confusion matrix',
+                          plot_size=(30, 30), fontsize=16, ticks_size=10,
+                          axis_names=['X', 'Y'], ext='png', savepath='./results/images/'):
+    fig, ax = plt.subplots()
+    fig.set_figwidth(plot_size[0])
+    fig.set_figheight(plot_size[1])
+
+    plt.imshow(matrix, interpolation='nearest', cmap=plt.get_cmap('Blues'))  # plt.cm.Blues
+    plt.title(plot_name, fontsize=fontsize)
+
+    plt.xticks(np.arange(0, len(important_categories)), important_categories, rotation=90, fontsize=ticks_size)
+    plt.yticks(np.arange(0, len(important_categories)), important_categories, fontsize=ticks_size)
+
+    fmt = 'd'
+    thresh = matrix.max() / 2.
+    for i, j in itertools.product(np.arange(matrix.shape[0]), np.arange(matrix.shape[1])):
+        plt.text(j, i, format(matrix[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if matrix[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.xlabel(axis_names[0], fontsize=14)
+    plt.ylabel(axis_names[1], fontsize=14)
+
+    adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
+    plt.savefig(adr)
+
+    return None
+
+
+def results_summarization(date=None, path=None, savepath='./results/'):
+    if path is None:
+        path = './debug/results/logs/'
+
+    if date is None:
+        date = datetime.datetime.now()
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    else:
+        log = join(path, date + '.txt')
+    # reading and scrabbing data
+    info = scrab_data(log)
+
+    # make dataframe table
+    table = get_table(info)
+
+    # ploting results
+
+    model_names = tuple(table.index)
+    metrics = list(table.keys())
+    x = np.arange(len(table))
+    for i in metrics:
+        y = list(table[i])
+        axes_names = ['Models', i]
+
+        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names)
+
+    for i in model_names:
+        I = info[i]['index_of_best']
+        important_categories = list(info[i]['list'][I]['results']['classes'].keys())
+        important_categories = np.array([int(x) for x in important_categories])
+        matrix = np.array(info[i]['list'][I]['results']['confusion_matrix'])
+
+        plot_confusion_matrix(matrix, important_categories,
+                              plot_name='Confusion Matrix of {}'.format(i),
+                              axis_names=['Prediction label', 'True label'])
+
+    return None
+
+
+# -------------------------- ***** Utils ----------------------------------
 
 
 def tokenize(data):

@@ -6,7 +6,7 @@ import os
 import re
 
 from dataset import Dataset
-from utils import transform, logging
+from utils import transform, logging, results_summarization
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from models.Classic.models import LinearRegression, GBM, SVM, RandomForest
 from models.CNN.multiclass import KerasMulticlassModel
@@ -139,6 +139,7 @@ conf = {'lemma': False,
         'fasttext_model': '../embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'}
 
 pipe = Pipeline(dataset, conf)
+results_summarization(date='2018-3-12', path='/home/mks/projects/intent_classification_script/debug/results/logs/')
 
 pipe.run()
 

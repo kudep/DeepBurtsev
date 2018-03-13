@@ -11,3 +11,4 @@ pymorphy2
 fasttext
 jupyter notebook
 lightgbm
+matplotlib
