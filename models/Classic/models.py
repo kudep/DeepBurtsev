@@ -5,7 +5,6 @@ from sklearn.ensemble import RandomForestClassifier
 from utils import get_result
 
 
-# TODO write test method in all classes
 class LinearRegression(object):
     def __init__(self, vectorizer, train=True, *args):
         self.model = LogisticRegression(n_jobs=-1, solver='lbfgs')
