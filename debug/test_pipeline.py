@@ -15,7 +15,7 @@ morph = pymorphy2.MorphAnalyzer()
 
 # class IntentRecognition():
 #     def __init__(self, Data, standartization_function=None, linear_only=False, neural_only=False):
-
+ 
 
 def read_dataset(filepath, duplicates=False, clean=True):
     file = open(filepath, 'r', encoding='ISO-8859-1')

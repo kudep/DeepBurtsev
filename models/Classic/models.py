@@ -95,7 +95,3 @@ class GBM(object):
 
     def params(self):
         return self.model.get_params()
-
-
-
-

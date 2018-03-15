@@ -9,7 +9,7 @@ from models.CNN.multiclass import KerasMulticlassModel
 from models.Classic.models import LinearRegression, GBM, SVM, RandomForest
 morph = pymorphy2.MorphAnalyzer()
 
-
+# 'the most important incomprehensible bullshit'
 # class IntentRecognition():
 #     def __init__(self, Data, standartization_function=None, linear_only=False, neural_only=False):
 

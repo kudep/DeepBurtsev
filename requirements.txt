@@ -12,3 +12,6 @@ fasttext
 jupyter notebook
 lightgbm
 matplotlib
+requests
+jinja2
+weasyprint
