@@ -2,7 +2,7 @@
 import pandas as pd
 import re
 from dataset import Dataset
-from transformer import Speller, Tokenizer
+from transformer import Speller, Tokenizer, Lemmatizer
 
 
 def read_dataset(filepath, duplicates=False, clean=True):
@@ -93,4 +93,7 @@ print(dataset.data['test'].head())
 
 # Tokenizer test:
 dataset = Tokenizer().transform(dataset)
+print(dataset.data['base'].head())
+
+dataset = Lemmatizer().transform(dataset)
 print(dataset.data['base'].head())
