@@ -8,6 +8,8 @@ class Dataset(object):
 
     def __init__(self, data, seed=None, classes_description=None, *args, **kwargs):
 
+        self.main_names = ['request', 'report']
+
         rs = random.getstate()
         random.seed(seed)
         self.random_state = random.getstate()
@@ -58,7 +60,7 @@ class Dataset(object):
             raise ValueError("You dataset don't contains 'base' key. If You want to split a specific part dataset,"
                              "please use .simple_split method.")
 
-        for x, y in zip(dataset['request'], dataset['report']):
+        for x, y in zip(dataset[self.main_names[0]], dataset[self.main_names[1]]):
             if y not in dd.keys():
                 dd[y] = list()
                 dd[y].append((x, y))
@@ -101,9 +103,9 @@ class Dataset(object):
                 n.append(x[0])
                 c.append(x[1])
 
-        self.data['train'] = pd.DataFrame({'request': utrain, 'report': ctrain})
-        self.data['valid'] = pd.DataFrame({'request': uvalid, 'report': cvalid})
-        self.data['test'] = pd.DataFrame({'request': utest, 'report': ctest})
+        self.data['train'] = pd.DataFrame({self.main_names[0]: utrain, self.main_names[1]: ctrain})
+        self.data['valid'] = pd.DataFrame({self.main_names[0]: uvalid, self.main_names[1]: cvalid})
+        self.data['test'] = pd.DataFrame({self.main_names[0]: utest, self.main_names[1]: ctest})
 
         if delete_parent:
             a = self.data.pop('base', [])
@@ -134,7 +136,7 @@ class Dataset(object):
         #     yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
         for i in range((data_len - 1) // batch_size + 1):
             o = order[i * batch_size:(i + 1) * batch_size]
-            yield list((list(data['request'][o]), list(data['report'][o])))
+            yield list((list(data[self.main_names[0]][o]), list(data[self.main_names[1]][o])))
 
     def iter_all(self, data_type: str = 'base') -> Generator:
         """
@@ -145,7 +147,7 @@ class Dataset(object):
             samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
         """
         data = self.data[data_type]
-        for x, y in zip(data['request'], data['report']):
+        for x, y in zip(data[self.main_names[0]], data[self.main_names[1]]):
             yield (x, y)
 
     def merge_data(self, fields_to_merge, delete_parent=True, new_name=None):
@@ -166,16 +168,16 @@ class Dataset(object):
 
     def get_classes(self):
         if self.data.get('base') is not None:
-            classes = self.data['base']['report'].unique()
+            classes = self.data['base'][self.main_names[1]].unique()
         else:
-            classes = self.data['train']['report'].unique()
+            classes = self.data['train'][self.main_names[1]].unique()
         return classes
 
     def get_distribution(self):
         try:
-            classes_distribution = self.data['base'].groupby('report')['request'].nunique()
+            classes_distribution = self.data['base'].groupby(self.main_names[1])[self.main_names[0]].nunique()
         except KeyError:
-            classes_distribution = self.data['train'].groupby('report')['request'].nunique()
+            classes_distribution = self.data['train'].groupby(self.main_names[1])[self.main_names[0]].nunique()
         return classes_distribution
 
     def info(self):

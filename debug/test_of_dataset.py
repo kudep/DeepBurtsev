@@ -2,6 +2,7 @@
 import pandas as pd
 import re
 from dataset import Dataset
+from transformer import Speller, Tokenizer
 
 
 def read_dataset(filepath, duplicates=False, clean=True):
@@ -48,35 +49,48 @@ print(train_data.head())
 
 # Building dataset
 dataset = Dataset(data=train_data, seed=42)
-print(dataset.info())
+# print(dataset.info())
+# print(dataset.data['base'].head())
 # print(dataset.data['train'])
 # print(dataset.data['valid'])
 # print(dataset.data['test'])
 # print(dataset.data['base'])
-print('Len of Dataset: {}'.format(len(dataset.data['base'])))
+# print('Len of Dataset: {}'.format(len(dataset.data['base'])))
+#
+# # splitting full dataset on train and valid in proportion 9:1
+# dataset = dataset.split()
+# print(dataset.info())
+# # print(dataset.data['train'])
+# # print(dataset.data['valid'])
+# # print(dataset.data['test'])
+# print('Len of sum fields: {}'.format(len(dataset.data['train']) + len(dataset.data['valid']) + len(dataset.data['test'])))
+#
+# dataset.simple_split(splitting_proportions=[0.5, 0.5], splitted_fields=['train_1', 'train_2'], field_to_split='train')
+# print(dataset.info())
+# print('Len of train_1: {}'.format(len(dataset.data['train_1'])))
+# print('Len of train_2: {}'.format(len(dataset.data['train_2'])))
+#
+# dataset.merge_data(fields_to_merge=['train_1', 'train_2'], new_name='train')
+# print(dataset.info())
+# print('Len of train: {}'.format(len(dataset.data['train'])))
+#
+# dataset.merge_data(fields_to_merge=['train', 'valid', 'test'], new_name='base')
+# print(dataset.info())
+# print(len(dataset.data['base']))
+# # print(dataset.data['base'])
+#
+# classes = dataset.get_classes()
+# distribution = dataset.get_distribution()
+# print(classes, distribution)
 
-# splitting full dataset on train and valid in proportion 9:1
-dataset = dataset.split()
+dataset.simple_split([0.999, 0.001], 'base', ['base', 'test'], delete_parent=False)
 print(dataset.info())
-# print(dataset.data['train'])
-# print(dataset.data['valid'])
-# print(dataset.data['test'])
-print('Len of sum fields: {}'.format(len(dataset.data['train']) + len(dataset.data['valid']) + len(dataset.data['test'])))
+print(dataset.data['test'].head())
 
-dataset.simple_split(splitting_proportions=[0.5, 0.5], splitted_fields=['train_1', 'train_2'], field_to_split='train')
-print(dataset.info())
-print('Len of train_1: {}'.format(len(dataset.data['train_1'])))
-print('Len of train_2: {}'.format(len(dataset.data['train_2'])))
+# Speller test:
+# dataset = Speller().transform(dataset, name='test')
+# print(dataset.data['test'].head())
 
-dataset.merge_data(fields_to_merge=['train_1', 'train_2'], new_name='train')
-print(dataset.info())
-print('Len of train: {}'.format(len(dataset.data['train'])))
-
-dataset.merge_data(fields_to_merge=['train', 'valid', 'test'], new_name='base')
-print(dataset.info())
-print(len(dataset.data['base']))
-# print(dataset.data['base'])
-
-classes = dataset.get_classes()
-distribution = dataset.get_distribution()
-print(classes, distribution)
+# Tokenizer test:
+dataset = Tokenizer().transform(dataset)
+print(dataset.data['base'].head())
