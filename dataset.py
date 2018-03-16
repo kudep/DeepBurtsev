@@ -22,6 +22,9 @@ class Dataset(object):
         if (self.data['train'] is None) and (self.data['valid'] is None) and (self.data['test'] is None):
             self.data['base'] = data
 
+        self.classes = self.get_classes()
+        self.classes_distribution = self.get_distribution()
+
     def simple_split(self, splitting_proportions, field_to_split, splitted_fields, delete_parent=True):
         data_to_div = self.data[field_to_split].copy()
         data_size = len(self.data[field_to_split])
@@ -41,7 +44,7 @@ class Dataset(object):
     def split(self, splitting_proportions=None, delete_parent=True):
 
         dd = dict()
-        cd = dict()
+        cd = self.classes_distribution
         train = list()
         valid = list()
         test = list()
@@ -58,12 +61,9 @@ class Dataset(object):
         for x, y in zip(dataset['request'], dataset['report']):
             if y not in dd.keys():
                 dd[y] = list()
-                cd[y] = 0
                 dd[y].append((x, y))
-                cd[y] += 1
             else:
                 dd[y].append((x, y))
-                cd[y] += 1
 
         if type(splitting_proportions) is list:
             assert len(splitting_proportions) == 2
@@ -90,7 +90,7 @@ class Dataset(object):
             for z_, z in zip([train_, valid_, test_], [train, valid, test]):
                 z.extend(z_[x])
 
-        del train_, valid_, test_, dd, cd, dataset  # really need ?
+        del train_, valid_, test_, dd, cd, dataset
 
         for z in [train, valid, test]:
             z = random.shuffle(z)
@@ -163,6 +163,20 @@ class Dataset(object):
             del a
 
         return self
+
+    def get_classes(self):
+        if self.data.get('base') is not None:
+            classes = self.data['base']['report'].unique()
+        else:
+            classes = self.data['train']['report'].unique()
+        return classes
+
+    def get_distribution(self):
+        try:
+            classes_distribution = self.data['base'].groupby('report')['request'].nunique()
+        except KeyError:
+            classes_distribution = self.data['train'].groupby('report')['request'].nunique()
+        return classes_distribution
 
     def info(self):
         information = dict(data_keys=list(self.data.keys()),
