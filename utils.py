@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import sys
 import os
+import re
 import json
 import requests
 import tarfile
@@ -563,3 +564,38 @@ def download_untar(url, download_path, extract_path=None):
     print('Extracting {} archive into {}'.format(tar_file_path, extract_path))
     untar(tar_file_path, extract_path)
     os.remove(tar_file_path)
+
+
+def read_dataset(filepath, duplicates=False, clean=True):
+    file = open(filepath, 'r', encoding='ISO-8859-1')
+    data = pd.read_csv(file)
+
+    old_names = data.keys()
+    names = [n.encode('ISO-8859-1').decode('cp1251').encode('utf8') for n in old_names]
+    names = [n.decode('utf-8') for n in names]
+
+    new_data = dict()
+    for old, new in zip(old_names, names):
+        new_data[new] = list()
+        for c in data[old]:
+            try:
+                s = c.encode('ISO-8859-1').decode('cp1251').encode('utf8')
+                s = s.decode('utf-8')
+                new_data[new].append(s)
+            except AttributeError:
+                new_data[new].append(c)
+
+    new_data = pd.DataFrame(new_data, columns=['Описание', 'Категория жалобы'])
+    new_data.rename(columns={'Описание': 'request', 'Категория жалобы': 'report'}, inplace=True)
+    new_data = new_data.dropna()  # dell nan
+    if not duplicates:
+        new_data = new_data.drop_duplicates()  # dell duplicates
+
+    # как отдельную ветвь можно использовать
+    if clean:
+        delete_bad_symbols = lambda x: " ".join(re.sub('[^а-яa-zё0-9]', ' ', x.lower()).split())
+        new_data['request'] = new_data['request'].apply(delete_bad_symbols)
+
+    new_data = new_data.reset_index()
+
+    return new_data

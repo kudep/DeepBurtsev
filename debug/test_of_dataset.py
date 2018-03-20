@@ -2,7 +2,7 @@
 import pandas as pd
 import re
 from dataset import Dataset
-from transformer import Speller, Tokenizer, Lemmatizer
+from transformer import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
 
 
 def read_dataset(filepath, duplicates=False, clean=True):
@@ -79,9 +79,9 @@ dataset = Dataset(data=train_data, seed=42)
 # print(len(dataset.data['base']))
 # # print(dataset.data['base'])
 #
-# classes = dataset.get_classes()
-# distribution = dataset.get_distribution()
-# print(classes, distribution)
+classes = dataset.get_classes()
+distribution = dataset.get_distribution()
+print(classes, distribution)
 
 dataset.simple_split([0.999, 0.001], 'base', ['base', 'test'], delete_parent=False)
 print(dataset.info())
@@ -95,5 +95,13 @@ print(dataset.data['test'].head())
 dataset = Tokenizer().transform(dataset)
 print(dataset.data['base'].head())
 
-dataset = Lemmatizer().transform(dataset)
-print(dataset.data['base'].head())
+# dataset = Lemmatizer().transform(dataset)
+# print(dataset.data['base'].head())
+
+dataset.split()
+print(dataset.info())
+
+dataset = FasttextVectorizer().transform(dataset, name='train')
+print(dataset.data['train'].head(2))
+
+

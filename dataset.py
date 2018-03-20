@@ -17,11 +17,14 @@ class Dataset(object):
 
         self.classes_description = classes_description
         self.data = dict()
-        self.data['train'] = data.get('train')
-        self.data['test'] = data.get('test')
-        self.data['valid'] = data.get('valid')
 
-        if (self.data['train'] is None) and (self.data['valid'] is None) and (self.data['test'] is None):
+        if data.get('train') is not None:
+            self.data['train'] = data.get('train')
+        elif data.get('test') is not None:
+            self.data['test'] = data.get('test')
+        elif data.get('valid') is not None:
+            self.data['valid'] = data.get('valid')
+        else:
             self.data['base'] = data
 
         self.classes = self.get_classes()
@@ -164,6 +167,12 @@ class Dataset(object):
             a = [self.data.pop(x) for x in fields_to_merge]
             del a
 
+        return self
+
+    def del_data(self, fields_to_del):
+        for name in fields_to_del:
+            a = self.data.pop(name)
+            del a
         return self
 
     def get_classes(self):
