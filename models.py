@@ -1,97 +1,135 @@
-from lightgbm import LGBMClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
-from utils import get_result
+from transformer import BaseTransformer
 
 
-class LinearRegression(object):
-    def __init__(self, vectorizer, train=True, *args):
-        self.model = LogisticRegression(n_jobs=-1, solver='lbfgs')
-        self.vectorizer = vectorizer
-        self.train = train
+class skwrapper(BaseTransformer):
+    def __init__(self, t, info=None, request_names=None, new_names=None):
+        super().__init__(info, request_names, new_names)
 
-    def fit(self, dataset, mode='train', stage='base', *args, **kwargs):
-        data = dataset.data[mode][stage]
-        vec = self.vectorizer.fit_transform(data['request'])
-        self.model.fit(vec, data['class'])
-        return None
+        if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
+            raise TypeError("Methods fit, fit_transform, transform are not implemented in class {} "
+                            "Sklearn transformers and estimators shoud implement fit and transform."
+                            " '%s' (type %s) doesn't" % (t, type(t)))
 
-    def test(self, dataset, stage='mod'):
-        data = dataset.data['test'][stage]
-        vec = self.vectorizer.transform(data['request'])
-        y_pred = self.model.predict(vec)
-        result = get_result(y_pred, data['class'])
-        return result
-
-    def params(self):
-        return self.model.get_params()
+        self.transformer = t
+        self.trained = False
 
 
-class RandomForest(object):
-    def __init__(self, vectorizer, train=True, *args):
-        self.model = RandomForestClassifier(max_depth=5, random_state=0)
-        self.vectorizer = vectorizer
-        self.train = train
+class sktransformer(skwrapper):
+    def __init__(self, t, info=None, request_names=None, new_names=None):
+        super().__init__(t, info, request_names, new_names)
 
-    def fit(self, dataset, mode='train', stage='base', *args, **kwargs):
-        data = dataset.data[mode][stage]
-        vec = self.vectorizer.fit_transform(data['request'])
-        self.model.fit(vec, data['class'])
-        return None
+    def _transform(self, dataset):
+        request, report = dataset.main_names
+        if hasattr(self.transformer, 'fit_transform') and not self.trained:
+            if 'base' not in dataset.data.keys():
+                dataset.merge_data(fields_to_merge=self.request_names, delete_parent=False, new_name='base')
+                X = dataset.data['base'][request]
+                y = dataset.data['base'][report]
+                # fit
+                self.transformer.fit(X, y)
+                self.trained = True
 
-    def test(self, dataset, stage='mod'):
-        data = dataset.data['test'][stage]
-        vec = self.vectorizer.transform(data['request'])
-        y_pred = self.model.predict(vec)
-        result = get_result(y_pred, data['class'])
-        return result
+                # delete 'base' from dataset
+                dataset.del_data(['base'])
+            else:
+                X = dataset.data['base'][request]
+                y = dataset.data['base'][report]
+                # fit
+                self.transformer.fit(X, y)
+                self.trained = True
 
-    def params(self):
-        return self.model.get_params()
+            # transform all fields
+            for name, new_name in zip(self.request_names, self.new_names):
+                X = dataset.data[name][request]
+                y = dataset.data[name][report]
+                dataset.data[new_name] = {request: self.transformer.transform(X),
+                                          report: y}
 
+        else:
+            for name, new_name in zip(self.request_names, self.new_names):
+                X = dataset.data[name][request]
+                y = dataset.data[name][report]
+                dataset.data[new_name] = {request: self.transformer.transform(X),
+                                          report: y}
 
-class SVM(object):
-    def __init__(self, vectorizer, train=True, *args):
-        self.model = LinearSVC(C=0.8873076204728344, class_weight='balanced')
-        self.vectorizer = vectorizer
-        self.train = train
-
-    def fit(self, dataset, mode='train', stage='base', *args, **kwargs):
-        data = dataset.data[mode][stage]
-        vec = self.vectorizer.fit_transform(data['request'])
-        self.model.fit(vec, data['class'])
-        return None
-
-    def test(self, dataset, stage='mod'):
-        data = dataset.data['test'][stage]
-        vec = self.vectorizer.transform(data['request'])
-        y_pred = self.model.predict(vec)
-        result = get_result(y_pred, data['class'])
-        return result
-
-    def params(self):
-        return self.model.get_params()
+        return dataset
 
 
-class GBM(object):
-    def __init__(self, vectorizer, train=True, *args):
-        self.model = LGBMClassifier(n_estimators=200, n_jobs=-1, learning_rate=0.1)
-        self.vectorizer = vectorizer
-        self.train = train
+class skmodel(skwrapper):
+    def __init__(self, t, info=None, request_names=None, new_names=None):
+        super().__init__(t, info, request_names, new_names)
 
-    def fit(self, dataset, mode='train', stage='base', *args, **kwargs):
-        data = dataset.data[mode][stage]
-        vec = self.vectorizer.fit_transform(data['request'])
-        self.model.fit(vec, data['class'])
-        return None
+    def fit(self, dataset):
+        request, report = dataset.main_names
 
-    def test(self, dataset, stage='mod'):
-        data = dataset.data['test'][stage]
-        vec = self.vectorizer.transform(data['request'])
-        y_pred = self.model.predict(vec)
-        result = get_result(y_pred, data['class'])
-        return result
+        if 'train_vec' in dataset.data.keys():
+            name = 'train_vec'
+        else:
+            if 'train' in dataset.data.keys():
+                name = 'train'
+            else:
+                raise KeyError('Dataset must contain "train_vec" or "train" fields.')
 
-    def params(self):
-        return self.model.get_params()
+        X = dataset.data[name][request]
+        y = dataset.data[name][report]
+
+        if hasattr(self.transformer, 'fit') and not hasattr(self.transformer, 'fit_tranform'):
+            self.transformer.fit(X, y)
+            self.trained = True
+
+        return self
+
+    def predict(self, dataset, request_names=None, new_names=None):
+
+        if not hasattr(self.transformer, 'predict'):
+            raise TypeError("Methods predict, is not implemented in class {} "
+                            " '%s' (type %s) doesn't" % (self.transformer, type(self.transformer)))
+
+        request, report = dataset.main_names
+
+        if not self.trained:
+            # TODO write correct error
+            raise ValueError('Sklearn model is not trained yet.')
+
+        if (request_names is not None) and (new_names):
+            self.request_names = request_names
+            self.new_names = new_names
+
+        for name, new_name in zip(self.request_names, self.new_names):
+            X = dataset.data[name][request]
+            dataset.data[new_name] = self.transformer.predict(X)
+
+        return dataset
+
+    def fit_predict(self, dataset, request_names=None, new_names=None):
+        self.fit(dataset)
+        dataset = self.predict(dataset, request_names, new_names)
+        return dataset
+
+    def predict_data(self, dataset, request_names=None, new_names=None):
+
+        if not hasattr(self.transformer, 'predict'):
+            raise TypeError("Methods predict, is not implemented in class {} "
+                            " '%s' (type %s) doesn't" % (self.transformer, type(self.transformer)))
+
+        request, report = dataset.main_names
+
+        if not self.trained:
+            # TODO write correct error
+            raise ValueError('Sklearn model is not trained yet.')
+
+        if (request_names is not None) and (new_names):
+            self.request_names = request_names
+            self.new_names = new_names
+
+        res = []
+        for name, new_name in zip(self.request_names, self.new_names):
+            X = dataset.data[name][request]
+            res.append(self.transformer.predict(X))
+
+        return res
+
+    def fit_predict_data(self, dataset, request_names=None, new_names=None):
+        self.fit(dataset)
+        res = self.predict_data(dataset, request_names, new_names)
+        return res
