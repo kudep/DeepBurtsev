@@ -11,25 +11,24 @@ from deeppavlov.core.commands.infer import build_model_from_config
 
 
 class BaseTransformer(object):
-    def __init__(self, info=None, request_names=None, new_names=None):
+    def __init__(self, config=None):
         # info resist
-        if isinstance(info, list):
-            self.info = {'op_type': info[0], 'name': info[1]}
-        elif isinstance(info, dict):
-            #             if set(['op_type', 'name']) in info.keys():
-            if ('op_type' in info.keys()) and ('name' in info.keys()):
-                self.info = info
-            else:
-                raise ValueError('Attribute info dict must contain fields "op_type" and "name",'
-                                 'but {} was found.'.format(info.keys()))
-        elif info is None:
-            self.info = {'op_type': 'transformer', 'name': 'op_'}
-        else:
-            raise ValueError('Attribute info must be list, dict or None, but {} was found.'.format(type(info)))
+        if not isinstance(config, dict):
+            raise ValueError('Input config must be dict or None, but {} was found.'.format(type(config)))
+
+        keys = ['op_type', 'name', 'request_names', 'new_names', 'input_x_type', 'input_y_type', 'output_x_type',
+                'output_y_type']
+        self.info = dict()
+        for x in keys:
+            if x not in config.keys():
+                raise ValueError('Input config must contain {} key.'.format(x))
+            self.info[x] = config[x]
+
+        self.config = config
 
         # named spaces
-        self.new_names = new_names
-        self.worked_names = request_names
+        self.new_names = config['new_names']
+        self.worked_names = config['request_names']
         self.request_names = []
 
     def _validate_names(self, dataset):
@@ -55,12 +54,15 @@ class BaseTransformer(object):
 
         return self
 
+    def _transform(self, dataset):
+        return None
+
     def transform(self, dataset):
         self._validate_names(dataset)
         return self._transform(dataset)
 
     def get_params(self):
-        return self.params
+        return self.config
 
     def set_params(self, params):
         # self.params = params
@@ -69,17 +71,28 @@ class BaseTransformer(object):
 
 
 class Speller(BaseTransformer):
-    def __init__(self, params=None, info=None, request_names=None, new_names=None):
-        super().__init__(info, request_names, new_names)
-
-        if params is None:
-            self.conf_path = '/home/mks/projects/intent_classification_script/DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Speller',
+                           'request_names': ['base'],
+                           'new_names': ['base'],
+                           'input_x_type': pd.core.series.Series,
+                           'input_y_type': pd.core.series.Series,
+                           'output_x_type': pd.core.series.Series,
+                           'output_y_type': pd.core.series.Series,
+                           'path': '/home/mks/projects/intent_classification_script/DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
         else:
-            if isinstance(params, dict):
-                self.conf_path = params['path']
-            else:
-                raise ValueError('Attribute params must be dict, but {} was found.'.format(type(params)))
+            need_names = ['path']
+            for name in need_names:
+                if name not in config.keys():
+                    raise ValueError('Input config must contain {}.'.format(name))
 
+            self.config = config
+
+        super().__init__(self.config)
+
+        self.conf_path = self.config['path']
         with open(self.conf_path) as config_file:
             self.config = json.load(config_file)
 
@@ -104,9 +117,20 @@ class Speller(BaseTransformer):
 
 
 class Tokenizer(BaseTransformer):
-    def __init__(self, params=None, info=None, request_names=None, new_names=None):
-        self.params = params
-        super().__init__(info, request_names, new_names)
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Tokenizer',
+                           'request_names': ['base'],
+                           'new_names': ['base'],
+                           'input_x_type': pd.core.series.Series,
+                           'input_y_type': pd.core.series.Series,
+                           'output_x_type': pd.core.series.Series,
+                           'output_y_type': pd.core.series.Series}
+        else:
+            self.config = config
+
+        super().__init__(self.config)
 
     def _transform(self, dataset):
         print('[ Starting tokenization ... ]')
@@ -130,10 +154,22 @@ class Tokenizer(BaseTransformer):
 
 
 class Lemmatizer(BaseTransformer):
-    def __init__(self, params=None, info=None, request_names=None, new_names=None):
-        self.params = params
+    def __init__(self, config=None):
         self.morph = pymorphy2.MorphAnalyzer()
-        super().__init__(info, request_names, new_names)
+
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Lemmatizer',
+                           'request_names': ['base'],
+                           'new_names': ['base'],
+                           'input_x_type': pd.core.series.Series,
+                           'input_y_type': pd.core.series.Series,
+                           'output_x_type': pd.core.series.Series,
+                           'output_y_type': pd.core.series.Series}
+        else:
+            self.config = config
+
+        super().__init__(self.config)
 
     def _transform(self, dataset):
         print('[ Starting lemmatization ... ]')
@@ -153,22 +189,31 @@ class Lemmatizer(BaseTransformer):
 
 
 class FasttextVectorizer(BaseTransformer):
-    def __init__(self, params=None, info=None, request_names=None, new_names=None):
-        super().__init__(info, request_names, new_names)
-        self.info['op_type'] = 'vectorizer'
+    def __init__(self, config=None):
 
-        #         print(type(self.new_names))
-        #         for i, name in enumerate(self.new_names):
-        #             name = name + '_' + 'vec'
-        #             self.new_names[i] = name
+        if config is None:
+            self.config = {'op_type': 'vectorizer',
+                           'name': 'fasttext',
+                           'request_names': ['train', 'valid', 'test'],
+                           'new_names': ['train_vec', 'valid_vec', 'test_vec'],
+                           'input_x_type': pd.core.series.Series,
+                           'input_y_type': pd.core.series.Series,
+                           'output_x_type': pd.core.series.Series,
+                           'output_y_type': pd.core.series.Series,
+                           'path_to_model': '/home/mks/projects/intent_classification_script/data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
+                           'dimension': 300,
+                           'file_type': 'bin'}
+        else:
+            need_names = ['path_to_model', 'dimension', 'file_type']
+            for name in need_names:
+                if name not in config.keys():
+                    raise ValueError('Input config must contain {}.'.format(name))
 
-        if params is None:
-            self.params = {
-                'path_to_model': '/home/mks/projects/intent_classification_script/data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
-                'dimension': 300,
-                'file_type': 'bin'}
+            self.config = config
 
-        self.vectorizer = fasttext.load_model(self.params['path_to_model'])
+        super().__init__(self.config)
+
+        self.vectorizer = fasttext.load_model(self.config['path_to_model'])
 
     def _transform(self, dataset):
         print('[ Starting vectorization ... ]')
@@ -180,7 +225,7 @@ class FasttextVectorizer(BaseTransformer):
             vec_request = []
 
             for x in tqdm(data):
-                matrix_i = np.zeros((len(x), self.params['dimension']))
+                matrix_i = np.zeros((len(x), self.config['dimension']))
                 for j, y in enumerate(x):
                     matrix_i[j] = self.vectorizer[y]
                 vec_request.append(matrix_i)
@@ -191,4 +236,43 @@ class FasttextVectorizer(BaseTransformer):
                                                    report: vec_report})
 
         print('[ Vectorization was ended. ]')
+        return dataset
+
+
+class TextConcat(BaseTransformer):
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'text_concatenator',
+                           'request_names': ['base'],
+                           'new_names': ['base'],
+                           'input_x_type': pd.core.series.Series,
+                           'input_y_type': pd.core.series.Series,
+                           'output_x_type': pd.core.series.Series,
+                           'output_y_type': pd.core.series.Series}
+        else:
+            need_names = []
+            for name in need_names:
+                if name not in config.keys():
+                    raise ValueError('Input config must contain {}.'.format(name))
+
+            self.config = config
+
+        super().__init__(self.config)
+
+    def _transform(self, dataset):
+        print('[ Starting text merging ... ]')
+        request, report = dataset.main_names
+
+        for name, new_name in zip(self.request_names, self.new_names):
+            data = dataset.data[name][request]
+            text_request = []
+
+            for x in tqdm(data):
+                text_request.append(' '.join([z for z in x]))
+
+            dataset.data[new_name] = pd.DataFrame({request: text_request,
+                                                   report: dataset.data[name][report]})
+
+        print('[ Text concatenation was ended. ]')
         return dataset

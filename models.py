@@ -2,21 +2,26 @@ from transformer import BaseTransformer
 
 
 class skwrapper(BaseTransformer):
-    def __init__(self, t, info=None, request_names=None, new_names=None):
-        super().__init__(info, request_names, new_names)
+    def __init__(self, t, config=None):
+        super().__init__(config)
 
-        if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
+        self.transformer = t()
+        if not ((hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform")):
             raise TypeError("Methods fit, fit_transform, transform are not implemented in class {} "
-                            "Sklearn transformers and estimators shoud implement fit and transform."
-                            " '%s' (type %s) doesn't" % (t, type(t)))
+                            "Sklearn transformers and estimators shoud implement fit and transform.".format(t))
 
-        self.transformer = t
         self.trained = False
+        params = self.transformer.get_params()
+        for key in params.keys():
+            if key in self.config.keys():
+                params[key] = self.config[key]
+
+        self.transformer.set_params(**params)
 
 
 class sktransformer(skwrapper):
-    def __init__(self, t, info=None, request_names=None, new_names=None):
-        super().__init__(t, info, request_names, new_names)
+    def __init__(self, t, config=None):
+        super().__init__(t, config)
 
     def _transform(self, dataset):
         request, report = dataset.main_names
@@ -56,8 +61,8 @@ class sktransformer(skwrapper):
 
 
 class skmodel(skwrapper):
-    def __init__(self, t, info=None, request_names=None, new_names=None):
-        super().__init__(t, info, request_names, new_names)
+    def __init__(self, t, config=None):
+        super().__init__(t, config)
 
     def fit(self, dataset):
         request, report = dataset.main_names
@@ -88,8 +93,7 @@ class skmodel(skwrapper):
         request, report = dataset.main_names
 
         if not self.trained:
-            # TODO write correct error
-            raise ValueError('Sklearn model is not trained yet.')
+            raise AttributeError('Sklearn model is not trained yet.')
 
         if (request_names is not None) and (new_names):
             self.request_names = request_names
@@ -115,8 +119,7 @@ class skmodel(skwrapper):
         request, report = dataset.main_names
 
         if not self.trained:
-            # TODO write correct error
-            raise ValueError('Sklearn model is not trained yet.')
+            raise AttributeError('Sklearn model is not trained yet.')
 
         if (request_names is not None) and (new_names):
             self.request_names = request_names
