@@ -22,6 +22,10 @@ class BaseTransformer(object):
         for x in keys:
             if x not in config.keys():
                 raise ValueError('Input config must contain {} key.'.format(x))
+            elif x == 'request_names' or x == 'new_names':
+                if not isinstance(config[x], list):
+                    raise ValueError('request_names and new_names in config must be list,'
+                                     ' but {} was found.'.format(type(x)))
             self.info[x] = config[x]
 
         self.config = config

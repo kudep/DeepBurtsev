@@ -32,7 +32,7 @@ from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 import metrics as metrics_file
-from utils import log_metrics, labels2onehot_one, tokenize, get_result
+from utils import log_metrics, labels2onehot_one, get_result
 
 
 config = tf.ConfigProto()
@@ -69,7 +69,6 @@ class KerasMulticlassModel(object):
                                       metrics_names=self.opt['lear_metrics'],
                                       add_metrics_file=metrics_file)
         else:
-            # TODO we need read classes from dataset
             self.classes = np.array(self.opt['classes'].split(' '))
             self.n_classes = self.classes.shape[0]
             self.model = self.init_model_from_scratch(model_name=self.opt['model_name'],
