@@ -146,14 +146,17 @@ class BaseModel(object):
 
         keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names', 'input_x_type', 'input_y_type',
                 'output_x_type', 'output_y_type']
+
         self.info = dict()
+
         for x in keys:
             if x not in config.keys():
                 raise ValueError('Input config must contain {} key.'.format(x))
-            elif x == 'fit_names' or x == 'predict_names' or 'new_names':
+
+            elif x == 'fit_names' or x == 'predict_names' or x == 'new_names':
                 if not isinstance(config[x], list):
                     raise ValueError('Parameters fit_names, predict_names and new_names in config must be a list,'
-                                     ' but {} was found.'.format(type(x)))
+                                     ' but {} "{}" was found.'.format(type(config[x]), config[x]))
             self.info[x] = config[x]
 
         self.config = config
@@ -190,9 +193,11 @@ class BaseModel(object):
         if not (hasattr(model, 'fit') or hasattr(model, 'train')):
             raise AttributeError("Model don't supported fit or train methods method.")
         elif not (hasattr(model, 'restore') or hasattr(model, 'load')):
-            raise AttributeError("Model don't supported save or load methods method.")
-        elif not hasattr(model, 'save') or not hasattr(model, 'predict') or not hasattr(model, 'fit_predict'):
-            raise AttributeError("Model don't supported save or load methods method.")
+            raise AttributeError("Model don't supported restore or load methods method.")
+        elif not hasattr(model, 'save'):
+            raise AttributeError("Model don't supported save methods method.")
+        elif not hasattr(model, 'predict'):
+            raise AttributeError("Model don't supported predict or load methods method.")
 
         return self
 
@@ -205,7 +210,10 @@ class BaseModel(object):
         self.init_model(dataset)
 
         for name in self.fit_names:
-            self.model.fit(dataset, name)
+            if hasattr(self.model, 'train'):
+                self.model.train(dataset, name)
+            if hasattr(self.model, 'fit'):
+                self.model.fit(dataset, name)
 
         return self
 
