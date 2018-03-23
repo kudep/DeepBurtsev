@@ -6,7 +6,7 @@ import fasttext
 import numpy as np
 
 from tqdm import tqdm
-from utils import labels2onehot_one
+from .utils import labels2onehot_one
 from deeppavlov.core.commands.infer import build_model_from_config
 
 
