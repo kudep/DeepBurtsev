@@ -17,21 +17,35 @@ class BasePipeline(object):
 
     def step(self, i, op, dataset, last_op=False):
         if len(op) == 1:
-            operation = op[0]()
-            op_type = operation.info['op_type']
-            self.config_constructor(operation.config, i)
-        elif len(op) == 2:
-            if op[1] is None:
+            operation = op[0]
+            try:
+                op_type = operation.info['op_type']
+                self.config_constructor(operation.config, i)
+            except AttributeError:
                 operation = op[0]()
                 op_type = operation.info['op_type']
                 self.config_constructor(operation.config, i)
+        elif len(op) == 2:
+            if op[1] is None:
+                operation = op[0]
+                try:
+                    op_type = operation.info['op_type']
+                    self.config_constructor(operation.config, i)
+                except AttributeError:
+                    operation = op[0]()
+                    op_type = operation.info['op_type']
+                    self.config_constructor(operation.config, i)
             else:
                 if not isinstance(op[1], dict):
                     raise AttributeError('Config of operation {0} must be a dict,'
                                          ' but {1} was found.'.format(op, type(op)))
                 op_type = op[1]['op_type']
-                operation = op[0](config=op[1])
-                self.config_constructor(op[1], i)
+                try:
+                    operation = op[0](config=op[1])
+                    self.config_constructor(op[1], i)
+                except TypeError:
+                    operation = op[0].set_params(op[1])
+                    self.config_constructor(op[1], i)
         else:
             raise AttributeError('Operation in pipeline input list must be tuple like (operation, config), '
                                  'but {0} was found, with length={1}.'.format(op, len(op)))
@@ -90,10 +104,14 @@ class BasePipeline(object):
     def run(self, dataset):
         dataset_i = dataset
         for i, op in enumerate(self.pipe):
-            if i == len(self.pipe) - 1:
-                dataset_i = self.step(i, op, dataset_i, last_op=True)
-            else:
-                dataset_i = self.step(i, op, dataset_i)
+            try:
+                if i == len(self.pipe) - 1:
+                    dataset_i = self.step(i, op, dataset_i, last_op=True)
+                else:
+                    dataset_i = self.step(i, op, dataset_i)
+            except:
+                print('Operation with number {0};'.format(i + 1))
+                raise
         out = dataset_i
         return out
 
@@ -122,7 +140,3 @@ class BasePipeline(object):
         print('[ Prediction End. ]')
 
         return prediction
-
-
-pipeline_config = {'mode': 'train',  # [train, infer]
-                   'return': 'None'}  # [None, dataset, predictions]
