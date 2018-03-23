@@ -1,6 +1,6 @@
 import copy
 from dataset import Dataset
-from transformer import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
+from transformers import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
 
 
 class Pipeline(object):

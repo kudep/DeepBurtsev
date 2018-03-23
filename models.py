@@ -1,4 +1,4 @@
-from transformer import BaseTransformer
+from transformers import BaseTransformer
 
 
 class skwrapper(BaseTransformer):
@@ -152,15 +152,17 @@ class BaseModel(object):
         for x in keys:
             if x not in config.keys():
                 raise ValueError('Input config must contain {} key.'.format(x))
+            self.info[x] = config[x]
 
-            elif x == 'fit_names' or x == 'predict_names' or x == 'new_names':
+        for x in keys:
+            if x == 'fit_names' or x == 'predict_names' or x == 'new_names':
                 if not isinstance(config[x], list):
                     raise ValueError('Parameters fit_names, predict_names and new_names in config must be a list,'
                                      ' but {} "{}" was found.'.format(type(config[x]), config[x]))
-            self.info[x] = config[x]
 
         self.config = config
         self.trained = False
+        self.model_init = False
         self._validate_model(model)
         self.model = model
 
@@ -202,7 +204,17 @@ class BaseModel(object):
         return self
 
     def init_model(self, dataset):
-        self.model = self.model(self.config)
+        if not self.model_init:
+            self.model = self.model(self.config)
+            self.model_init = True
+        else:
+            if hasattr(self.model, 'reset'):
+                self.save()
+                self.model.reset()
+                self.model = self.model(self.config)
+            else:
+                raise AttributeError('Model was already initialized. Add reset method in your model'
+                                     'or create new pipeline')
         return self
 
     def fit(self, dataset):

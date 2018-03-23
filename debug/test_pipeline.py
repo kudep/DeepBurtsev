@@ -8,7 +8,7 @@ import re
 from dataset import Dataset
 from utils import transform, logging, results_summarization
 from dataset import Dataset
-from transformer import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
+from transformers import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
 morph = pymorphy2.MorphAnalyzer()
  
 

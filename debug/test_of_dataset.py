@@ -2,7 +2,7 @@
 import pandas as pd
 import re
 from dataset import Dataset
-from transformer import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
+from transformers import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
 
 
 def read_dataset(filepath, duplicates=False, clean=True):
