@@ -144,8 +144,10 @@ class BaseModel(object):
         if not isinstance(config, dict):
             raise ValueError('Input config must be dict or None, but {} was found.'.format(type(config)))
 
-        keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names', 'input_x_type', 'input_y_type',
-                'output_x_type', 'output_y_type']
+        # keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names', 'input_x_type', 'input_y_type',
+        #         'output_x_type', 'output_y_type']
+
+        keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names']
 
         self.info = dict()
 

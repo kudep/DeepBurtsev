@@ -16,8 +16,11 @@ class BaseTransformer(object):
         if not isinstance(config, dict):
             raise ValueError('Input config must be dict or None, but {} was found.'.format(type(config)))
 
-        keys = ['op_type', 'name', 'request_names', 'new_names', 'input_x_type', 'input_y_type', 'output_x_type',
-                'output_y_type']
+        # keys = ['op_type', 'name', 'request_names', 'new_names', 'input_x_type', 'input_y_type', 'output_x_type',
+        #         'output_y_type']
+
+        keys = ['op_type', 'name', 'request_names', 'new_names']
+
         self.info = dict()
         for x in keys:
             if x not in config.keys():
@@ -77,15 +80,22 @@ class BaseTransformer(object):
 class Speller(BaseTransformer):
     def __init__(self, config=None):
         if config is None:
+            # self.config = {'op_type': 'transformer',
+            #                'name': 'Speller',
+            #                'request_names': ['base'],
+            #                'new_names': ['base'],
+            #                'input_x_type': pd.core.series.Series,
+            #                'input_y_type': pd.core.series.Series,
+            #                'output_x_type': pd.core.series.Series,
+            #                'output_y_type': pd.core.series.Series,
+            #                'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
+
             self.config = {'op_type': 'transformer',
                            'name': 'Speller',
                            'request_names': ['base'],
                            'new_names': ['base'],
-                           'input_x_type': pd.core.series.Series,
-                           'input_y_type': pd.core.series.Series,
-                           'output_x_type': pd.core.series.Series,
-                           'output_y_type': pd.core.series.Series,
-                           'path': '/home/mks/projects/intent_classification_script/DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
+                           'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
+
         else:
             need_names = ['path']
             for name in need_names:
@@ -123,14 +133,20 @@ class Speller(BaseTransformer):
 class Tokenizer(BaseTransformer):
     def __init__(self, config=None):
         if config is None:
+            # self.config = {'op_type': 'transformer',
+            #                'name': 'Tokenizer',
+            #                'request_names': ['base'],
+            #                'new_names': ['base'],
+            #                'input_x_type': pd.core.series.Series,
+            #                'input_y_type': pd.core.series.Series,
+            #                'output_x_type': pd.core.series.Series,
+            #                'output_y_type': pd.core.series.Series}
+
             self.config = {'op_type': 'transformer',
                            'name': 'Tokenizer',
                            'request_names': ['base'],
-                           'new_names': ['base'],
-                           'input_x_type': pd.core.series.Series,
-                           'input_y_type': pd.core.series.Series,
-                           'output_x_type': pd.core.series.Series,
-                           'output_y_type': pd.core.series.Series}
+                           'new_names': ['base']}
+
         else:
             self.config = config
 
@@ -162,14 +178,20 @@ class Lemmatizer(BaseTransformer):
         self.morph = pymorphy2.MorphAnalyzer()
 
         if config is None:
+            # self.config = {'op_type': 'transformer',
+            #                'name': 'Lemmatizer',
+            #                'request_names': ['base'],
+            #                'new_names': ['base'],
+            #                'input_x_type': pd.core.series.Series,
+            #                'input_y_type': pd.core.series.Series,
+            #                'output_x_type': pd.core.series.Series,
+            #                'output_y_type': pd.core.series.Series}
+
             self.config = {'op_type': 'transformer',
                            'name': 'Lemmatizer',
                            'request_names': ['base'],
-                           'new_names': ['base'],
-                           'input_x_type': pd.core.series.Series,
-                           'input_y_type': pd.core.series.Series,
-                           'output_x_type': pd.core.series.Series,
-                           'output_y_type': pd.core.series.Series}
+                           'new_names': ['base']}
+
         else:
             self.config = config
 
@@ -196,17 +218,26 @@ class FasttextVectorizer(BaseTransformer):
     def __init__(self, config=None):
 
         if config is None:
+            # self.config = {'op_type': 'vectorizer',
+            #                'name': 'fasttext',
+            #                'request_names': ['train', 'valid', 'test'],
+            #                'new_names': ['train_vec', 'valid_vec', 'test_vec'],
+            #                'input_x_type': pd.core.series.Series,
+            #                'input_y_type': pd.core.series.Series,
+            #                'output_x_type': pd.core.series.Series,
+            #                'output_y_type': pd.core.series.Series,
+            #                'path_to_model': './data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
+            #                'dimension': 300,
+            #                'file_type': 'bin'}
+
             self.config = {'op_type': 'vectorizer',
                            'name': 'fasttext',
                            'request_names': ['train', 'valid', 'test'],
                            'new_names': ['train_vec', 'valid_vec', 'test_vec'],
-                           'input_x_type': pd.core.series.Series,
-                           'input_y_type': pd.core.series.Series,
-                           'output_x_type': pd.core.series.Series,
-                           'output_y_type': pd.core.series.Series,
-                           'path_to_model': '/home/mks/projects/intent_classification_script/data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
+                           'path_to_model': './data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
                            'dimension': 300,
                            'file_type': 'bin'}
+
         else:
             need_names = ['path_to_model', 'dimension', 'file_type']
             for name in need_names:
@@ -249,11 +280,7 @@ class TextConcat(BaseTransformer):
             self.config = {'op_type': 'transformer',
                            'name': 'text_concatenator',
                            'request_names': ['base'],
-                           'new_names': ['base'],
-                           'input_x_type': pd.core.series.Series,
-                           'input_y_type': pd.core.series.Series,
-                           'output_x_type': pd.core.series.Series,
-                           'output_y_type': pd.core.series.Series}
+                           'new_names': ['base']}
         else:
             need_names = []
             for name in need_names:
