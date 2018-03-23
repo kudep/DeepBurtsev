@@ -18,6 +18,15 @@ class skwrapper(BaseTransformer):
 
         self.transformer.set_params(**params)
 
+    def set_params(self, config):
+        params = self.transformer.get_params()
+        for key in params.keys():
+            if key in config.keys():
+                params[key] = config[key]
+
+        self.transformer.set_params(**params)
+        return self
+
 
 class sktransformer(skwrapper):
     def __init__(self, t, config=None):
