@@ -17,22 +17,26 @@ import json
 import copy
 from pathlib import Path
 import numpy as np
+import pandas as pd
 from os.path import isdir
 import os
 
 import keras.metrics
 import keras.optimizers
 import tensorflow as tf
+
+from os.path import join
+
 from keras.backend.tensorflow_backend import set_session
 from keras.models import Model
 from keras.layers import Dense, Input, concatenate, Activation
-from keras.layers.pooling import GlobalMaxPooling1D, MaxPooling1D
+from keras.layers.pooling import GlobalMaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 import metrics as metrics_file
-from utils import log_metrics, labels2onehot_one, get_result
+from utils import log_metrics
 
 
 config = tf.ConfigProto()
@@ -56,7 +60,7 @@ class CNN(object):
         """
         self.opt = copy.deepcopy(opt)
 
-        self.model_path_ = Path(self.opt["model_path"])
+        self.model_path_ = self.opt["checkpoint_path"]
         self.confident_threshold = self.opt['confident_threshold']
 
         if self.opt['model_from_saved']:
@@ -71,7 +75,8 @@ class CNN(object):
         else:
             self.classes = np.array(self.opt['classes'].split(' '))
             self.n_classes = self.classes.shape[0]
-            self.model = self.init_model_from_scratch(optimizer_name=self.opt['optimizer'],
+            self.model = self.init_model_from_scratch(model_name=self.opt['model_name'],
+                                                      optimizer_name=self.opt['optimizer'],
                                                       lr=self.opt['lear_rate'],
                                                       decay=self.opt['lear_rate_decay'],
                                                       loss_name=self.opt['loss'],
@@ -122,13 +127,16 @@ class CNN(object):
         model = Model(inputs=inp, outputs=act_output)
         return model
 
-    def init_model_from_scratch(self, optimizer_name,
+    def init_model_from_scratch(self, model_name, optimizer_name,
                                 lr, decay, loss_name, metrics_names=None, add_metrics_file=None,
                                 loss_weights=None,
-                                sample_weight_mode=None):
+                                sample_weight_mode=None,
+                                weighted_metrics=None,
+                                target_tensors=None):
         """
         Method initializes intent_model from scratch with given params
         Args:
+            model_name: name of intent_model function described as a method of this class
             optimizer_name: name of optimizer from keras.optimizers
             lr: learning rate
             decay: learning rate decay
@@ -137,14 +145,16 @@ class CNN(object):
             add_metrics_file: file with additional metrics functions
             loss_weights: optional parameter as in keras.intent_model.compile
             sample_weight_mode: optional parameter as in keras.intent_model.compile
+            weighted_metrics: optional parameter as in keras.intent_model.compile
+            target_tensors: optional parameter as in keras.intent_model.compile
 
         Returns:
             compiled intent_model with given network and learning parameters
         """
-        print('[ CNN intent_model model initializing from scratch ]')
-
+        print('[ Initializing intent_model from scratch ]')
         model = self.model(params=self.opt)
         optimizer_func = getattr(keras.optimizers, optimizer_name, None)
+
         if callable(optimizer_func):
             optimizer_ = optimizer_func(lr=lr, decay=decay)
         else:
@@ -202,16 +212,15 @@ class CNN(object):
             intent_model with loaded weights and network parameters from files
             but compiled with given learning parameters
         """
-        print('___Initializing CNN intent_model from saved___'
+        print('___Initializing intent_model from saved___'
               '\nModel weights file is %s.h5'
               '\nNetwork parameters are from %s_opt.json' % (fname, fname))
 
-        fname = self.model_path_.name
-        opt_fname = str(fname) + '_opt.json'
-        weights_fname = str(fname) + '.h5'
+        weights_fname = model_name + '.h5'
+        opt_fname = model_name + '_opt.json'
 
-        opt_path = Path.joinpath(self.model_path_, opt_fname)
-        weights_path = Path.joinpath(self.model_path_, weights_fname)
+        opt_path = join(fname, opt_fname)
+        weights_path = join(fname, weights_fname)
 
         if Path(opt_path).is_file():
             with open(opt_path, 'r') as opt_file:
@@ -222,13 +231,9 @@ class CNN(object):
         self.classes = np.array(self.opt['classes'].split(" "))
         self.n_classes = self.classes.shape[0]
 
-        model_func = getattr(self, model_name, None)
-        if callable(model_func):
-            model = model_func(params=self.opt)
-        else:
-            raise AttributeError("Model {} is not defined".format(model_name))
+        model = self.model(params=self.opt)
 
-        # print("Loading wights from `{}`".format(fname + '.h5'))
+        print("Loading wights from `{}`".format(fname + self.opt['model_name'] + '.h5'))
         model.load_weights(weights_path)
 
         optimizer_func = getattr(keras.optimizers, optimizer_name, None)
@@ -276,17 +281,17 @@ class CNN(object):
         Returns:
             nothing
         """
-        fname = self.model_path_.name if fname is None else fname
-        opt_fname = str(fname) + '_opt.json'
-        weights_fname = str(fname) + '.h5'
+        fname = self.model_path_ if fname is None else fname
+        opt_path = join(fname, self.opt['model_name'] + '_opt.json')
+        weights_path = join(fname, self.opt['model_name'] + '.h5')
 
         if isdir(fname):
             pass
         else:
             os.makedirs(fname)
 
-        opt_path = Path.joinpath(self.model_path_, opt_fname)
-        weights_path = Path.joinpath(self.model_path_, weights_fname)
+        # opt_path = Path.joinpath(self.model_path_, opt_fname)
+        # weights_path = Path.joinpath(self.model_path_, weights_fname)
         # print("[ saving intent_model: {} ]".format(str(opt_path)))
         self.model.save_weights(weights_path)
 
@@ -296,4 +301,163 @@ class CNN(object):
         return str(weights_path)
 
     def reset(self):
-        pass
+        tf.reset_default_graph()
+        return self
+
+    def train_on_batch(self, batch):
+        """
+        Method trains the intent_model on the given batch
+        Args:
+            batch - list of tuples (preprocessed text, labels)
+
+        Returns:
+            loss and metrics values on the given batch
+        """
+        features = batch[0]
+        onehot_labels = batch[1]
+        metrics_values = self.model.train_on_batch(features, onehot_labels)
+        return metrics_values
+
+    def infer_on_batch(self, batch, labels=None):
+        """
+        Method infers the model on the given batch
+        Args:
+            batch - list of texts
+
+        Returns:
+            loss and metrics values on the given batch, if labels are given
+            predictions, otherwise
+        """
+        if labels:
+            features = batch
+            onehot_labels = labels
+            metrics_values = self.model.test_on_batch(features, onehot_labels.reshape(-1, self.n_classes))
+            return metrics_values
+        else:
+            predictions = self.model.predict(batch)
+            return predictions
+
+    def batch_reformat(self, batch):
+        vectors = list(batch[0])
+        labels_vec = np.array(batch[1])
+
+        for i, x in enumerate(vectors):
+            if len(x) > self.opt['text_size']:
+                vectors[i] = vectors[:self.opt['text_size']]
+            elif len(x) < self.opt['text_size']:
+                pads = np.array([np.zeros(self.opt['embedding_size'])
+                                for _ in range(self.opt['text_size'] - len(x))])
+                vectors[i] = np.concatenate((pads, vectors[i]), axis=0)
+
+        matrix = np.zeros((self.opt['batch_size'], self.opt['text_size'], self.opt['embedding_size']))
+        for i, x in enumerate(vectors):
+            for j, y in enumerate(x):
+                matrix[i][j] = y
+
+        batch = (matrix, labels_vec)
+
+        return batch
+
+    def train(self, dataset, name, *args, **kwargs):
+        """
+        Method trains the intent_model using batches and validation
+        Args:
+            dataset: instance of class Dataset
+
+        Returns: None
+
+        """
+        updates = 0
+
+        val_loss = 1e100
+        val_increase = 0
+        epochs_done = 0
+
+        n_train_samples = len(dataset.data[name])
+        print('\n____Training over {} samples____\n\n'.format(n_train_samples))
+
+        while epochs_done < self.opt['epochs']:
+            batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
+                                           data_type=name)
+
+            for step, batch in enumerate(batch_gen):
+
+                ##############################################
+                batch = self.batch_reformat(batch)
+                ##############################################
+
+                metrics_values = self.train_on_batch(batch)
+                updates += 1
+
+                if self.opt['verbose'] and step % 500 == 0:
+                    log_metrics(names=self.metrics_names,
+                                values=metrics_values,
+                                updates=updates,
+                                mode='train')
+
+            epochs_done += 1
+            if epochs_done % self.opt['val_every_n_epochs'] == 0:
+                if 'valid' in dataset.data.keys():
+
+                    valid_batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
+                                                         data_type='valid')
+                    valid_metrics_values = []
+                    for valid_step, valid_batch in enumerate(valid_batch_gen):
+                        ##############################################
+                        valid_batch = self.batch_reformat(valid_batch)
+                        ##############################################
+
+                        valid_metrics_values.append(self.infer_on_batch(valid_batch[0],
+                                                                        labels=valid_batch[1]))
+
+                    valid_metrics_values = np.mean(np.asarray(valid_metrics_values), axis=0)
+                    log_metrics(names=self.metrics_names,
+                                values=valid_metrics_values,
+                                mode='valid')
+                    if valid_metrics_values[0] > val_loss:
+                        val_increase += 1
+                        print("__Validation impatience {} out of {}".format(
+                            val_increase, self.opt['val_patience']))
+                        if val_increase == self.opt['val_patience']:
+                            print("___Stop training: validation is out of patience___")
+                            break
+                    else:
+                        val_increase = 0
+                        val_loss = valid_metrics_values[0]
+            print('epochs_done: {}'.format(epochs_done))
+
+        self.save()
+
+    def predict(self, dataset, name, *args):
+        """
+        Method returns predictions on the given data
+        Args:
+            data: sentence or list of sentences
+            *args:
+
+        Returns:
+            Predictions for the given data
+        """
+        request, report = dataset.main_names
+        data = dataset.data[name][request]
+
+        if type(data) is str:
+            preds = self.infer_on_batch([data])[0]
+            preds = np.array(preds)
+        elif (type(data) is list) or isinstance(data, pd.Series):
+            if len(data) > self.opt['batch_size']:
+                batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
+                                               data_type=name, only_request=True)
+                predictions = []
+                for batch in batch_gen:
+                    preds = self.infer_on_batch(batch[0])
+                    preds = np.array(preds)
+                    predictions.append(preds)
+
+                preds = predictions
+            else:
+                preds = self.infer_on_batch(data)
+                preds = np.array(preds)
+        else:
+            raise ValueError("Not understand data type for inference")
+        return preds
