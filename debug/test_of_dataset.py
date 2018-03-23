@@ -49,6 +49,15 @@ print(train_data.head())
 
 # Building dataset
 dataset = Dataset(data=train_data, seed=42)
+dataset.split()
+
+generator = dataset.iter_batch(batch_size=10, data_type='test', only_request=True)
+for step, batch in enumerate(generator):
+    print(batch)
+    if step == 1:
+        break
+
+
 # print(dataset.info())
 # print(dataset.data['base'].head())
 # print(dataset.data['train'])
@@ -78,30 +87,28 @@ dataset = Dataset(data=train_data, seed=42)
 # print(dataset.info())
 # print(len(dataset.data['base']))
 # # print(dataset.data['base'])
+
+# classes = dataset.get_classes()
+# distribution = dataset.get_distribution()
+# print(classes, distribution)
 #
-classes = dataset.get_classes()
-distribution = dataset.get_distribution()
-print(classes, distribution)
-
-dataset.simple_split([0.999, 0.001], 'base', ['base', 'test'], delete_parent=False)
-print(dataset.info())
-print(dataset.data['test'].head())
-
-# Speller test:
-# dataset = Speller().transform(dataset, name='test')
+# dataset.simple_split([0.999, 0.001], 'base', ['base', 'test'], delete_parent=False)
+# print(dataset.info())
 # print(dataset.data['test'].head())
-
-# Tokenizer test:
-dataset = Tokenizer().transform(dataset)
-print(dataset.data['base'].head())
-
-# dataset = Lemmatizer().transform(dataset)
+#
+# # Speller test:
+# # dataset = Speller().transform(dataset, name='test')
+# # print(dataset.data['test'].head())
+#
+# # Tokenizer test:
+# dataset = Tokenizer().transform(dataset)
 # print(dataset.data['base'].head())
+#
+# # dataset = Lemmatizer().transform(dataset)
+# # print(dataset.data['base'].head())
+#
+# dataset.split()
+# print(dataset.info())
 
-dataset.split()
-print(dataset.info())
-
-dataset = FasttextVectorizer().transform(dataset, name='train')
-print(dataset.data['train'].head(2))
 
 

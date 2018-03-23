@@ -1,4 +1,4 @@
-from transformers import BaseTransformer
+from script.core.transformers import BaseTransformer
 
 
 class skwrapper(BaseTransformer):
