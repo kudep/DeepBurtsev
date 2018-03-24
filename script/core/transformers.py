@@ -6,7 +6,7 @@ import fasttext
 import numpy as np
 
 from tqdm import tqdm
-from .utils import labels2onehot_one
+from .utils import labels2onehot_one, get_result
 from deeppavlov.core.commands.infer import build_model_from_config
 
 
@@ -306,4 +306,63 @@ class TextConcat(BaseTransformer):
                                                    report: dataset.data[name][report]})
 
         print('[ Text concatenation was ended. ]')
+        return dataset
+
+
+class GetResult(BaseTransformer):
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Resulter',
+                           'request_names': ['predicted_test'],
+                           'new_names': ['test']}
+        else:
+            self.config = config
+
+        super().__init__(self.config)
+
+    def _transform(self, dataset):
+        request, report = dataset.main_names
+
+        pred_name = self.config['request_names'][0]
+        real_name = self.config['new_names'][0]
+        pred_data = dataset.data[pred_name]
+        real_data = np.array(dataset.data[real_name][report])
+
+        preds = pred_data[0]
+        for x in pred_data[1:]:
+            preds = np.concatenate((preds, x), axis=0)
+
+        preds = np.argmax(preds, axis=1)
+        for i, x in enumerate(preds):
+            preds[i] = x + 1
+
+        preds = preds[:len(real_data)]
+        results = get_result(preds, real_data)
+        dataset.data['results'] = results
+        return dataset
+
+
+class GetResultLinear(BaseTransformer):
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Resulter',
+                           'request_names': ['predicted_test'],
+                           'new_names': ['test']}
+        else:
+            self.config = config
+
+        super().__init__(self.config)
+
+    def _transform(self, dataset):
+        request, report = dataset.main_names
+
+        pred_name = self.config['request_names'][0]
+        real_name = self.config['new_names'][0]
+        pred_data = np.array(dataset.data[pred_name])
+
+        real_data = np.array(dataset.data[real_name][report])
+        results = get_result(pred_data, real_data)
+        dataset.data['results'] = results
         return dataset
