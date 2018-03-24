@@ -253,6 +253,7 @@ class BaseModel(object):
             self.model = self.model(self.config)
             self.model_init = True
         else:
+            # TODO it strange!
             if hasattr(self.model, 'reset'):
                 self.save()
                 self.model.reset()
@@ -272,15 +273,18 @@ class BaseModel(object):
             if hasattr(self.model, 'fit'):
                 self.model.fit(dataset, name)
 
+        self.trained = True
         return self
 
     def predict(self, dataset):
         self._validate_names(dataset)
-        self.init_model(dataset)
-        if not self.trained:
+        if not self.model_init:
+            self.init_model(dataset)
+        elif not self.trained:
             raise TypeError('Model is not trained yet.')
-        for name, new_name in zip(self.request_names, self.new_names):
-            dataset.data[new_name] = self.model.predict(dataset, name)
+        else:
+            for name, new_name in zip(self.request_names, self.new_names):
+                dataset.data[new_name] = self.model.predict(dataset, name)
 
         return dataset
 

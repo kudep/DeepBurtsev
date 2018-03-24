@@ -444,10 +444,13 @@ class CNN(object):
         elif (type(data) is list) or isinstance(data, pd.Series):
             if len(data) > self.opt['batch_size']:
                 batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
-                                               data_type=name, only_request=True)
+                                               data_type=name)
                 predictions = []
                 for batch in batch_gen:
-                    preds = self.infer_on_batch(batch[0])
+                    ##############################################
+                    pred_batch = self.batch_reformat(batch)
+                    ##############################################
+                    preds = self.infer_on_batch(pred_batch[0])
                     preds = np.array(preds)
                     predictions.append(preds)
 
