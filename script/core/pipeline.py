@@ -3,6 +3,7 @@ class BasePipeline(object):
         self.pipe = pipe
         self.mode = mode
         self.output = output
+        self.models = []
 
         if self.mode == 'train' and self.output == 'predictions':
             raise AttributeError("Pipeline can't returning predictions of model in train mode.")
@@ -64,11 +65,17 @@ class BasePipeline(object):
             if self.mode == 'infer':
                 if self.output == 'dataset':
                     dataset_ = operation.fit_predict(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
                 elif self.output == 'predictions':
                     if last_op:
                         dataset_ = operation.fit_predict_data(dataset)
+                        # add model
+                        self.models.append((operation.info['name'], operation))
                     else:
                         dataset_ = operation.fit_predict(dataset)
+                        # add model
+                        self.models.append((operation.info['name'], operation))
                 else:
                     raise AttributeError('Pipeline must returning predictions or dataset object in infer mode,'
                                          'but {} was found.'.format(self.output))
@@ -78,9 +85,13 @@ class BasePipeline(object):
             elif self.mode == 'train':
                 if last_op:
                     operation.fit(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
                     return None
                 else:
                     dataset_ = operation.fit_predict(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
                     return dataset_
 
             else:
@@ -96,10 +107,10 @@ class BasePipeline(object):
         return self
 
     def get_last_model(self):
-        pass
+        return self.models[-1]
 
     def get_models(self):
-        pass
+        return self.models
 
     def run(self, dataset):
         dataset_i = dataset

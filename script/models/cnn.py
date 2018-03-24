@@ -340,19 +340,24 @@ class CNN(object):
     def batch_reformat(self, batch):
         vectors = list(batch[0])
         labels_vec = np.array(batch[1])
+        if len(labels_vec) != self.opt['batch_size']:
+            shape = (self.opt['batch_size'] - len(labels_vec), len(labels_vec[0]))
+            labels_vec = np.concatenate((labels_vec, np.zeros(shape)), axis=0)
 
-        for i, x in enumerate(vectors):
-            if len(x) > self.opt['text_size']:
-                vectors[i] = vectors[:self.opt['text_size']]
-            elif len(x) < self.opt['text_size']:
-                pads = np.array([np.zeros(self.opt['embedding_size'])
-                                for _ in range(self.opt['text_size'] - len(x))])
-                vectors[i] = np.concatenate((pads, vectors[i]), axis=0)
+        # for i, x in enumerate(vectors):
+        #     if len(x) > self.opt['text_size']:
+        #         vectors[i] = vectors[:self.opt['text_size']]
+        #     elif len(x) < self.opt['text_size']:
+        #         pads = np.array([np.zeros(self.opt['embedding_size'])
+        #                         for _ in range(self.opt['text_size'] - len(x))])
+        #         vectors[i] = np.concatenate((pads, vectors[i]), axis=0)
 
         matrix = np.zeros((self.opt['batch_size'], self.opt['text_size'], self.opt['embedding_size']))
         for i, x in enumerate(vectors):
             for j, y in enumerate(x):
-                matrix[i][j] = y
+                if j < self.opt['text_size']:
+                    for k, d in enumerate(y):
+                            matrix[i][j][k] = d
 
         batch = (matrix, labels_vec)
 
