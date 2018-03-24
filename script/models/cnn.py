@@ -425,6 +425,7 @@ class CNN(object):
 
         self.save()
 
+    # TODO we need more clever logic of prediction and test
     def predict(self, dataset, name, *args):
         """
         Method returns predictions on the given data
