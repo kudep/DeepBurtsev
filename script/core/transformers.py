@@ -340,6 +340,11 @@ class GetResult(BaseTransformer):
         preds = preds[:len(real_data)]
         results = get_result(preds, real_data)
         dataset.data['results'] = results
+
+        conf = dataset.pipeline_config
+        date = dataset.date
+        logging(results, conf, date)
+
         return dataset
 
 
