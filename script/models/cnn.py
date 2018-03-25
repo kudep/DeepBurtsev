@@ -306,7 +306,7 @@ class CNN(object):
 
     def train_on_batch(self, batch):
         """
-        Method trains the intent_model on the given batch
+        Method pipelines the intent_model on the given batch
         Args:
             batch - list of tuples (preprocessed text, labels)
 
@@ -357,7 +357,7 @@ class CNN(object):
 
     def train(self, dataset, name, *args, **kwargs):
         """
-        Method trains the intent_model using batches and validation
+        Method pipelines the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
 

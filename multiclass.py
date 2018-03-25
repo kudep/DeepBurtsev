@@ -98,7 +98,7 @@ class KerasMulticlassModel(object):
 
     def train_on_batch(self, batch):
         """
-        Method trains the intent_model on the given batch
+        Method pipelines the intent_model on the given batch
         Args:
             batch - list of tuples (preprocessed text, labels)
 
@@ -114,7 +114,7 @@ class KerasMulticlassModel(object):
 
     def fit(self, dataset, stage='base', *args, **kwargs):
         """
-        Method trains the intent_model using batches and validation
+        Method pipelines the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
             stage:
@@ -179,7 +179,7 @@ class KerasMulticlassModel(object):
 
     def test(self, dataset, stage='base', *args, **kwargs):
         """
-        Method trains the intent_model using batches and validation
+        Method pipelines the intent_model using batches and validation
         Args:
             dataset: instance of class Dataset
             stage:

@@ -1,5 +1,8 @@
 import random
 import pandas as pd
+import json
+import secrets
+from os.path import join
 from typing import Generator
 from sklearn.model_selection import train_test_split
 
@@ -204,3 +207,58 @@ class Dataset(object):
                            classes_description=self.classes_description)
 
         return information
+
+
+class Watcher(Dataset):
+    def __init__(self, data, conf_dict=None, seed=None, classes_description=None, *args, **kwargs):
+        super().__init__(data, seed, classes_description, *args, **kwargs)
+        self.pipeline_config = {}
+        if conf_dict is None:
+            self.conf_dict = '/home/mks/projects/intent_classification_script/configs/pipelines/'
+        else:
+            self.conf_dict = conf_dict
+
+    def add_config(self, conf):
+        name = conf.pop('name')
+        op_type = conf.pop('op_type')
+        self.pipeline_config[name + '_' + op_type] = conf
+        return self
+
+    def check_config(self, conf):
+        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r+') as d:
+            conf_ = json.load(d)
+            for name in conf_.keys():
+                if conf_[name] != conf:
+                    return True
+                else:
+                    pass
+            d.close()
+        return False
+
+    def save_data(self, conf):
+        names = self.data.keys()
+        dataframes = []
+        datanames = []
+        for name in names:
+            if isinstance(self.data[name], pd.DataFrame):
+                dataframes.append(self.data[name])
+                datanames.append(name)
+        data = pd.concat(dataframes, keys=datanames)
+
+        # saving in file
+        secret_name = secrets.token_hex(nbytes=16)
+        path = join(self.conf_dict, secret_name)
+        data.to_csv(path)
+
+        # write in conf_dict.json
+        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as d:
+            conf_ = json.load(d)
+            d.close()
+
+        conf_[secret_name] = conf
+        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
+            line = json.dumps(conf_)
+            d.write(line)
+            d.close()
+
+        return self

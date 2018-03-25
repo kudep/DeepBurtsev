@@ -151,3 +151,92 @@ class BasePipeline(object):
         print('[ Prediction End. ]')
 
         return prediction
+
+
+class Pipeline(BasePipeline):
+    def __init__(self, pipe, mode='train', output=None):
+        super().__init__(pipe, mode, output)
+
+    def step(self, i, op, dataset, last_op=False):
+        if len(op) == 1:
+            operation = op[0]
+            try:
+                op_type = operation.info['op_type']
+                self.config_constructor(operation.config, i)
+            except AttributeError:
+                operation = op[0]()
+                op_type = operation.info['op_type']
+                self.config_constructor(operation.config, i)
+        elif len(op) == 2:
+            if op[1] is None:
+                operation = op[0]
+                try:
+                    op_type = operation.info['op_type']
+                    self.config_constructor(operation.config, i)
+                except AttributeError:
+                    operation = op[0]()
+                    op_type = operation.info['op_type']
+                    self.config_constructor(operation.config, i)
+            else:
+                if not isinstance(op[1], dict):
+                    raise AttributeError('Config of operation {0} must be a dict,'
+                                         ' but {1} was found.'.format(op, type(op)))
+                op_type = op[1]['op_type']
+                try:
+                    operation = op[0](config=op[1])
+                    self.config_constructor(op[1], i)
+                except TypeError:
+                    operation = op[0].set_params(op[1])
+                    self.config_constructor(op[1], i)
+        else:
+            raise AttributeError('Operation in pipeline input list must be tuple like (operation, config), '
+                                 'but {0} was found, with length={1}.'.format(op, len(op)))
+
+        # logic of methods calls
+        if op_type == 'transformer':
+            dataset_ = operation.transform(dataset)
+            return dataset_
+        elif op_type == 'vectorizer':
+            # TODO i don't like it
+            if 'train' not in dataset.data.keys():
+                dataset = dataset.split()
+            dataset_ = operation.transform(dataset)
+            return dataset_
+        elif op_type == 'model':
+            if self.mode == 'infer':
+                if self.output == 'dataset':
+                    dataset_ = operation.fit_predict(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
+                elif self.output == 'predictions':
+                    if last_op:
+                        dataset_ = operation.fit_predict_data(dataset)
+                        # add model
+                        self.models.append((operation.info['name'], operation))
+                    else:
+                        dataset_ = operation.fit_predict(dataset)
+                        # add model
+                        self.models.append((operation.info['name'], operation))
+                else:
+                    raise AttributeError('Pipeline must returning predictions or dataset object in infer mode,'
+                                         'but {} was found.'.format(self.output))
+
+                return dataset_
+
+            elif self.mode == 'train':
+                if last_op:
+                    operation.fit(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
+                    return None
+                else:
+                    dataset_ = operation.fit_predict(dataset)
+                    # add model
+                    self.models.append((operation.info['name'], operation))
+                    return dataset_
+
+            else:
+                raise AttributeError('Pipeline can be only in infer or train mode,'
+                                     ' but {} was found.'.format(self.mode))
+        else:
+            raise AttributeError('It can not happened.')
