@@ -6,7 +6,7 @@ import fasttext
 import numpy as np
 
 from tqdm import tqdm
-from .utils import labels2onehot_one, get_result
+from .utils import labels2onehot_one, get_result, logging
 from deeppavlov.core.commands.infer import build_model_from_config
 
 
@@ -365,4 +365,34 @@ class GetResultLinear(BaseTransformer):
         real_data = np.array(dataset.data[real_name][report])
         results = get_result(pred_data, real_data)
         dataset.data['results'] = results
+        return dataset
+
+
+class GetResultLinear_W(BaseTransformer):
+    def __init__(self, config=None):
+        if config is None:
+            self.config = {'op_type': 'transformer',
+                           'name': 'Resulter',
+                           'request_names': ['predicted_test'],
+                           'new_names': ['test']}
+        else:
+            self.config = config
+
+        super().__init__(self.config)
+
+    def _transform(self, dataset):
+        request, report = dataset.main_names
+
+        pred_name = self.config['request_names'][0]
+        real_name = self.config['new_names'][0]
+        pred_data = np.array(dataset.data[pred_name])
+
+        real_data = np.array(dataset.data[real_name][report])
+        results = get_result(pred_data, real_data)
+        dataset.data['results'] = results
+
+        conf = dataset.pipeline_config
+        date = dataset.date
+        logging(results, conf, date)
+
         return dataset

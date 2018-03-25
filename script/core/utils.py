@@ -145,15 +145,15 @@ def get_result(y_pred, y_test):
     return results
 
 
-def logging(res, pipe_conf, model_conf=None, adres=None):
-    date = datetime.datetime.now()
-    log = {'pipeline configuration': pipe_conf, 'model configuration': model_conf, 'results': res,
-           'checkpoint adres': adres}
+def logging(res, pipe_conf, name):
+    log = {'pipeline configuration': pipe_conf, 'results': res}
 
     if not os.path.isdir('./results/logs/'):
         os.makedirs('./results/logs/')
 
-    with open('./results/logs/{}-{}-{}.txt'.format(date.year, date.month, date.day), 'a') as f:
+    path = '/home/mks/projects/intent_classification_script/results/logs/'
+
+    with open(join(path, name), 'a') as f:
         line = json.dumps(log)
         f.write(line)
         f.write('\n')

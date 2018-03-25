@@ -1,3 +1,6 @@
+from collections import OrderedDict
+
+
 class BasePipeline(object):
     def __init__(self, pipe, mode='train', output=None):
         self.pipe = pipe
@@ -10,7 +13,7 @@ class BasePipeline(object):
         elif self.mode == 'infer' and self.output is None:
             raise AttributeError("Pipeline must returning predictions or dataset object in infer mode.")
 
-        self.pipeline_config = {'pipeline': {'mode': self.mode, 'output': self.output}}
+        self.pipeline_config = OrderedDict(pipeline={'mode': self.mode, 'output': self.output})
 
     # TODO write the super power resist
     # def _validate_pipeline(self):
@@ -102,7 +105,11 @@ class BasePipeline(object):
 
     def config_constructor(self, conf, num):
         conf['num_op'] = num
-        key = conf['op_type'] + '_' + conf['name']
+
+        # op_type = conf.pop('op_type')
+        # name = conf.pop('name')
+
+        key = conf['name'] + '_' + conf['op_type']
         self.pipeline_config[key] = conf
         return self
 
@@ -163,20 +170,24 @@ class Pipeline(BasePipeline):
             try:
                 op_type = operation.info['op_type']
                 self.config_constructor(operation.config, i)
+                dataset.add_config(operation.config)
             except AttributeError:
                 operation = op[0]()
                 op_type = operation.info['op_type']
                 self.config_constructor(operation.config, i)
+                dataset.add_config(operation.config)
         elif len(op) == 2:
             if op[1] is None:
                 operation = op[0]
                 try:
                     op_type = operation.info['op_type']
                     self.config_constructor(operation.config, i)
+                    dataset.add_config(operation.config)
                 except AttributeError:
                     operation = op[0]()
                     op_type = operation.info['op_type']
                     self.config_constructor(operation.config, i)
+                    dataset.add_config(operation.config)
             else:
                 if not isinstance(op[1], dict):
                     raise AttributeError('Config of operation {0} must be a dict,'
@@ -185,9 +196,11 @@ class Pipeline(BasePipeline):
                 try:
                     operation = op[0](config=op[1])
                     self.config_constructor(op[1], i)
+                    dataset.add_config(op[1])
                 except TypeError:
                     operation = op[0].set_params(op[1])
                     self.config_constructor(op[1], i)
+                    dataset.add_config(op[1])
         else:
             raise AttributeError('Operation in pipeline input list must be tuple like (operation, config), '
                                  'but {0} was found, with length={1}.'.format(op, len(op)))

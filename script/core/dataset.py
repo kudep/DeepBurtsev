@@ -3,6 +3,8 @@ import pandas as pd
 import json
 import secrets
 from os.path import join
+import os
+from collections import OrderedDict
 from typing import Generator
 from sklearn.model_selection import train_test_split
 
@@ -210,9 +212,11 @@ class Dataset(object):
 
 
 class Watcher(Dataset):
-    def __init__(self, data, conf_dict=None, seed=None, classes_description=None, *args, **kwargs):
+    def __init__(self, data, date, conf_dict=None, seed=None, classes_description=None, *args, **kwargs):
         super().__init__(data, seed, classes_description, *args, **kwargs)
-        self.pipeline_config = {}
+        self.pipeline_config = OrderedDict()
+        self.date = '{}-{}-{}.txt'.format(date.year, date.month, date.day)
+        self.save_path = '/home/mks/projects/intent_classification_script/data/logs_data/'
         if conf_dict is None:
             self.conf_dict = '/home/mks/projects/intent_classification_script/configs/pipelines/'
         else:
@@ -222,6 +226,10 @@ class Watcher(Dataset):
         name = conf.pop('name')
         op_type = conf.pop('op_type')
         self.pipeline_config[name + '_' + op_type] = conf
+        status = self.check_config(self.pipeline_config)
+        if status:
+            self.save_data(self.pipeline_config)
+
         return self
 
     def check_config(self, conf):
@@ -247,7 +255,11 @@ class Watcher(Dataset):
 
         # saving in file
         secret_name = secrets.token_hex(nbytes=16)
-        path = join(self.conf_dict, secret_name)
+
+        if not os.path.isdir(self.save_path):
+            os.makedirs(self.save_path)
+
+        path = join(self.save_path, secret_name)
         data.to_csv(path)
 
         # write in conf_dict.json
