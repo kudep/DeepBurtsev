@@ -171,7 +171,12 @@ def scrab_data(path):
     with open(path, 'r') as f:
         for line in f:
             jline = json.loads(line)
-            name = jline['pipeline configuration']['model']['name']
+            jl = jline['pipeline configuration']
+            rnum = jline['pipeline configuration']['Resulter_transformer']['num_op']
+            for x in jline['pipeline configuration'].keys():
+                if jl[x]['num_op'] == rnum - 1:
+                    name = x.split('_')[0]
+
             if name not in info.keys():
                 info[name] = dict()
                 info[name]['list'] = list()
@@ -186,7 +191,7 @@ def scrab_data(path):
         f1w_max = 0
         ind = 0
         pipe_conf = None
-        model_conf = None
+        # model_conf = None
 
         for i, y in enumerate(info[x]['list']):
 
@@ -197,7 +202,7 @@ def scrab_data(path):
             if float(z['f1_weighted']) >= f1w_max:
                 f1w_max = float(z['f1_weighted'])
                 pipe_conf = y['pipeline configuration']
-                model_conf = y['model configuration']
+                # model_conf = y['model configuration']
                 ind = i
             if float(z['accuracy'].split(' ')[-1]) >= acc_max:  # fix
                 acc_max = float(z['accuracy'].split(' ')[-1])  # fix
@@ -206,13 +211,13 @@ def scrab_data(path):
         info[x]['max_f1_weighted'] = f1w_max
         info[x]['max_acc'] = acc_max
         info[x]['best_pipe_conf'] = pipe_conf
-        info[x]['best_model_conf'] = model_conf
+        # info[x]['best_model_conf'] = model_conf
         info[x]['index_of_best'] = ind
 
     return info
 
 
-def get_table(dang, savepath='./results/', filename='report', ext='pdf'):
+def get_table(dang, savepath='./results/russian/', filename='report', ext='pdf'):
     # make dataframe table
     fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
     table = pd.DataFrame({'Models': list(dang.keys()),
@@ -237,7 +242,7 @@ def get_table(dang, savepath='./results/', filename='report', ext='pdf'):
 
     # create pdf table
     env = Environment(loader=FileSystemLoader('/home/mks/projects/intent_classification_script/'))
-    template = env.get_template("template.html")
+    template = env.get_template("./script/core/template.html")
     template_vars = {"title": "Results ",
                      "national_pivot_table": table.to_html()}
 
@@ -317,9 +322,9 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
-def results_summarization(date=None, path=None, savepath='./results/images/'):
+def results_summarization(date=None, path=None, savepath='./results/russian/images/'):
     if path is None:
-        path = './debug/results/logs/'
+        path = './results/logs/'
 
     if date is None:
         date = datetime.datetime.now()
@@ -353,7 +358,7 @@ def results_summarization(date=None, path=None, savepath='./results/images/'):
                               axis_names=['Prediction label', 'True label'])
 
     best_model_name, stat = best_model
-    classes_names = list(info['LR']['list'][0]['results']['classes'].keys())
+    classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
     for i in stat.keys():
         axes_names = ['Classes', i]
         ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names)
