@@ -322,6 +322,96 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
+def plot_i(date=None, path=None, savepath='./results/russian/images/'):
+    if path is None:
+        path = './results/logs/'
+
+    if date is None:
+        date = datetime.datetime.now()
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    else:
+        log = join(path, date + '.txt')
+    # reading and scrabbing data
+    info = scrab_data(log)
+
+    # make dataframe table
+    table, best_model = get_table(info)
+
+    # ploting results
+    model_names = tuple(table.index)
+    metrics = list(table.keys())
+    x = np.arange(len(table))
+    for i in metrics:
+        y = list(table[i])
+        axes_names = ['Models', i]
+
+        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names)
+
+    return None
+
+
+def plot_j(date=None, path=None, savepath='./results/russian/images/'):
+    if path is None:
+        path = './results/logs/'
+
+    if date is None:
+        date = datetime.datetime.now()
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    else:
+        log = join(path, date + '.txt')
+    # reading and scrabbing data
+    info = scrab_data(log)
+
+    # make dataframe table
+    table, best_model = get_table(info)
+
+    # ploting results
+    model_names = tuple(table.index)
+    metrics = list(table.keys())
+    x = np.arange(len(table))
+
+    for n in model_names:
+        I = info[n]['index_of_best']
+        important_categories = list(info[n]['list'][I]['results']['classes'].keys())
+        important_categories = np.array([int(x) for x in important_categories])
+        matrix = np.array(info[n]['list'][I]['results']['confusion_matrix'])
+
+        plot_confusion_matrix(matrix, important_categories,
+                              plot_name='Confusion Matrix of {}'.format(n),
+                              axis_names=['Prediction label', 'True label'])
+
+    return None
+
+
+def plot_k(date=None, path=None, savepath='./results/russian/images/'):
+    if path is None:
+        path = './results/logs/'
+
+    if date is None:
+        date = datetime.datetime.now()
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    else:
+        log = join(path, date + '.txt')
+    # reading and scrabbing data
+    info = scrab_data(log)
+
+    # make dataframe table
+    table, best_model = get_table(info)
+
+    # ploting results
+    model_names = tuple(table.index)
+    metrics = list(table.keys())
+    x = np.arange(len(table))
+
+    best_model_name, stat = best_model
+    classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
+    for i in stat.keys():
+        axes_names = ['Classes', i]
+        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names)
+
+    return None
+
+
 def results_summarization(date=None, path=None, savepath='./results/russian/images/'):
     if path is None:
         path = './results/logs/'

@@ -338,6 +338,7 @@ class GetResult(BaseTransformer):
             preds[i] = x + 1
 
         preds = preds[:len(real_data)]
+
         results = get_result(preds, real_data)
         dataset.data['results'] = results
 
