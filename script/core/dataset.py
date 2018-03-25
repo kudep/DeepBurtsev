@@ -223,8 +223,10 @@ class Watcher(Dataset):
             self.conf_dict = conf_dict
 
     def add_config(self, conf):
-        name = conf.pop('name')
-        op_type = conf.pop('op_type')
+        # name = conf.pop('name')
+        # op_type = conf.pop('op_type')
+        name = conf['name']
+        op_type = conf['op_type']
         self.pipeline_config[name + '_' + op_type] = conf
         status = self.check_config(self.pipeline_config)
         if status:
