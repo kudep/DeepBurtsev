@@ -212,15 +212,19 @@ class Dataset(object):
 
 
 class Watcher(Dataset):
-    def __init__(self, data, date, conf_dict=None, seed=None, classes_description=None, *args, **kwargs):
+    def __init__(self, data, date, language, dataset_name, seed=None, classes_description=None, root=None,
+                 *args, **kwargs):
+
         super().__init__(data, seed, classes_description, *args, **kwargs)
+
         self.pipeline_config = OrderedDict()
         self.date = '{}-{}-{}.txt'.format(date.year, date.month, date.day)
-        self.save_path = '/home/mks/projects/intent_classification_script/data/logs_data/'
-        if conf_dict is None:
-            self.conf_dict = '/home/mks/projects/intent_classification_script/configs/pipelines/'
-        else:
-            self.conf_dict = conf_dict
+
+        if root is None:
+            root = '/home/mks/projects/intent_classification_script/'
+
+        self.conf_dict = join(root, 'data', language, dataset_name, 'log_data')
+        self.save_path = join(self.conf_dict, 'data')
 
     def add_config(self, conf):
         # name = conf.pop('name')

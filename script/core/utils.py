@@ -145,15 +145,18 @@ def get_result(y_pred, y_test):
     return results
 
 
-def logging(res, pipe_conf, name):
+def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
     log = {'pipeline configuration': pipe_conf, 'results': res}
 
-    if not os.path.isdir('./results/logs/'):
-        os.makedirs('./results/logs/')
+    root = '/home/mks/projects/intent_classification_script/'
+    path = join(root, 'results', language, dataset_name, name)
 
-    path = '/home/mks/projects/intent_classification_script/results/logs/'
+    if not os.path.isdir(path):
+        os.makedirs(path)
 
-    with open(join(path, name), 'a') as f:
+    file = name + '.txt'
+
+    with open(join(path, file), 'a') as f:
         line = json.dumps(log)
         f.write(line)
         f.write('\n')
@@ -217,7 +220,7 @@ def scrab_data(path):
     return info
 
 
-def get_table(dang, savepath='./results/russian/', filename='report', ext='pdf'):
+def get_table(dang, savepath, filename='report', ext='pdf'):
     # make dataframe table
     fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
     table = pd.DataFrame({'Models': list(dang.keys()),
@@ -412,13 +415,17 @@ def plot_k(date=None, path=None, savepath='./results/russian/images/'):
     return None
 
 
-def results_summarization(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None:
-        path = './results/logs/'
+def results_summarization(date=None, language='russian', dataset_name='vkusvill'):
+    path = join('./results/', language, dataset_name)
+    savepath = join(path, 'images')
+
+    if not isdir(savepath):
+        os.makedirs(savepath)
 
     if date is None:
         date = datetime.datetime.now()
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+        log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
+                   '{}-{}-{}.txt'.format(date.year, date.month, date.day))
     else:
         log = join(path, date + '.txt')
     # reading and scrabbing data
@@ -435,7 +442,7 @@ def results_summarization(date=None, path=None, savepath='./results/russian/imag
         y = list(table[i])
         axes_names = ['Models', i]
 
-        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names)
+        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names, savepath=savepath)
 
     for n in model_names:
         I = info[n]['index_of_best']
@@ -445,13 +452,15 @@ def results_summarization(date=None, path=None, savepath='./results/russian/imag
 
         plot_confusion_matrix(matrix, important_categories,
                               plot_name='Confusion Matrix of {}'.format(n),
-                              axis_names=['Prediction label', 'True label'])
+                              axis_names=['Prediction label', 'True label'],
+                              savepath=savepath)
 
     best_model_name, stat = best_model
     classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
     for i in stat.keys():
         axes_names = ['Classes', i]
-        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names)
+        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names,
+                     savepath=savepath)
 
     return None
 

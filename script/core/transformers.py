@@ -80,22 +80,11 @@ class BaseTransformer(object):
 class Speller(BaseTransformer):
     def __init__(self, config=None):
         if config is None:
-            # self.config = {'op_type': 'transformer',
-            #                'name': 'Speller',
-            #                'request_names': ['base'],
-            #                'new_names': ['base'],
-            #                'input_x_type': pd.core.series.Series,
-            #                'input_y_type': pd.core.series.Series,
-            #                'output_x_type': pd.core.series.Series,
-            #                'output_y_type': pd.core.series.Series,
-            #                'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
-
             self.config = {'op_type': 'transformer',
                            'name': 'Speller',
                            'request_names': ['base'],
                            'new_names': ['base'],
-                           'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
-
+                           'path': './script/DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
         else:
             need_names = ['path']
             for name in need_names:
