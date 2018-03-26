@@ -85,24 +85,6 @@ class HyperPar:
         return float(sample)
 
 
-class NLTKTokenizer(object):
-
-    def infer(self, batch, tokenizer="wordpunct_tokenize"):
-        tokenized_batch = []
-
-        tokenizer_ = getattr(nltk.tokenize, tokenizer, None)
-        if callable(tokenizer_):
-            if type(batch) == str:
-                tokenized_batch = " ".join(tokenizer_(batch))
-            else:
-                # list of str
-                for text in batch:
-                    tokenized_batch.append(" ".join(tokenizer_(text)))
-            return tokenized_batch
-        else:
-            raise AttributeError("Tokenizer %s is not defined in nltk.tokenizer" % tokenizer)
-
-
 # -------------------------- Logging ----------------------------------
 
 
@@ -466,6 +448,24 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
 
 
 # -------------------------- Utils ----------------------------------
+
+
+class NLTKTokenizer(object):
+
+    def infer(self, batch, tokenizer="wordpunct_tokenize"):
+        tokenized_batch = []
+
+        tokenizer_ = getattr(nltk.tokenize, tokenizer, None)
+        if callable(tokenizer_):
+            if type(batch) == str:
+                tokenized_batch = " ".join(tokenizer_(batch))
+            else:
+                # list of str
+                for text in batch:
+                    tokenized_batch.append(" ".join(tokenizer_(text)))
+            return tokenized_batch
+        else:
+            raise AttributeError("Tokenizer %s is not defined in nltk.tokenizer" % tokenizer)
 
 
 def tokenize(data):
