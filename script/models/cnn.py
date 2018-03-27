@@ -462,3 +462,7 @@ class CNN(object):
         else:
             raise ValueError("Not understand data type for inference")
         return preds
+
+
+
+

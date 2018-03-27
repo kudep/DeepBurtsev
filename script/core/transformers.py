@@ -6,8 +6,8 @@ import fasttext
 import numpy as np
 
 from tqdm import tqdm
-from .utils import labels2onehot_one, get_result, logging
-from script.DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
+from script.core.utils import labels2onehot_one, get_result, logging
+from DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
 
 
 class BaseTransformer(object):

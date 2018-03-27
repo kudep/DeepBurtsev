@@ -1,0 +1,6 @@
+{
+  "op_type": "transformer",
+  "name": "Resulter",
+  "request_names": ["predicted_test"],
+  "new_names": ["test"]
+}
