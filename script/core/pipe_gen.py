@@ -109,20 +109,12 @@ class PipeGen(object):
                     if pipe_conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                           'RandomForestClassifier', 'LinearSVC']:
                         path = './configs/models/Linear/' + pipe_conf[key] + '.json'
-
-
                         conf = get_config(path)
-
-
                         model = skmodel(self.ops_dict[pipe_conf[key]], conf)
                         pipe.append((model,))
                     elif pipe_conf[key] == 'CNN':
                         path = './configs/models/CNN/WCNN.json'
-
-
                         conf = get_config(path)
-
-
                         WCNN = GetCNN(self.ops_dict[pipe_conf[key]], conf)
                         pipe.append((WCNN,))
                     else:
