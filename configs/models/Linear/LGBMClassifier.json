@@ -1,0 +1,7 @@
+{
+  "op_type": "model",
+  "name": "LGBMClassifier",
+  "fit_names": ["train_vec"],
+  "new_names": ["predicted_test"],
+  "predict_names": ["test_vec"]
+}
