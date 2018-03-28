@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import pandas as pd
 import re
-from dataset import Dataset
-from transformers import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
+from script.core.dataset import Dataset
+from script.core.transformers import Speller, Tokenizer, Lemmatizer, FasttextVectorizer
 
 
 def read_dataset(filepath, duplicates=False, clean=True):

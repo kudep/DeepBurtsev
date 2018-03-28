@@ -265,7 +265,7 @@ class Watcher(Dataset):
         if not os.path.isdir(self.save_path):
             os.makedirs(self.save_path)
 
-        path = join(self.save_path, secret_name)
+        path = join(self.save_path, secret_name)  # + '.csv'
         data.to_csv(path)
 
         # write in conf_dict.json
@@ -280,3 +280,6 @@ class Watcher(Dataset):
             d.close()
 
         return self
+
+    # def load_data(self, name):
+
