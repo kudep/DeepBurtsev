@@ -42,7 +42,7 @@ class PipeGen(object):
         self.ops_dict = {'Speller': Speller,
                          'Tokenizer': Tokenizer,
                          'Lemmatizer': Lemmatizer,
-                         'TextConcatenator': TextConcat,
+                         'Textconcatenator': TextConcat,
                          'FasttextVectorizer': FasttextVectorizer,
                          'tf-idf': TfidfVectorizer,
                          'count': CountVectorizer,
@@ -52,7 +52,12 @@ class PipeGen(object):
                          'LogisticRegression': LogisticRegression,
                          'LGBMClassifier': LGBMClassifier}
 
-        self.neural_struct = {'Speller': {'bool': True}, 'Lemmatizer': {'bool': True}, 'model': ['CNN']}
+        # self.neural_struct = {'Speller': {'bool': True}, 'Lemmatizer': {'bool': True}, 'model': ['CNN']}
+
+        ################################################################################################
+        self.neural_struct = {'Lemmatizer': {'bool': True}, 'model': ['CNN']}
+        ################################################################################################
+
         self.neural_pipe = OrderedDict(Speller=True,
                                        Tokenizer=True,
                                        Lemmatizer=True,
@@ -60,16 +65,26 @@ class PipeGen(object):
                                        model='CNN')
         self.neural = (self.neural_pipe, self.neural_struct)
 
-        self.linear_struct = {'Speller': {'bool': True}, 'Lemmatizer': {'bool': True},
+        # self.linear_struct = {'Speller': {'bool': True}, 'Lemmatizer': {'bool': True},
+        #                       'vectorizer': ['tf-idf', 'count'],
+        #                       'model': ['LogisticRegression',
+        #                                 'RandomForestClassifier',
+        #                                 'LGBMClassifier',
+        #                                 'LinearSVC']}
+
+        ################################################################################################
+        self.linear_struct = {'Lemmatizer': {'bool': True},
                               'vectorizer': ['tf-idf', 'count'],
                               'model': ['LogisticRegression',
                                         'RandomForestClassifier',
                                         'LGBMClassifier',
                                         'LinearSVC']}
+        ################################################################################################
+
         self.linear_pipe = OrderedDict(Speller=True,
                                        Tokenizer=True,
                                        Lemmatizer=True,
-                                       TextConcatenator=True,
+                                       Textconcatenator=True,
                                        vectorizer='tf-idf',
                                        model='LogisticRegression')
         self.linear = (self.linear_pipe, self.linear_struct)
@@ -82,7 +97,7 @@ class PipeGen(object):
         elif model_type == 'linear':
             pipe_conf = ConfGen(self.linear[0], self.linear[1]).sample_params()
             pipe_conf['Tokenizer'] = pipe_conf['Lemmatizer']
-            pipe_conf['TextConcatenator'] = pipe_conf['Lemmatizer']
+            pipe_conf['Textconcatenator'] = pipe_conf['Lemmatizer']
             resulter = GetResultLinear
         else:
             raise ValueError('')
@@ -118,13 +133,13 @@ class PipeGen(object):
                 elif key == 'model':
                     if pipe_conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                           'RandomForestClassifier', 'LinearSVC']:
-                        path = './configs/models/Linear/' + pipe_conf[key] + '.json'
+                        path = './configs/models/' + pipe_conf[key] + '.json'
                         conf = get_config(path)
                         model = skmodel(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config[pipe_conf[key] + '_model'] = conf
                         pipe.append((model,))
                     elif pipe_conf[key] == 'CNN':
-                        path = './configs/models/CNN/WCNN.json'
+                        path = './configs/models/CNN.json'
                         conf = get_config(path)
                         WCNN = GetCNN(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config['WCNN_model'] = conf
@@ -172,7 +187,7 @@ class PipelineGenerator(object):
         self.ops_dict = {'Speller': Speller,
                          'Tokenizer': Tokenizer,
                          'Lemmatizer': Lemmatizer,
-                         'TextConcatenator': TextConcat,
+                         'Textсoncatenator': TextConcat,
                          'FasttextVectorizer': FasttextVectorizer,
                          'tf-idf': TfidfVectorizer,
                          'count': CountVectorizer,
@@ -182,25 +197,48 @@ class PipelineGenerator(object):
                          'LogisticRegression': LogisticRegression,
                          'LGBMClassifier': LGBMClassifier}
 
-        self.neural_struct = {'Speller': [False, True], 'Lemmatizer': [False, True], 'model': ['CNN']}
-        self.neural_pipe = OrderedDict(Speller=True,
-                                       Tokenizer=True,
+        # self.neural_struct = {'Speller': [False, True], 'Lemmatizer': [False, True], 'model': ['CNN']}
+        # self.neural_pipe = OrderedDict(Speller=True,
+        #                                Tokenizer=True,
+        #                                Lemmatizer=True,
+        #                                vectorizer='FasttextVectorizer',
+        #                                model='CNN')
+
+        ###############################################################################################
+        self.neural_struct = {'Lemmatizer': [False, True], 'model': ['CNN']}
+        self.neural_pipe = OrderedDict(Tokenizer=True,
                                        Lemmatizer=True,
                                        vectorizer='FasttextVectorizer',
                                        model='CNN')
+        ################################################################################################
 
-        self.linear_struct = {'Speller': [False, True], 'Lemmatizer': [False, True],
+        # self.linear_struct = {'Speller': [False, True], 'Lemmatizer': [False, True],
+        #                       'vectorizer': ['tf-idf', 'count'],
+        #                       'model': ['LogisticRegression',
+        #                                 'RandomForestClassifier',
+        #                                 'LGBMClassifier',
+        #                                 'LinearSVC']}
+        # self.linear_pipe = OrderedDict(Speller=True,
+        #                                Tokenizer=True,
+        #                                Lemmatizer=True,
+        #                                Textconcatenator=True,
+        #                                vectorizer='tf-idf',
+        #                                model='LogisticRegression')
+
+        ###############################################################################################
+        self.linear_struct = {'Lemmatizer': [False, True],
                               'vectorizer': ['tf-idf', 'count'],
                               'model': ['LogisticRegression',
                                         'RandomForestClassifier',
                                         'LGBMClassifier',
                                         'LinearSVC']}
-        self.linear_pipe = OrderedDict(Speller=True,
-                                       Tokenizer=True,
+        self.linear_pipe = OrderedDict(Tokenizer=True,
                                        Lemmatizer=True,
-                                       TextConcatenator=True,
+                                       Textconcatenator=True,
                                        vectorizer='tf-idf',
                                        model='LogisticRegression')
+        ###############################################################################################
+
 
     # generation
     def pipeline_gen(self):
@@ -219,7 +257,7 @@ class PipelineGenerator(object):
             for conf in gen:
                 if type_ == 'linear':
                     conf['Tokenizer'] = conf['Lemmatizer']
-                    conf['TextConcatenator'] = conf['Lemmatizer']
+                    conf['Textconcatenator'] = conf['Lemmatizer']
 
                 pipeline_config = OrderedDict()
                 pipe = []
@@ -252,13 +290,13 @@ class PipelineGenerator(object):
                         elif key == 'model':
                             if conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                              'RandomForestClassifier', 'LinearSVC']:
-                                path = './configs/models/Linear/' + conf[key] + '.json'
+                                path = './configs/models/' + conf[key] + '.json'
                                 config = get_config(path)
                                 model = skmodel(self.ops_dict[conf[key]], config)
                                 pipeline_config[conf[key] + '_model'] = config
                                 pipe.append((model,))
                             elif conf[key] == 'CNN':
-                                path = './configs/models/CNN/WCNN.json'
+                                path = './configs/models/CNN.json'
                                 config = get_config(path)
                                 WCNN = GetCNN(self.ops_dict[conf[key]], config)
                                 pipeline_config['WCNN_model'] = config
@@ -271,5 +309,4 @@ class PipelineGenerator(object):
                         raise TypeError('It wrong dict, attribute of dicts must have a bool type or str,'
                                         'but {} was found.'.format(type(conf[key])))
                 pipe.append((resulter,))
-#                 (pipe, pipeline_config)
                 yield (pipe, pipeline_config)

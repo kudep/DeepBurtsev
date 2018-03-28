@@ -2,7 +2,7 @@ import random
 import pandas as pd
 import json
 import secrets
-from os.path import join
+from os.path import join, isfile
 import os
 from collections import OrderedDict
 from typing import Generator
@@ -232,9 +232,13 @@ class Watcher(Dataset):
         name = conf['name']
         op_type = conf['op_type']
         self.pipeline_config[name + '_' + op_type] = conf
-        status = self.check_config(self.pipeline_config)
+
+        status, name = self.check_config(self.pipeline_config)
+
         if status:
             self.save_data(self.pipeline_config)
+        else:
+            self.load_data(name)
 
         return self
 
@@ -243,11 +247,11 @@ class Watcher(Dataset):
             conf_ = json.load(d)
             for name in conf_.keys():
                 if conf_[name] != conf:
-                    return True
+                    d.close()
+                    return True, name
                 else:
-                    pass
-            d.close()
-        return False
+                    d.close()
+                    return False, name
 
     def save_data(self, conf):
         names = self.data.keys()
@@ -269,17 +273,48 @@ class Watcher(Dataset):
         data.to_csv(path)
 
         # write in conf_dict.json
-        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as d:
-            conf_ = json.load(d)
-            d.close()
+        if isfile('pipe_conf_dict.json'):
+            with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as d:
+                conf_ = json.load(d)
+                d.close()
 
-        conf_[secret_name] = conf
-        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
-            line = json.dumps(conf_)
-            d.write(line)
-            d.close()
+            conf_[secret_name] = conf
+            with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
+                line = json.dumps(conf_)
+                d.write(line)
+                d.close()
+
+        else:
+            conf_ = dict()
+            conf_[secret_name] = conf
+            with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
+                line = json.dumps(conf_)
+                d.write(line)
+                d.close()
 
         return self
 
-    # def load_data(self, name):
+    def load_data(self, name):
+        filepath = join(self.save_path, name)
+        file = open(filepath, 'r')
+        data = pd.read_csv(file)
+        file.close()
 
+        request, report = self.main_names
+
+        keys = list(data['Unnamed: 0'].unique())
+        data_keys = list(self.data.keys())
+
+        for key in keys:
+            if key not in data_keys:
+                self.data[key] = {}
+            self.data[key][request] = data[data['Unnamed: 0'] == key][request]
+            self.data[key][report] = data[data['Unnamed: 0'] == key][report]
+
+        for key in data_keys:
+            if key not in keys:
+                self.del_data([key])
+
+        del data
+
+        return self

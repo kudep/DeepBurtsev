@@ -3,5 +3,5 @@
   "name": "Speller",
   "request_names": ["base"],
   "new_names": ["base"],
-  "path": "./script/DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json"
+  "path": "./DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json"
 }
