@@ -209,7 +209,8 @@ class PipelineGenerator(object):
         self.neural_pipe = OrderedDict(Tokenizer=True,
                                        Lemmatizer=True,
                                        vectorizer='FasttextVectorizer',
-                                       model='CNN')
+                                       model='CNN',
+                                       Resulter='Resulter')
         ################################################################################################
 
         # self.linear_struct = {'Speller': [False, True], 'Lemmatizer': [False, True],
@@ -230,13 +231,14 @@ class PipelineGenerator(object):
                               'vectorizer': ['tf-idf', 'count'],
                               'model': ['LogisticRegression',
                                         'RandomForestClassifier',
-                                        'LGBMClassifier',
+                                        # 'LGBMClassifier',
                                         'LinearSVC']}
         self.linear_pipe = OrderedDict(Tokenizer=True,
                                        Lemmatizer=True,
                                        Textсoncatenator=True,
                                        vectorizer='tf-idf',
-                                       model='LogisticRegression')
+                                       model='LogisticRegression',
+                                       Resulter='Resulter')
         ###############################################################################################
 
     # generation
@@ -249,7 +251,7 @@ class PipelineGenerator(object):
                 resulter = GetResult
             elif type_ == 'linear':
                 gen = genc(self.linear_pipe, self.linear_struct)
-                resulter = GetResultLinear
+                resulter = GetResultLinear_W
             else:
                 raise ValueError('')
 
@@ -302,10 +304,15 @@ class PipelineGenerator(object):
                                 pipe.append((WCNN,))
                             else:
                                 raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
+                        elif key == 'Resulter':
+                            path = './configs/ops/'+key+'.json'
+                            config = get_config(path)
+                            pipeline_config['Resulter_transformer'] = config
+                            pipe.append((resulter, config))
+
                         else:
                             raise ValueError('Unexpected key value {}'.format(key))
                     else:
                         raise TypeError('It wrong dict, attribute of dicts must have a bool type or str,'
                                         'but {} was found.'.format(type(conf[key])))
-                pipe.append((resulter,))
                 yield (pipe, pipeline_config)

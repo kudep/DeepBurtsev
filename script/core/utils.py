@@ -18,7 +18,7 @@ from time import time
 from tqdm import tqdm
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
-from os.path import join, isdir
+from os.path import join, isdir, isfile
 from os import mkdir
 
 # metrics
@@ -493,22 +493,44 @@ def plot_k(date=None, path=None, savepath='./results/russian/images/'):
 
 def results_summarization(date=None, language='russian', dataset_name='vkusvill'):
     path = join('./results/', language, dataset_name)
-    savepath = join(path, 'images')
-
-    if not isdir(savepath):
-        os.makedirs(savepath)
 
     if date is None:
         date = datetime.datetime.now()
+        date_path = join(path, '{}-{}-{}'.format(date.year, date.month, date.day))
+        if not isdir(date_path):
+            os.makedirs(date_path)
+
+        image_path = join(date_path, 'images')
+        if not isdir(image_path):
+            os.makedirs(image_path)
+
         log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
                    '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+        if not isfile(log):
+            raise FileExistsError('File with results {}'
+                                  ' is not exist'.format('{}-{}-{}.txt'.format(date.year, date.month, date.day)))
+
     else:
-        log = join(path, date + '.txt')
+        date_path = join(path, '{}-{}-{}'.format(date.year, date.month, date.day))
+        if not isdir(date_path):
+            os.makedirs(date_path)
+
+        image_path = join(date_path, 'images')
+        if not isdir(image_path):
+            os.makedirs(image_path)
+
+        log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
+                   '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+        if not isfile(log):
+            raise FileExistsError('File with results {} is not exist'.format('{}-{}-{}.txt'.format(date.year,
+                                                                                                   date.month,
+                                                                                                   date.day)))
+
     # reading and scrabbing data
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info)
+    table, best_model = get_table(info, date_path)
 
     # ploting results
     model_names = tuple(table.index)
@@ -518,7 +540,7 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
         y = list(table[i])
         axes_names = ['Models', i]
 
-        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names, savepath=savepath)
+        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names, savepath=image_path)
 
     for n in model_names:
         I = info[n]['index_of_best']
@@ -529,14 +551,14 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
         plot_confusion_matrix(matrix, important_categories,
                               plot_name='Confusion Matrix of {}'.format(n),
                               axis_names=['Prediction label', 'True label'],
-                              savepath=savepath)
+                              savepath=image_path)
 
     best_model_name, stat = best_model
     classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
     for i in stat.keys():
         axes_names = ['Classes', i]
         ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names,
-                     savepath=savepath)
+                     savepath=image_path)
 
     return None
 

@@ -1,6 +1,5 @@
-from os.path import isfile
 from .pipe_gen import PipelineGenerator
-from .pipeline import Pipeline, BasePipeline
+from .pipeline import Pipeline, PrepPipeline
 from .dataset import Watcher
 from .utils import *
 from .transformers import *
@@ -48,14 +47,14 @@ class PipelineManager(object):
             model_pipe = x[0][-2:]
             pipe_conf = x[1]
 
-            prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
+            prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
 
             # initialize new dataset
             self.init_dataset_tiny()
             d_ = prer_pipeline.run(self.start_dataset)
 
             if not self.hyper_search:
-                model_pipeline = BasePipeline(model_pipe, mode='infer', output='dataset')
+                model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
                 end_dataset = model_pipeline.run(d_)
             else:
                 model_name = list(pipe_conf.keys())[-1].split('_')[0] + '_params.json'
@@ -74,7 +73,7 @@ class PipelineManager(object):
                 params_generator = ConfGen(model_conf, search_conf, seed=self.seed)
                 for params in params_generator.generator(self.N):
                     model_pipe[0][1] = params
-                    model_pipeline = BasePipeline(model_pipe, mode='infer', output='dataset')
+                    model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
                     end_dataset = model_pipeline.run(d_)
 
         results_summarization(self.date, self.language, self.dataset_name)

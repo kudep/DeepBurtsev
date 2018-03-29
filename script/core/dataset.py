@@ -14,6 +14,7 @@ class Dataset(object):
     def __init__(self, data, seed=None, classes_description=None, *args, **kwargs):
 
         self.main_names = ['request', 'report']
+        self.pipeline_config = OrderedDict()
 
         rs = random.getstate()
         random.seed(seed)
@@ -210,6 +211,12 @@ class Dataset(object):
 
         return information
 
+    def add_config(self, conf):
+        name = conf['name']
+        op_type = conf['op_type']
+        self.pipeline_config[name + '_' + op_type] = conf
+        return self
+
 
 class Watcher(Dataset):
     def __init__(self, data, date, language, dataset_name, seed=None, classes_description=None, root=None,
@@ -217,8 +224,7 @@ class Watcher(Dataset):
 
         super().__init__(data, seed, classes_description, *args, **kwargs)
 
-        self.pipeline_config = OrderedDict()
-        self.date = '{}-{}-{}.txt'.format(date.year, date.month, date.day)
+        self.date = '{}-{}-{}'.format(date.year, date.month, date.day)
 
         if root is None:
             root = '/home/mks/projects/intent_classification_script/'
@@ -226,25 +232,22 @@ class Watcher(Dataset):
         self.conf_dict = join(root, 'data', language, dataset_name, 'log_data')
         self.save_path = join(self.conf_dict, 'data')
 
-    def add_config(self, conf):
-        # name = conf.pop('name')
-        # op_type = conf.pop('op_type')
-        name = conf['name']
-        op_type = conf['op_type']
-        self.pipeline_config[name + '_' + op_type] = conf
-
+    def test_config(self, conf):
+        self.add_config(conf)
         status = self.check_config(self.pipeline_config)
 
         if isinstance(status, bool):
             if status:
                 self.save_data(self.pipeline_config)
+                return False
         elif isinstance(status, str):
-            self.load_data(name)
+            self.load_data(status)
+            return True
         else:
             print(type(status))
             raise ValueError('Incorrect')
 
-        return self
+        # return self
 
     def check_config(self, conf):
         with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r+') as d:
