@@ -233,25 +233,35 @@ class Watcher(Dataset):
         op_type = conf['op_type']
         self.pipeline_config[name + '_' + op_type] = conf
 
-        status, name = self.check_config(self.pipeline_config)
+        status = self.check_config(self.pipeline_config)
 
-        if status:
-            self.save_data(self.pipeline_config)
-        else:
+        if isinstance(status, bool):
+            if status:
+                self.save_data(self.pipeline_config)
+        elif isinstance(status, str):
             self.load_data(name)
+        else:
+            print(type(status))
+            raise ValueError('Incorrect')
 
         return self
 
     def check_config(self, conf):
         with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r+') as d:
             conf_ = json.load(d)
-            for name in conf_.keys():
-                if conf_[name] != conf:
-                    d.close()
-                    return True, name
-                else:
-                    d.close()
-                    return False, name
+
+            if len(list(conf_.keys())) == 0:
+                d.close()
+                return True
+            else:
+                for name in conf_.keys():
+                    if conf_[name] != conf:
+                        d.close()
+                        return True
+                    else:
+                        d.close()
+                        return name
+        return None
 
     def save_data(self, conf):
         names = self.data.keys()

@@ -234,11 +234,10 @@ class PipelineGenerator(object):
                                         'LinearSVC']}
         self.linear_pipe = OrderedDict(Tokenizer=True,
                                        Lemmatizer=True,
-                                       Textconcatenator=True,
+                                       Textсoncatenator=True,
                                        vectorizer='tf-idf',
                                        model='LogisticRegression')
         ###############################################################################################
-
 
     # generation
     def pipeline_gen(self):
@@ -257,7 +256,7 @@ class PipelineGenerator(object):
             for conf in gen:
                 if type_ == 'linear':
                     conf['Tokenizer'] = conf['Lemmatizer']
-                    conf['Textconcatenator'] = conf['Lemmatizer']
+                    conf['Textсoncatenator'] = conf['Lemmatizer']
 
                 pipeline_config = OrderedDict()
                 pipe = []

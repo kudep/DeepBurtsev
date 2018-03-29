@@ -17,23 +17,29 @@ class PipelineManager(object):
         self.root = '/home/mks/projects/intent_classification_script/'
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
         self.date = datetime.datetime.now()
+        pipegen = PipelineGenerator()
+        self.pipeline_generator = pipegen.pipeline_gen()
+        self.start_dataset = None
 
+    def init_dataset(self):
         pure_data = read_dataset(self.file_path, True, True)  # It not default meanings!!!
         self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
                                      seed=self.seed)  # classes_descriptions = {} we can do it
 
+        return self
+
+    def init_dataset_tiny(self):
+        pure_data = read_dataset(self.file_path, True, True)  # It not default meanings!!!
+        self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
+                                     seed=self.seed)  # classes_descriptions = {} we can do it
 
         ######################################################################################
-
         dataset = self.start_dataset.split([0.1, 0.1])
         data = dataset.data['test']
         self.start_dataset = Watcher(data, self.date, self.language, self.dataset_name, seed=self.seed)
-
         ######################################################################################
 
-
-        pipegen = PipelineGenerator()
-        self.pipeline_generator = pipegen.pipeline_gen()
+        return self
 
     def run(self):
         # Start generating pipelines configs
@@ -44,7 +50,10 @@ class PipelineManager(object):
 
             prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
 
+            # initialize new dataset
+            self.init_dataset_tiny()
             d_ = prer_pipeline.run(self.start_dataset)
+
             if not self.hyper_search:
                 model_pipeline = BasePipeline(model_pipe, mode='infer', output='dataset')
                 end_dataset = model_pipeline.run(d_)
