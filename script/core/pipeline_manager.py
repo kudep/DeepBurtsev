@@ -47,8 +47,8 @@ class PipelineManager(object):
 
         # Start generating pipelines configs
         for x in self.pipeline_generator:
-            prer_pipe = x[0][:-2]
-            model_pipe = x[0][-2:]
+            prer_pipe = x[0][:-3]  # with vectorizer
+            model_pipe = x[0][-3:]
             pipe_conf = x[1]
 
             prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')

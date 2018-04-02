@@ -207,6 +207,7 @@ class PrepPipeline(Pipeline):
             have = dataset.test_config(operation.config)
             if not have:
                 dataset_ = operation.transform(dataset)
+                dataset_.save_data()
                 return dataset_
             else:
                 return dataset
@@ -219,6 +220,7 @@ class PrepPipeline(Pipeline):
             have = dataset.test_config(operation.config)
             if not have:
                 dataset_ = operation.transform(dataset)
+                dataset_.save_data()
                 return dataset_
             else:
                 return dataset

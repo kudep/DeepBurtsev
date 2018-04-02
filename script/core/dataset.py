@@ -238,7 +238,7 @@ class Watcher(Dataset):
 
         if isinstance(status, bool):
             if status:
-                self.save_data(self.pipeline_config)
+                # self.save_data(self.pipeline_config)
                 return False
         elif isinstance(status, str):
             self.load_data(status)
@@ -247,7 +247,7 @@ class Watcher(Dataset):
             print(type(status))
             raise ValueError('Incorrect')
 
-        # return self
+        return self
 
     def check_config(self, conf):
         with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r+') as d:
@@ -257,16 +257,18 @@ class Watcher(Dataset):
                 d.close()
                 return True
             else:
+                coincidence = False
                 for name in conf_.keys():
-                    if conf_[name] != conf:
-                        d.close()
-                        return True
-                    else:
+                    if conf_[name] == conf:
+                        coincidence = True
                         d.close()
                         return name
+                if not coincidence:
+                    d.close()
+                    return True
         return None
 
-    def save_data(self, conf):
+    def save_data(self):
         names = self.data.keys()
         dataframes = []
         datanames = []
@@ -286,12 +288,12 @@ class Watcher(Dataset):
         data.to_csv(path)
 
         # write in conf_dict.json
-        if isfile('pipe_conf_dict.json'):
+        if isfile(join(self.conf_dict, 'pipe_conf_dict.json')):
             with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as d:
                 conf_ = json.load(d)
                 d.close()
 
-            conf_[secret_name] = conf
+            conf_[secret_name] = self.pipeline_config
             with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
                 line = json.dumps(conf_)
                 d.write(line)
@@ -299,7 +301,7 @@ class Watcher(Dataset):
 
         else:
             conf_ = dict()
-            conf_[secret_name] = conf
+            conf_[secret_name] = self.pipeline_config
             with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
                 line = json.dumps(conf_)
                 d.write(line)
