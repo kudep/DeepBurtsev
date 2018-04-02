@@ -361,6 +361,8 @@ class PipelineGenerator(object):
             if self.res_type == 'linear':
                 conf['Tokenizer'] = conf['Lemmatizer']
                 conf['Textсoncatenator'] = conf['Lemmatizer']
+                if conf['model'] == 'LGBMClassifier' and conf['vectorizer'] == 'count':
+                    continue
 
             pipeline_config = OrderedDict()
             pipe = []
