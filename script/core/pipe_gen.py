@@ -177,7 +177,7 @@ def genc(pipe, var):
         yield pipe
 
 
-class PipelineGenerator(object):
+class PipelineGeneratorOld(object):
     def __init__(self):
         self.vec_default = {'op_type': 'vectorizer', 'name': 'tf-idf vectorizer',
                             'request_names': ['train', 'valid', 'test'],
@@ -316,3 +316,105 @@ class PipelineGenerator(object):
                         raise TypeError('It wrong dict, attribute of dicts must have a bool type or str,'
                                         'but {} was found.'.format(type(conf[key])))
                 yield (pipe, pipeline_config)
+
+
+class PipelineGenerator(object):
+    def __init__(self, pipe, structure, res_type='neural', vec_default=None, ops_dict=None):
+        self.pipe = pipe
+        self.structure = structure
+        self.res_type = res_type
+
+        if vec_default is None:
+            self.vec_default = {'op_type': 'vectorizer', 'name': 'tf-idf vectorizer',
+                                'request_names': ['train', 'valid', 'test'],
+                                'new_names': ['train_vec', 'valid_vec', 'test_vec']}
+        else:
+            self.vec_default = vec_default
+
+        if ops_dict is None:
+            self.ops_dict = {'Speller': Speller,
+                             'Tokenizer': Tokenizer,
+                             'Lemmatizer': Lemmatizer,
+                             'Textсoncatenator': TextConcat,
+                             'FasttextVectorizer': FasttextVectorizer,
+                             'tf-idf': TfidfVectorizer,
+                             'count': CountVectorizer,
+                             'CNN': CNN,
+                             'RandomForestClassifier': RandomForestClassifier,
+                             'LinearSVC': LinearSVC,
+                             'LogisticRegression': LogisticRegression,
+                             'LGBMClassifier': LGBMClassifier}
+        else:
+            self.ops_dict = ops_dict
+
+    # generation
+    def pipeline_gen(self):
+        gen = genc(self.pipe, self.structure)
+        if self.res_type == 'linear':
+            resulter = GetResultLinear_W
+        elif self.res_type == 'neural':
+            resulter = GetResult
+        else:
+            raise ValueError('Type of last operation must be linear or neural, but {} was found.'.format(self.res_type))
+
+        for conf in gen:
+            if self.res_type == 'linear':
+                conf['Tokenizer'] = conf['Lemmatizer']
+                conf['Textсoncatenator'] = conf['Lemmatizer']
+
+            pipeline_config = OrderedDict()
+            pipe = []
+            for key in conf.keys():
+                if isinstance(conf[key], bool):
+                    path = './configs/ops/' + key + '.json'
+                    config = get_config(path)
+                    pipeline_config[str(key) + '_transformer'] = config
+                    pipe.append((self.ops_dict[key], config))
+                elif isinstance(conf[key], str):
+                    if key == 'vectorizer':
+                        if conf[key] == 'FasttextVectorizer':
+                            config = get_config('./configs/ops/FasttextVectorizer.json')
+                            pipeline_config['FasttextVectorizer_vectorizer'] = config
+                            pipe.append((self.ops_dict[conf[key]], config))
+                        elif conf[key] == 'tf-idf':
+                            config = self.vec_default
+                            config['name'] = 'tf-idf'
+                            pipeline_config['tf-idf_vectorizer'] = config
+                            vec = sktransformer(self.ops_dict[conf[key]], config)
+                            pipe.append((vec,))
+                        elif conf[key] == 'count':
+                            config = self.vec_default
+                            config['name'] = 'count'
+                            pipeline_config['count_vectorizer'] = config
+                            vec = sktransformer(self.ops_dict[conf[key]], config)
+                            pipe.append((vec,))
+                        else:
+                            raise AttributeError('Vectorizer {} is not implemented yet.'.format(conf[key]))
+                    elif key == 'model':
+                        if conf[key] in ['LogisticRegression', 'LGBMClassifier',
+                                         'RandomForestClassifier', 'LinearSVC']:
+                            path = './configs/models/' + conf[key] + '.json'
+                            config = get_config(path)
+                            model = skmodel(self.ops_dict[conf[key]], config)
+                            pipeline_config[conf[key] + '_model'] = config
+                            pipe.append((model,))
+                        elif conf[key] == 'CNN':
+                            path = './configs/models/CNN.json'
+                            config = get_config(path)
+                            WCNN = GetCNN(self.ops_dict[conf[key]], config)
+                            pipeline_config['WCNN_model'] = config
+                            pipe.append((WCNN,))
+                        else:
+                            raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
+                    elif key == 'Resulter':
+                        path = './configs/ops/'+key+'.json'
+                        config = get_config(path)
+                        pipeline_config['Resulter_transformer'] = config
+                        pipe.append((resulter, config))
+
+                    else:
+                        raise ValueError('Unexpected key value {}'.format(key))
+                else:
+                    raise TypeError('It wrong dict, attribute of dicts must have a bool type or str,'
+                                    'but {} was found.'.format(type(conf[key])))
+            yield (pipe, pipeline_config)

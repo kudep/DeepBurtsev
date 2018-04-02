@@ -16,9 +16,9 @@ class PipelineManager(object):
         self.root = '/home/mks/projects/intent_classification_script/'
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
         self.date = datetime.datetime.now()
-        pipegen = PipelineGenerator()
-        self.pipeline_generator = pipegen.pipeline_gen()
         self.start_dataset = None
+
+        self.pipeline_generator = None  # pipegen.pipeline_gen()
 
     def init_dataset(self):
         pure_data = read_dataset(self.file_path, True, True)  # It not default meanings!!!
@@ -40,7 +40,11 @@ class PipelineManager(object):
 
         return self
 
-    def run(self):
+    def run(self, pipe, structure, res_type):
+
+        pipegen = PipelineGenerator(pipe, structure, res_type)
+        self.pipeline_generator = pipegen.pipeline_gen()
+
         # Start generating pipelines configs
         for x in self.pipeline_generator:
             prer_pipe = x[0][:-2]
