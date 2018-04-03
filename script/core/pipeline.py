@@ -205,12 +205,16 @@ class PrepPipeline(Pipeline):
         if op_type == 'transformer':
 
             have = dataset.test_config(operation.config)
-            if not have:
-                dataset_ = operation.transform(dataset)
-                dataset_.save_data()
+            if isinstance(have, bool):
+                if not have:
+                    dataset_ = operation.transform(dataset)
+                    dataset_.save_data()
+                    return dataset_
+            elif isinstance(have, str):
+                dataset_ = dataset.load_data(have)
                 return dataset_
             else:
-                return dataset
+                raise AttributeError('Error with dataset loading.')
 
         elif op_type == 'vectorizer':
             # TODO i don't like it
@@ -218,12 +222,16 @@ class PrepPipeline(Pipeline):
                 dataset = dataset.split()
 
             have = dataset.test_config(operation.config)
-            if not have:
-                dataset_ = operation.transform(dataset)
-                dataset_.save_data()
+            if isinstance(have, bool):
+                if not have:
+                    dataset_ = operation.transform(dataset)
+                    dataset_.save_data()
+                    return dataset_
+            elif isinstance(have, str):
+                dataset_ = dataset.load_data(have)
                 return dataset_
             else:
-                return dataset
+                raise AttributeError('Error with dataset loading.')
 
         elif op_type == 'model':
             if self.mode == 'infer':

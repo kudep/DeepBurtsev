@@ -122,12 +122,14 @@ class Dataset(object):
 
         return self
 
-    def iter_batch(self, batch_size: int, data_type: str = 'base', only_request: bool = False) -> Generator:
+    def iter_batch(self, batch_size: int, data_type: str = 'base', shuffle: bool = True,
+                   only_request: bool = False) -> Generator:
         """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
          batches
         Args:
             batch_size (int): number of samples in batch
             data_type (str): can be either 'train', 'test', or 'valid'
+            shuffle (bool): shuffle trigger
             only_request (bool): trigger that told what data will be returned
         Returns:
             batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
@@ -138,7 +140,8 @@ class Dataset(object):
 
         rs = random.getstate()
         random.setstate(self.random_state)
-        random.shuffle(order)
+        if shuffle:
+            random.shuffle(order)
         self.random_state = random.getstate()
         random.setstate(rs)
 
@@ -241,8 +244,8 @@ class Watcher(Dataset):
                 # self.save_data(self.pipeline_config)
                 return False
         elif isinstance(status, str):
-            self.load_data(status)
-            return True
+            # self.load_data(status)
+            return status
         else:
             print(type(status))
             raise ValueError('Incorrect')

@@ -445,7 +445,7 @@ class CNN(object):
         elif (type(data) is list) or isinstance(data, pd.Series):
             if len(data) > self.opt['batch_size']:
                 batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
-                                               data_type=name)
+                                               data_type=name, shuffle=False)
                 predictions = []
                 for batch in batch_gen:
                     ##############################################
@@ -459,6 +459,9 @@ class CNN(object):
             else:
                 preds = self.infer_on_batch(data)
                 preds = np.array(preds)
+
+            # preds = self.infer_on_batch(data)
+            # preds = np.array(preds)
         else:
             raise ValueError("Not understand data type for inference")
         return preds
