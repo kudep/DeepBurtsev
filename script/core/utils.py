@@ -818,3 +818,25 @@ def read_dataset(filepath, duplicates=False, clean=True):
     new_data = new_data.reset_index()
 
     return new_data
+
+
+def read_en_dataset(path):
+    with open(path, 'r') as data:
+        dataset = json.load(data)
+        data.close()
+
+    qestions = []
+    classes_names = []
+    for x in dataset['sentences']:
+        qestions.append(x['text'])
+        classes_names.append(x['intent'])
+
+    categs = list(set(classes_names))
+    classes = [categs.index(x) + 1 for x in classes_names]
+
+    category_description = dict()
+    for name in classes_names:
+        category_description[name] = categs.index(name) + 1
+
+    df = pd.DataFrame({'request': qestions, 'report': classes, 'names': classes_names})
+    return df, category_description
