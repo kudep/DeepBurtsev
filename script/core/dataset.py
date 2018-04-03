@@ -320,13 +320,22 @@ class Watcher(Dataset):
 
         request, report = self.main_names
 
+        with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as f:
+            conf = json.load(f)
+            f.close()
+
+        config = conf[name]
+
         keys = list(data['Unnamed: 0'].unique())
         data_keys = list(self.data.keys())
+        sam = lambda s: [x[1:-1] for x in s[1:-1].split(', ')]
 
         for key in keys:
             if key not in data_keys:
                 self.data[key] = {}
-            self.data[key][request] = data[data['Unnamed: 0'] == key][request]
+
+            if 'Tokenizator_transformer' in config.keys() and 'Text Concatenator_transformer' not in config.keys():
+                self.data[key][request] = data[data['Unnamed: 0'] == key][request].apply(sam)
             self.data[key][report] = data[data['Unnamed: 0'] == key][report]
 
         for key in data_keys:
