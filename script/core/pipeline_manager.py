@@ -3,6 +3,7 @@ from .pipeline import Pipeline, PrepPipeline
 from .dataset import Watcher
 from .utils import *
 from .transformers import *
+from time import time
 
 
 class PipelineManager(object):
@@ -15,9 +16,10 @@ class PipelineManager(object):
         self.file_name = file_name
         self.root = '/home/mks/projects/intent_classification_script/'
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
+        self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
         self.date = datetime.datetime.now()
         self.start_dataset = None
-
+        self.time = dict()
         self.pipeline_generator = None  # pipegen.pipeline_gen()
 
     def init_dataset(self):
@@ -51,16 +53,39 @@ class PipelineManager(object):
             model_pipe = x[0][-3:]
             pipe_conf = x[1]
 
+            # time meshure
+            model_name = list(pipe_conf.keys())[-2].split('_')[0]
+            pipe_name = '___'.join(list(pipe_conf.keys()))
+            self.time[model_name] = dict()
+
+            self.time[model_name][pipe_name] = dict()
+
+            self.time[model_name][pipe_name]['start'] = time()
+
             prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
 
             # initialize new dataset
             self.init_dataset_tiny()
+            self.time[model_name][pipe_name]['dataset_init'] = time() - self.time[model_name][pipe_name]['start']
             d_ = prer_pipeline.run(self.start_dataset)
+            self.time[model_name][pipe_name]['end_of_preprocess'] = time() - \
+                                                                    self.time[model_name][pipe_name]['dataset_init']
 
             if not self.hyper_search:
+                self.time[model_name][pipe_name]['hyper'] = False
+                self.time[model_name][pipe_name]['start_model_pipe'] = time()
+
                 model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
                 end_dataset = model_pipeline.run(d_)
+
+                self.time[model_name][pipe_name]['end_model_pipe'] = \
+                    time() - self.time[model_name][pipe_name]['start_model_pipe']
+
+                self.time[model_name][pipe_name]['full_time'] = time() - self.time[model_name][pipe_name]['start']
             else:
+                self.time[model_name][pipe_name]['hyper'] = True
+                self.time[model_name][pipe_name]['start_model_pipe'] = time()
+
                 model_name = list(pipe_conf.keys())[-1].split('_')[0] + '_params.json'
                 model_conf = pipe_conf[list(pipe_conf.keys())[-1]]
                 path_to_model_conf = join(self.root, 'configs', 'models', model_name)
@@ -80,6 +105,17 @@ class PipelineManager(object):
                     model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
                     end_dataset = model_pipeline.run(d_)
 
+                    self.time[model_name][pipe_name]['end_model_pipe'] = \
+                        time() - self.time[model_name][pipe_name]['start_model_pipe']
+
+                    self.time[model_name][pipe_name]['full_time'] = time() - self.time[model_name][pipe_name]['start']
+
         results_summarization(self.date, self.language, self.dataset_name)
+        self.time_log()
 
         return None
+
+    def time_log(self):
+        with open(self.time_log_file, 'w') as log:
+            json.dump(self.time, log)
+        return self
