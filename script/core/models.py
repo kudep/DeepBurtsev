@@ -263,32 +263,47 @@ class BaseModel(object):
                                      'or create new pipeline')
         return self
 
-    def fit(self, dataset):
+    def fit(self, dataset, train_name=None):
         self._validate_names(dataset)
         self.init_model(dataset)
 
-        for name in self.fit_names:
+        if train_name is None:
+            for name in self.fit_names:
+                if hasattr(self.model, 'train'):
+                    self.model.train(dataset, name)
+                if hasattr(self.model, 'fit'):
+                    self.model.fit(dataset, name)
+        else:
             if hasattr(self.model, 'train'):
-                self.model.train(dataset, name)
+                self.model.train(dataset, train_name)
             if hasattr(self.model, 'fit'):
-                self.model.fit(dataset, name)
+                self.model.fit(dataset, train_name)
 
         self.trained = True
         return self
 
-    def predict(self, dataset):
+    def predict(self, dataset, predict_name=None, new_name=None):
         self._validate_names(dataset)
-        if not self.model_init:
-            self.init_model(dataset)
-        elif not self.trained:
-            raise TypeError('Model is not trained yet.')
+
+        if predict_name is None and new_name is None:
+            if not self.model_init:
+                self.init_model(dataset)
+            elif not self.trained:
+                raise TypeError('Model is not trained yet.')
+            else:
+                for name, new_name in zip(self.request_names, self.new_names):
+                    dataset.data[new_name] = self.model.predict(dataset, name)
         else:
-            for name, new_name in zip(self.request_names, self.new_names):
-                dataset.data[new_name] = self.model.predict(dataset, name)
+            if not self.model_init:
+                self.init_model(dataset)
+            elif not self.trained:
+                raise TypeError('Model is not trained yet.')
+            else:
+                dataset.data[new_name] = self.model.predict(dataset, predict_name)
 
         return dataset
 
-    def predict_data(self, dataset):
+    def predict_data(self, dataset, predict_name=None, new_name=None):
         self._validate_names(dataset)
         self.init_model(dataset)
 
@@ -296,8 +311,11 @@ class BaseModel(object):
             raise TypeError('Model is not trained yet.')
 
         prediction = {}
-        for name, new_name in zip(self.request_names, self.new_names):
-            prediction[new_name] = self.model.predict(dataset, name)
+        if predict_name is None and new_name is None:
+            for name, new_name in zip(self.request_names, self.new_names):
+                prediction[new_name] = self.model.predict(dataset, name)
+        else:
+            prediction[new_name] = self.model.predict(dataset, predict_name)
 
         return prediction
 
