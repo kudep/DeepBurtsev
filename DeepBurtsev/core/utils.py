@@ -321,7 +321,7 @@ def get_table(dang, savepath, filename='report', ext='pdf'):
 
     # create pdf table
     env = Environment(loader=FileSystemLoader('/home/mks/projects/intent_classification_script/'))
-    template = env.get_template("./script/core/template.html")
+    template = env.get_template("./DeepBurtsev/core/template.html")
     template_vars = {"title": "Results ",
                      "national_pivot_table": table.to_html()}
 

@@ -1,6 +1,6 @@
 import sys
 from collections import OrderedDict
-from script.core.pipeline_manager import PipelineManager
+from DeepBurtsev.core.pipeline_manager import PipelineManager
 
 
 language = sys.argv[1]

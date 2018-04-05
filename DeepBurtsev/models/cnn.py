@@ -35,8 +35,8 @@ from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
-from script.core import metrics as metrics_file
-from script.core.utils import log_metrics
+from DeepBurtsev.core import metrics as metrics_file
+from DeepBurtsev.core.utils import log_metrics
 
 
 config = tf.ConfigProto()

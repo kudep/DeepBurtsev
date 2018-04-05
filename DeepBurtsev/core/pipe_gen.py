@@ -1,8 +1,8 @@
 from collections import OrderedDict
-from script.core.utils import ConfGen
-from script.core.transformers import *
-from script.core.models import *
-from script.models.cnn import *
+from DeepBurtsev.core.utils import ConfGen
+from DeepBurtsev.core.transformers import *
+from DeepBurtsev.core.models import *
+from DeepBurtsev.models.cnn import *
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
