@@ -210,6 +210,8 @@ class PrepPipeline(Pipeline):
                     dataset_ = operation.transform(dataset)
                     dataset_.save_data()
                     return dataset_
+                else:
+                    raise AttributeError('Error!!!!!!!!!!!')
             elif isinstance(have, str):
                 dataset_ = dataset.load_data(have)
                 return dataset_
@@ -227,6 +229,8 @@ class PrepPipeline(Pipeline):
                     dataset_ = operation.transform(dataset)
                     dataset_.save_data()
                     return dataset_
+                else:
+                    raise AttributeError('Error!!!!!!!!!!!')
             elif isinstance(have, str):
                 dataset_ = dataset.load_data(have)
                 return dataset_

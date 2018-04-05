@@ -1,6 +1,6 @@
 {
   "op_type": "transformer",
-  "name": "Text Concatenator",
+  "name": "TextConcatenator",
   "request_names": ["base"],
   "new_names": ["base"]
 }

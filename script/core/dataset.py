@@ -287,7 +287,7 @@ class Watcher(Dataset):
         if not os.path.isdir(self.save_path):
             os.makedirs(self.save_path)
 
-        path = join(self.save_path, secret_name)  # + '.csv'
+        path = join(self.save_path, secret_name + '.csv')  # + '.csv'
         data.to_csv(path)
 
         # write in conf_dict.json
@@ -313,7 +313,7 @@ class Watcher(Dataset):
         return self
 
     def load_data(self, name):
-        filepath = join(self.save_path, name)
+        filepath = join(self.save_path, name + '.csv')
         file = open(filepath, 'r')
         data = pd.read_csv(file)
         file.close()
@@ -334,8 +334,11 @@ class Watcher(Dataset):
             if key not in data_keys:
                 self.data[key] = {}
 
-            if 'Tokenizator_transformer' in config.keys() and 'Text Concatenator_transformer' not in config.keys():
+            # TODO dell if it not need
+            if 'Tokenizator_transformer' in config.keys() and 'TextConcatenator_transformer' not in config.keys():
                 self.data[key][request] = data[data['Unnamed: 0'] == key][request].apply(sam)
+            else:
+                self.data[key][request] = data[data['Unnamed: 0'] == key][request]
             self.data[key][report] = data[data['Unnamed: 0'] == key][report]
 
         for key in data_keys:

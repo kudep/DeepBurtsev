@@ -319,10 +319,12 @@ class PipelineGeneratorOld(object):
 
 
 class PipelineGenerator(object):
-    def __init__(self, pipe, structure, res_type='neural', vec_default=None, ops_dict=None):
+    def __init__(self, pipe, structure, root, dataset_name, res_type='neural', vec_default=None, ops_dict=None):
         self.pipe = pipe
         self.structure = structure
         self.res_type = res_type
+        self.root = root
+        self.dataset_name = dataset_name
 
         if vec_default is None:
             self.vec_default = {'op_type': 'vectorizer', 'name': 'tf-idf vectorizer',
@@ -368,14 +370,22 @@ class PipelineGenerator(object):
             pipe = []
             for key in conf.keys():
                 if isinstance(conf[key], bool):
-                    path = './configs/ops/' + key + '.json'
-                    config = get_config(path)
-                    pipeline_config[str(key) + '_transformer'] = config
-                    pipe.append((self.ops_dict[key], config))
+                    if conf[key]:
+                        path = './configs/ops/' + key + '.json'
+                        config = get_config(path)
+                        pipeline_config[str(key) + '_transformer'] = config
+                        pipe.append((self.ops_dict[key], config))
+                    else:
+                        pass
                 elif isinstance(conf[key], str):
                     if key == 'vectorizer':
                         if conf[key] == 'FasttextVectorizer':
                             config = get_config('./configs/ops/FasttextVectorizer.json')
+
+                            # TODO fix not only bin dependencies
+                            names = os.listdir(join(self.root, 'embeddings'))
+                            config['path_to_model'] = join(self.root, 'embeddings', names[0])
+
                             pipeline_config['FasttextVectorizer_vectorizer'] = config
                             pipe.append((self.ops_dict[conf[key]], config))
                         elif conf[key] == 'tf-idf':
@@ -403,6 +413,9 @@ class PipelineGenerator(object):
                         elif conf[key] == 'CNN':
                             path = './configs/models/CNN.json'
                             config = get_config(path)
+
+                            config['checkpoint_path'] = join(self.root, self.dataset_name, 'checkpoints', 'CNN')
+
                             WCNN = GetCNN(self.ops_dict[conf[key]], config)
                             pipeline_config['WCNN_model'] = config
                             pipe.append((WCNN,))

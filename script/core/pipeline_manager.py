@@ -17,6 +17,7 @@ class PipelineManager(object):
         self.root = '/home/mks/projects/intent_classification_script/'
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
         self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
+        self.data_root = join(self.root, 'data', self.language)
         self.date = datetime.datetime.now()
         self.start_dataset = None
         self.time = dict()
@@ -44,13 +45,13 @@ class PipelineManager(object):
 
     def run(self, pipe, structure, res_type):
 
-        pipegen = PipelineGenerator(pipe, structure, res_type)
+        pipegen = PipelineGenerator(pipe, structure, self.data_root, self.dataset_name, res_type)
         self.pipeline_generator = pipegen.pipeline_gen()
 
         # Start generating pipelines configs
         for x in self.pipeline_generator:
-            prer_pipe = x[0][:-3]  # with vectorizer
-            model_pipe = x[0][-3:]
+            prer_pipe = x[0][:-2]  # with vectorizer
+            model_pipe = x[0][-2:]
             pipe_conf = x[1]
 
             # time meshure
@@ -62,12 +63,16 @@ class PipelineManager(object):
 
             self.time[model_name][pipe_name]['start'] = time()
 
-            prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
+            # prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
+            prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
 
             # initialize new dataset
-            self.init_dataset_tiny()
+            # self.init_dataset_tiny()
+            self.init_dataset()
+
             self.time[model_name][pipe_name]['dataset_init'] = time() - self.time[model_name][pipe_name]['start']
             d_ = prer_pipeline.run(self.start_dataset)
+
             self.time[model_name][pipe_name]['end_of_preprocess'] = time() - \
                                                                     self.time[model_name][pipe_name]['dataset_init']
 
