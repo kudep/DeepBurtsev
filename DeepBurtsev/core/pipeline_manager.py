@@ -19,7 +19,7 @@ class PipelineManager(object):
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
         self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
         self.data_root = join(self.root, 'data', self.language)
-        self.date = datetime.datetime.now()
+        self.date = datetime.now()
         self.start_dataset = None
         self.time = dict()
         self.pipeline_generator = None  # pipegen.pipeline_gen()

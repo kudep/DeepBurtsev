@@ -10,7 +10,7 @@ import json
 import requests
 import tarfile
 import itertools
-import datetime
+from datetime import datetime
 import matplotlib.pyplot as plt
 
 from copy import deepcopy
@@ -401,12 +401,15 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
-def plot_i(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None:
-        path = './results/logs/'
-
-    if date is None:
-        date = datetime.datetime.now()
+def plot_i(date=None, path=None):
+    if path is None and date is None:
+        date = datetime.now()
+        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    elif path is None and date is not None:
+        log = join('./results/russian/vkusvill/', date)
+    elif date is None and path is not None:
+        date = datetime.now()
         log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
     else:
         log = join(path, date + '.txt')
@@ -414,7 +417,7 @@ def plot_i(date=None, path=None, savepath='./results/russian/images/'):
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info)
+    table, best_model = get_table(info, path)
 
     # ploting results
     model_names = tuple(table.index)
@@ -430,19 +433,23 @@ def plot_i(date=None, path=None, savepath='./results/russian/images/'):
 
 
 def plot_j(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None:
-        path = './results/logs/'
-
-    if date is None:
-        date = datetime.datetime.now()
+    if path is None and date is None:
+        date = datetime.now()
+        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    elif path is None and date is not None:
+        log = join('./results/russian/vkusvill/', date)
+    elif date is None and path is not None:
+        date = datetime.now()
         log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
     else:
         log = join(path, date + '.txt')
+
     # reading and scrabbing data
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info)
+    table, best_model = get_table(info, savepath=path)
 
     # ploting results
     model_names = tuple(table.index)
@@ -463,19 +470,23 @@ def plot_j(date=None, path=None, savepath='./results/russian/images/'):
 
 
 def plot_k(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None:
-        path = './results/logs/'
-
-    if date is None:
-        date = datetime.datetime.now()
+    if path is None and date is None:
+        date = datetime.now()
+        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
+        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+    elif path is None and date is not None:
+        log = join('./results/russian/vkusvill/', date)
+    elif date is None and path is not None:
+        date = datetime.now()
         log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
     else:
         log = join(path, date + '.txt')
+
     # reading and scrabbing data
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info)
+    table, best_model = get_table(info, path)
 
     # ploting results
     model_names = tuple(table.index)
@@ -495,7 +506,7 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
     path = join('./results/', language, dataset_name)
 
     if date is None:
-        date = datetime.datetime.now()
+        date = datetime.now()
         date_path = join(path, '{}-{}-{}'.format(date.year, date.month, date.day))
         if not isdir(date_path):
             os.makedirs(date_path)
