@@ -4,7 +4,7 @@
   "fit_names": ["train_vec"],
   "new_names": ["predicted_test"],
   "predict_names": ["test_vec"],
-  "checkpoint_path": "./data/russian/vkusvill/checkpoints/test/CNN/",
+  "checkpoint_path": "./data/russian/vkusvill/checkpoints/CNN/",
   "kernel_sizes_cnn": "1 2 3",
   "filters_cnn": 256,
   "embedding_size": 300,

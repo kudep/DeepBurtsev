@@ -1,5 +1,6 @@
 from .pipe_gen import PipelineGenerator
-from .pipeline import Pipeline, PrepPipeline
+from .pipeline import Pipeline
+# from .pipeline import PrepPipeline
 from .dataset import Watcher
 from .utils import *
 from .transformers import *
@@ -24,16 +25,30 @@ class PipelineManager(object):
         self.pipeline_generator = None  # pipegen.pipeline_gen()
 
     def init_dataset(self):
-        pure_data = read_dataset(self.file_path, True, True)  # It not default meanings!!!
-        self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                     seed=self.seed)  # classes_descriptions = {} we can do it
+        if self.language == 'russian':
+            pure_data = read_dataset(self.file_path,  True, True)
+            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
+                                         seed=self.seed)
+        elif self.language == 'english':
+            pure_data, desc = read_en_dataset(self.file_path)
+            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
+                                         seed=self.seed, classes_description=desc)
+        else:
+            raise NotImplementedError("Language {} is not implemented yet.".format(self.language))
 
         return self
 
     def init_dataset_tiny(self):
-        pure_data = read_dataset(self.file_path, True, True)  # It not default meanings!!!
-        self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                     seed=self.seed)  # classes_descriptions = {} we can do it
+        if self.language == 'russian':
+            pure_data = read_dataset(self.file_path,  True, True)
+            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
+                                         seed=self.seed)
+        elif self.language == 'english':
+            pure_data, desc = read_en_dataset(self.file_path)
+            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
+                                         seed=self.seed, classes_description=desc)
+        else:
+            raise NotImplementedError("Language {} is not implemented yet.".format(self.language))
 
         ######################################################################################
         dataset = self.start_dataset.split([0.1, 0.1])
@@ -50,7 +65,7 @@ class PipelineManager(object):
 
         # Start generating pipelines configs
         for x in self.pipeline_generator:
-            prer_pipe = x[0][:-2]  # with vectorizer
+            prer_pipe = x[0][:-2]
             model_pipe = x[0][-2:]
             pipe_conf = x[1]
 

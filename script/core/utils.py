@@ -521,7 +521,10 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
 
         log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
                    '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+
         if not isfile(log):
+            # with open(log, 'w') as log_file:
+            #     log_file.close()
             raise FileExistsError('File with results {} is not exist'.format('{}-{}-{}.txt'.format(date.year,
                                                                                                    date.month,
                                                                                                    date.day)))
