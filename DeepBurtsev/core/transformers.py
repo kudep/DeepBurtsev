@@ -335,7 +335,7 @@ class GetResult(BaseTransformer):
         date = dataset.date
 
         # TODO fix dependencies
-        logging(results, conf, date, language='english', dataset_name='Chatbot')
+        logging(results, conf, date, language='english', dataset_name='snips')
 
         return dataset
 
@@ -392,6 +392,6 @@ class GetResultLinear_W(BaseTransformer):
         date = dataset.date
 
         # TODO fix dependencies
-        logging(results, conf, date, language='english', dataset_name='Chatbot')
+        logging(results, conf, date, language='english', dataset_name='snips')
 
         return dataset

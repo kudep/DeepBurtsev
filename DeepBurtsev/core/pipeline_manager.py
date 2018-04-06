@@ -30,7 +30,9 @@ class PipelineManager(object):
             self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
                                          seed=self.seed)
         elif self.language == 'english':
-            pure_data, desc = read_en_dataset(self.file_path)
+            #################################################
+            pure_data, desc = read_en_dataset(self.file_path, snips=True)
+            #################################################
             self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
                                          seed=self.seed, classes_description=desc)
         else:

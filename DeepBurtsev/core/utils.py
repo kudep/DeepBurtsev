@@ -841,23 +841,54 @@ def read_dataset(filepath, duplicates=False, clean=True):
     return new_data
 
 
-def read_en_dataset(path):
-    with open(path, 'r') as data:
-        dataset = json.load(data)
-        data.close()
+def read_en_dataset(path, snips=False):
 
-    qestions = []
-    classes_names = []
-    for x in dataset['sentences']:
-        qestions.append(x['text'])
-        classes_names.append(x['intent'])
+    if not snips:
+        with open(path, 'r') as data:
+            dataset = json.load(data)
+            data.close()
 
-    categs = list(set(classes_names))
-    classes = [categs.index(x) + 1 for x in classes_names]
+        qestions = []
+        classes_names = []
+        for x in dataset['sentences']:
+            qestions.append(x['text'])
+            classes_names.append(x['intent'])
+
+        categs = list(set(classes_names))
+        classes = [categs.index(x) + 1 for x in classes_names]
+
+        category_description = dict()
+        for name in classes_names:
+            category_description[name] = categs.index(name) + 1
+
+        df = pd.DataFrame({'request': qestions, 'report': classes, 'names': classes_names})
+    else:
+        dataset = pd.read_csv(path)
+
+        classes_names = list(dataset['intents'].unique())
+        classes = [classes_names.index(x) + 1 for x in dataset['intents']]
+
+        category_description = dict()
+        for name in dataset['intents']:
+            category_description[name] = classes_names.index(name) + 1
+
+        df = pd.DataFrame({'request': dataset['text'], 'report': classes, 'names': dataset['intents']})
+        del dataset
+
+    return df, category_description
+
+
+def read_snips_dataset(path):
+    dataset = pd.read_csv(path)
+
+    classes_names = list(dataset['intents'].unique())
+    classes = [classes_names.index(x) + 1 for x in dataset['intents']]
 
     category_description = dict()
-    for name in classes_names:
-        category_description[name] = categs.index(name) + 1
+    for name in dataset['intents']:
+        category_description[name] = classes_names.index(name) + 1
 
-    df = pd.DataFrame({'request': qestions, 'report': classes, 'names': classes_names})
+    df = pd.DataFrame({'request': dataset['text'], 'report': classes, 'names': dataset['intents']})
+    del dataset
+
     return df, category_description
