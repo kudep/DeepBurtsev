@@ -457,8 +457,24 @@ class CNN(object):
 
                 preds = predictions
             else:
-                preds = self.infer_on_batch(data)
-                preds = np.array(preds)
+
+                # TODO fix big batch
+                batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
+                                               data_type=name, shuffle=False)
+                predictions = []
+                for batch in batch_gen:
+                    ##############################################
+                    pred_batch = self.batch_reformat(batch)
+                    ##############################################
+                    preds = self.infer_on_batch(pred_batch[0])
+                    preds = np.array(preds)
+                    predictions.append(preds)
+
+                preds = predictions
+
+
+                # preds = self.infer_on_batch(data)
+                # preds = np.array(preds)
 
             # preds = self.infer_on_batch(data)
             # preds = np.array(preds)

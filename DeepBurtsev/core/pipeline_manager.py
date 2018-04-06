@@ -136,6 +136,9 @@ class PipelineManager(object):
         return None
 
     def time_log(self):
+        if not isdir(join(self.root, 'data', self.language, self.dataset_name, 'log_data')):
+            os.makedirs(join(self.root, 'data', self.language, self.dataset_name, 'log_data'))
+
         with open(self.time_log_file, 'w') as log:
             json.dump(self.time, log)
         return self

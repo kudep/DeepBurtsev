@@ -333,7 +333,9 @@ class GetResult(BaseTransformer):
 
         conf = dataset.pipeline_config
         date = dataset.date
-        logging(results, conf, date)
+
+        # TODO fix dependencies
+        logging(results, conf, date, language='english', dataset_name='AskUbuntu')
 
         return dataset
 
@@ -388,6 +390,8 @@ class GetResultLinear_W(BaseTransformer):
 
         conf = dataset.pipeline_config
         date = dataset.date
-        logging(results, conf, date)
+
+        # TODO fix dependencies
+        logging(results, conf, date, language='english', dataset_name='AskUbuntu')
 
         return dataset

@@ -3,7 +3,7 @@
   "name": "fasttext",
   "request_names": ["train", "valid", "test"],
   "new_names": ["train_vec", "valid_vec", "test_vec"],
-  "path_to_model": "./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin",
-  "dimension": 300,
+  "path_to_model": "./data/english/embeddings/reddit_fasttext_model.bin",
+  "dimension": 100,
   "file_type": "bin"
 }

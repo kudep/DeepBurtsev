@@ -39,10 +39,11 @@ neural_pipe = OrderedDict(Tokenizer=True,
 ###############################################################################################
 linear_struct = {'Lemmatizer': [False, True],
                  'vectorizer': ['tf-idf', 'count'],
-                 'model': ['LogisticRegression']}
-                           # 'RandomForestClassifier',
-                           # 'LGBMClassifier',
-                           # 'LinearSVC']}
+                 'model': ['LogisticRegression',
+                           'RandomForestClassifier',
+                           'LGBMClassifier',
+                           'LinearSVC']}
+
 linear_pipe = OrderedDict(Tokenizer=True,
                           Lemmatizer=True,
                           Textсoncatenator=True,

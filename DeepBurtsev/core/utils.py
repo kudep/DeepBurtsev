@@ -232,11 +232,18 @@ def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
 
     file = name + '.txt'
 
-    with open(join(path, file), 'a') as f:
-        line = json.dumps(log)
-        f.write(line)
-        f.write('\n')
-        f.close()
+    if not isfile(join(path, file)):
+        with open(join(path, file), 'w') as f:
+            line = json.dumps(log)
+            f.write(line)
+            f.write('\n')
+            f.close()
+    else:
+        with open(join(path, file), 'a') as f:
+            line = json.dumps(log)
+            f.write(line)
+            f.write('\n')
+            f.close()
 
     return None
 
