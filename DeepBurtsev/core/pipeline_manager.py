@@ -108,9 +108,9 @@ class PipelineManager(object):
                 self.time[model_name][pipe_name]['hyper'] = True
                 self.time[model_name][pipe_name]['start_model_pipe'] = time()
 
-                model_name = list(pipe_conf.keys())[-2].split('_')[0] + '_params.json'
+                model_conf_name = list(pipe_conf.keys())[-2].split('_')[0] + '_params.json'
                 model_conf = pipe_conf[list(pipe_conf.keys())[-2]]
-                path_to_model_conf = join(self.root, 'configs', 'models', model_name)
+                path_to_model_conf = join(self.root, 'configs', 'models', model_conf_name)
 
                 if isfile(path_to_model_conf):
                     with open(path_to_model_conf, 'r') as file:
@@ -124,6 +124,10 @@ class PipelineManager(object):
                 params_generator = ConfGen(model_conf, search_conf, seed=self.seed)
                 for params in params_generator.generator(self.N):
                     # TODO refactor
+                    for u in params.keys():
+                        if isinstance(params[u], np.int64):
+                            params[u] = int(params[u])
+
                     model_op = model_pipe[0][0]
                     mod = (model_op, params)
                     model_pipe[0] = mod

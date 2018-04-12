@@ -334,6 +334,11 @@ class GetResult(BaseTransformer):
         conf = dataset.pipeline_config
         date = dataset.date
 
+        names_ = list(conf.keys())
+        for u in conf[names_[-2]].keys():
+            if isinstance(conf[names_[-2]][u], np.int64):
+                conf[names_[-2]][u] = int(conf[names_[-2]][u])
+
         # TODO fix dependencies
         logging(results, conf, date, language='russian', dataset_name='vkusvill')
 
@@ -390,6 +395,11 @@ class GetResultLinear_W(BaseTransformer):
 
         conf = dataset.pipeline_config
         date = dataset.date
+
+        names_ = list(conf.keys())
+        for u in conf[names_[-2]].keys():
+            if isinstance(conf[names_[-2]][u], np.int64):
+                conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
         # TODO fix dependencies
         logging(results, conf, date, language='russian', dataset_name='vkusvill')

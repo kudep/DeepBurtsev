@@ -1,4 +1,5 @@
 {
+  "solver": "liblinear",
   "op_type": "model",
   "name": "LinearSVC",
   "fit_names": ["train_vec"],

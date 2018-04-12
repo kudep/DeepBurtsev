@@ -1,8 +1,6 @@
 {
-  "n_estimators": {"range": [10, 20]},
+  "n_estimators": [10, 12, 14, 16 ,18, 20],
   "criterion": ["gini", "entropy"],
   "max_features": ["auto", "sqrt", "log2", null],
-  "bootstrap": {"bool": true},
-  "oob_score": {"bool": true},
-  "warm_start": {"bool": true}
+  "oob_score": {"bool": true}
 }
