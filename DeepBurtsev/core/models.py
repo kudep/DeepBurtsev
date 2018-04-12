@@ -209,7 +209,8 @@ class BaseModel(object):
         self.trained = False
         self.model_init = False
         self._validate_model(model)
-        self.model = model
+        self.pure_model = model
+        self.model = None
 
         # named spaces
         self.new_names = config['new_names']
@@ -250,14 +251,14 @@ class BaseModel(object):
 
     def init_model(self, dataset):
         if not self.model_init:
-            self.model = self.model(self.config)
+            self.model = self.pure_model(self.config)
             self.model_init = True
         else:
             # TODO it strange!
             if hasattr(self.model, 'reset'):
                 self.save()
-                self.model.reset()
-                self.model = self.model(self.config)
+                # self.model.reset()
+                self.model = self.pure_model(self.config)
             else:
                 raise AttributeError('Model was already initialized. Add reset method in your model'
                                      'or create new pipeline')
