@@ -97,9 +97,9 @@ class Speller(BaseTransformer):
 
         self.conf_path = self.config['path']
         with open(self.conf_path) as config_file:
-            self.config = json.load(config_file)
+            self.speller_config = json.load(config_file)
 
-        self.speller = build_model_from_config(self.config)
+        self.speller = build_model_from_config(self.speller_config)
 
     def _transform(self, dataset):
         print('[ Speller start working ... ]')
