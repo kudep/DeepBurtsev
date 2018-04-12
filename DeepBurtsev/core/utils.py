@@ -892,3 +892,14 @@ def read_snips_dataset(path):
     del dataset
 
     return df, category_description
+
+
+def read_sber_dataset(path):
+    dataset = pd.read_csv(path)
+
+    df = pd.DataFrame({'request': dataset['0'], 'report': dataset['1']})
+    df = df.dropna()
+    df = df.reset_index()
+    del dataset
+
+    return df

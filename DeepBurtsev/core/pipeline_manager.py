@@ -27,6 +27,7 @@ class PipelineManager(object):
     def init_dataset(self):
         if self.language == 'russian':
             pure_data = read_dataset(self.file_path,  True, True)
+            # pure_data = read_sber_dataset(self.file_path)
             self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
                                          seed=self.seed)
         elif self.language == 'english':
