@@ -1,0 +1,80 @@
+{
+  "kernel_sizes_cnn": {
+    "range": [
+      1,
+      5
+    ],
+    "discrete": true,
+    "n_samples": 3,
+    "increasing": true
+  },
+  "filters_cnn": {
+    "range": [
+      32,
+      512
+    ],
+    "discrete": true
+  },
+  "confident_threshold": {
+    "range": [
+      0.4,
+      0.6
+    ]
+  },
+  "lear_rate": {
+    "range": [
+      1e-2,
+      10
+    ],
+    "scale": "log"
+  },
+  "lear_rate_decay": {
+    "range": [
+      1e-1,
+      9e-1
+    ]
+  },
+  "text_size": [
+    25,
+    30,
+    40,
+    50,
+    80,
+    100,
+    200
+  ],
+  "coef_reg_cnn": {
+    "range": [
+      1e-5,
+      1e-3
+    ],
+    "scale": "log"
+  },
+  "coef_reg_den": {
+    "range": [
+      1e-5,
+      1e-3
+    ],
+    "scale": "log"
+  },
+  "dropout_rate": {
+    "range": [
+      1e-1,
+      7e-1
+    ]
+  },
+  "dense_size": {
+    "range": [
+      32,
+      128
+    ],
+    "discrete": true
+  },
+  "batch_size": {
+    "range": [
+      64,
+      128
+    ],
+    "discrete": true
+  }
+}

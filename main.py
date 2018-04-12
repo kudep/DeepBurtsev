@@ -52,8 +52,8 @@ linear_pipe = OrderedDict(Tokenizer=True,
                           Resulter='Resulter')
 ###############################################################################################
 
-Manager = PipelineManager(language, dataset_name, file_name)
-Manager.run(linear_pipe, linear_struct, 'linear')
+Manager = PipelineManager(language, dataset_name, file_name, hyper_search=True)
+# Manager.run(linear_pipe, linear_struct, 'linear')
 Manager.run(neural_pipe, neural_struct, 'neural')
 
 
