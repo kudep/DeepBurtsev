@@ -1,0 +1,28 @@
+{
+  "boosting_type": ["gbdt", "dart", "goss"],
+  "num_leaves": [11, 21, 31, 41, 51, 71],
+  "max_depth": [-1, 10, 30, 50, 100],
+  "learning_rate": {
+    "range": [
+      1e-2,
+      10
+    ],
+    "scale": "log"
+  },
+  "n_estimators": [50, 100, 150, 200, 300, 400],
+  "subsample_for_bin": [10000, 30000, 50000, 100000, 150000, 200000],
+  "reg_alpha": {
+    "range": [
+      1e-5,
+      1e-3
+    ],
+    "scale": "log"
+  },
+  "reg_lambda": {
+    "range": [
+      1e-5,
+      1e-3
+    ],
+    "scale": "log"
+  }
+}

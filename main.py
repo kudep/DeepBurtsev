@@ -39,7 +39,7 @@ neural_pipe = OrderedDict(Tokenizer=True,
 ###############################################################################################
 linear_struct = {'Lemmatizer': [False, True],
                  'vectorizer': ['tf-idf', 'count'],
-                 'model': ['LinearSVC']}
+                 'model': ['LGBMClassifier']}
 
 # 'model': ['LogisticRegression',
 #           'RandomForestClassifier',
@@ -56,8 +56,8 @@ linear_pipe = OrderedDict(Tokenizer=True,
 ###############################################################################################
 
 Manager = PipelineManager(language, dataset_name, file_name, hyper_search=True)
-# Manager.run(linear_pipe, linear_struct, 'linear')
-Manager.run(neural_pipe, neural_struct, 'neural')
+Manager.run(linear_pipe, linear_struct, 'linear')
+# Manager.run(neural_pipe, neural_struct, 'neural')
 
 
 # if __name__ == '__main__':

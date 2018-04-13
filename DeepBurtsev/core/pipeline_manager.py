@@ -124,22 +124,26 @@ class PipelineManager(object):
 
                 params_generator = ConfGen(model_conf, search_conf, seed=self.seed)
                 for params in params_generator.generator(self.N):
-                    # TODO refactor
-                    for u in params.keys():
-                        if isinstance(params[u], np.int64):
-                            params[u] = int(params[u])
+                    try:
+                        # TODO refactor
+                        for u in params.keys():
+                            if isinstance(params[u], np.int64):
+                                params[u] = int(params[u])
 
-                    model_op = model_pipe[0][0]
-                    mod = (model_op, params)
-                    model_pipe[0] = mod
+                        model_op = model_pipe[0][0]
+                        mod = (model_op, params)
+                        model_pipe[0] = mod
 
-                    model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
-                    end_dataset = model_pipeline.run(d_)
+                        model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
+                        end_dataset = model_pipeline.run(d_)
 
-                    self.time[model_name][pipe_name]['end_model_pipe'] = \
-                        time() - self.time[model_name][pipe_name]['start_model_pipe']
+                        self.time[model_name][pipe_name]['end_model_pipe'] = \
+                            time() - self.time[model_name][pipe_name]['start_model_pipe']
 
-                    self.time[model_name][pipe_name]['full_time'] = time() - self.time[model_name][pipe_name]['start']
+                        self.time[model_name][pipe_name]['full_time'] = time() - self.time[model_name][pipe_name]['start']
+                    except:
+                        print(params)
+                        raise
 
         results_summarization(self.date, self.language, self.dataset_name)
         self.time_log()
