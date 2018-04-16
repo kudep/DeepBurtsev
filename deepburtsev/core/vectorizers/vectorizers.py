@@ -4,8 +4,8 @@ import numpy as np
 
 from tqdm import tqdm
 
-from DeepBurtsev.core.utils import labels2onehot_one
-from DeepBurtsev.core.transformers.transformers import BaseTransformer
+from deepburtsev.core.utils import labels2onehot_one
+from deepburtsev.core.transformers.transformers import BaseTransformer
 
 
 class FasttextVectorizer(BaseTransformer):

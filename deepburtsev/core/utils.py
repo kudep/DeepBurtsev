@@ -226,7 +226,7 @@ def get_result(y_pred, y_test):
 def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
     log = {'pipeline configuration': pipe_conf, 'results': res}
 
-    root = '/home/mks/projects/DeepBurtsev/'
+    root = '/home/mks/projects/deepburtsev/'
     path = join(root, 'results', language, dataset_name, name)
 
     if not os.path.isdir(path):
@@ -329,8 +329,9 @@ def get_table(dang, savepath, root, filename='report', ext='pdf'):
                 best_model[y].append(a[x][y])
 
     # create pdf table
+    print(root)
     env = Environment(loader=FileSystemLoader(root))
-    template = env.get_template("./DeepBurtsev/core/template.html")
+    template = env.get_template("./deepburtsev/core/template.html")
     template_vars = {"title": "Results ",
                      "national_pivot_table": table.to_html()}
 

@@ -8,12 +8,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
-from DeepBurtsev.core.models.BaseModel import *
-from DeepBurtsev.core.transformers.transformers import *
-from DeepBurtsev.core.vectorizers.vectorizers import *
-from DeepBurtsev.core.utils import ConfGen
-from DeepBurtsev.core.wrappers.skwrappers import *
-from DeepBurtsev.models.cnn import *
+from deepburtsev.core.models.BaseModel import *
+from deepburtsev.core.transformers.transformers import *
+from deepburtsev.core.vectorizers.vectorizers import *
+from deepburtsev.core.utils import ConfGen
+from deepburtsev.core.wrappers.skwrappers import *
+from deepburtsev.models.cnn import *
 
 
 class GetCNN(BaseModel):
@@ -107,14 +107,14 @@ class PipeGen(object):
         pipe = []
         for key in pipe_conf.keys():
             if isinstance(pipe_conf[key], bool):
-                path = './DeepBurtsev/configs/ops/' + key + '.json'
+                path = './deepburtsev/configs/ops/' + key + '.json'
                 conf = get_config(path)
                 pipeline_config[str(key) + '_transformer'] = conf
                 pipe.append((self.ops_dict[key], conf))
             elif isinstance(pipe_conf[key], str):
                 if key == 'vectorizer':
                     if pipe_conf[key] == 'FasttextVectorizer':
-                        conf = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
+                        conf = get_config('./deepburtsev/configs/ops/FasttextVectorizer.json')
                         pipeline_config['FasttextVectorizer_vectorizer'] = conf
                         pipe.append((self.ops_dict[pipe_conf[key]], conf))
                     elif pipe_conf[key] == 'tf-idf':
@@ -134,13 +134,13 @@ class PipeGen(object):
                 elif key == 'model':
                     if pipe_conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                           'RandomForestClassifier', 'LinearSVC']:
-                        path = './DeepBurtsev/configs/models/' + pipe_conf[key] + '.json'
+                        path = './deepburtsev/configs/models/' + pipe_conf[key] + '.json'
                         conf = get_config(path)
                         model = skmodel(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config[pipe_conf[key] + '_model'] = conf
                         pipe.append((model,))
                     elif pipe_conf[key] == 'CNN':
-                        path = './DeepBurtsev/configs/models/CNN.json'
+                        path = './deepburtsev/configs/models/CNN.json'
                         conf = get_config(path)
                         WCNN = GetCNN(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config['WCNN_model'] = conf
@@ -264,14 +264,14 @@ class PipelineGeneratorOld(object):
                 pipe = []
                 for key in conf.keys():
                     if isinstance(conf[key], bool):
-                        path = './DeepBurtsev/configs/ops/' + key + '.json'
+                        path = './deepburtsev/configs/ops/' + key + '.json'
                         config = get_config(path)
                         pipeline_config[str(key) + '_transformer'] = config
                         pipe.append((self.ops_dict[key], config))
                     elif isinstance(conf[key], str):
                         if key == 'vectorizer':
                             if conf[key] == 'FasttextVectorizer':
-                                config = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
+                                config = get_config('./deepburtsev/configs/ops/FasttextVectorizer.json')
                                 pipeline_config['FasttextVectorizer_vectorizer'] = config
                                 pipe.append((self.ops_dict[conf[key]], config))
                             elif conf[key] == 'tf-idf':
@@ -291,13 +291,13 @@ class PipelineGeneratorOld(object):
                         elif key == 'model':
                             if conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                              'RandomForestClassifier', 'LinearSVC']:
-                                path = './DeepBurtsev/configs/models/' + conf[key] + '.json'
+                                path = './deepburtsev/configs/models/' + conf[key] + '.json'
                                 config = get_config(path)
                                 model = skmodel(self.ops_dict[conf[key]], config)
                                 pipeline_config[conf[key] + '_model'] = config
                                 pipe.append((model,))
                             elif conf[key] == 'CNN':
-                                path = './DeepBurtsev/configs/models/CNN.json'
+                                path = './deepburtsev/configs/models/CNN.json'
                                 config = get_config(path)
                                 WCNN = GetCNN(self.ops_dict[conf[key]], config)
                                 pipeline_config['WCNN_model'] = config
@@ -305,7 +305,7 @@ class PipelineGeneratorOld(object):
                             else:
                                 raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
                         elif key == 'Resulter':
-                            path = './DeepBurtsev/configs/ops/'+key+'.json'
+                            path = './deepburtsev/configs/ops/'+key+'.json'
                             config = get_config(path)
                             pipeline_config['Resulter_transformer'] = config
                             pipe.append((resulter, config))
@@ -369,7 +369,7 @@ class PipelineGenerator(object):
             for key in conf.keys():
                 if isinstance(conf[key], bool):
                     if conf[key]:
-                        path = './DeepBurtsev/configs/ops/' + key + '.json'
+                        path = './deepburtsev/configs/ops/' + key + '.json'
                         config = get_config(path)
                         pipeline_config[str(key) + '_transformer'] = config
                         pipe.append((self.ops_dict[key], config))
@@ -378,7 +378,7 @@ class PipelineGenerator(object):
                 elif isinstance(conf[key], str):
                     if key == 'vectorizer':
                         if conf[key] == 'FasttextVectorizer':
-                            config = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
+                            config = get_config('./deepburtsev/configs/ops/FasttextVectorizer.json')
                             config['path_to_model'] = join(self.root, 'embeddings', self.emb_name)
                             config['dimension'] = int(self.emb_dim)
                             pipeline_config['FasttextVectorizer_vectorizer'] = config
@@ -400,13 +400,13 @@ class PipelineGenerator(object):
                     elif key == 'model':
                         if conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                          'RandomForestClassifier', 'LinearSVC']:
-                            path = './DeepBurtsev/configs/models/' + conf[key] + '.json'
+                            path = './deepburtsev/configs/models/' + conf[key] + '.json'
                             config = get_config(path)
                             model = skmodel(self.ops_dict[conf[key]], config)
                             pipeline_config[conf[key] + '_model'] = config
                             pipe.append((model,))
                         elif conf[key] == 'CNN':
-                            path = './DeepBurtsev/configs/models/CNN.json'
+                            path = './deepburtsev/configs/models/CNN.json'
                             config = get_config(path)
 
                             config['checkpoint_path'] = join(self.root, self.dataset_name, 'checkpoints', 'CNN')
@@ -417,7 +417,7 @@ class PipelineGenerator(object):
                         else:
                             raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
                     elif key == 'Resulter':
-                        path = './DeepBurtsev/configs/ops/'+key+'.json'
+                        path = './deepburtsev/configs/ops/'+key+'.json'
                         config = get_config(path)
                         pipeline_config['Resulter_transformer'] = config
                         pipe.append((resulter, config))

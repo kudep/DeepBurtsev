@@ -18,22 +18,25 @@ import copy
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from os.path import isdir, join
+from os.path import isdir
 import os
 
 import keras.metrics
 import keras.optimizers
 import tensorflow as tf
+
+from os.path import join
+
 from keras.backend.tensorflow_backend import set_session
 from keras.models import Model
-from keras.layers import Dense, Input, Activation
-from keras.layers.pooling import GlobalMaxPooling1D, MaxPooling1D
+from keras.layers import Dense, Input, concatenate, Activation
+from keras.layers.pooling import GlobalMaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
-from DeepBurtsev.core import metrics as metrics_file
-from DeepBurtsev.core.utils import log_metrics
+from deepburtsev.core import metrics as metrics_file
+from deepburtsev.core.utils import log_metrics
 
 
 config = tf.ConfigProto()
@@ -42,7 +45,7 @@ config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
 
-class DCNN(object):
+class CNN(object):
     """
     Class builds keras intent_model
     """
@@ -85,7 +88,7 @@ class DCNN(object):
 
     def model(self, params):
         """
-        Method builds uncompiled intent_model of deep CNN
+        Method builds uncompiled intent_model of shallow-and-wide CNN
         Args:
             params: disctionary of parameters for NN
 
@@ -96,24 +99,21 @@ class DCNN(object):
             self.opt['kernel_sizes_cnn'] = [int(x) for x in
                                             self.opt['kernel_sizes_cnn'].split(' ')]
 
-        if type(self.opt['filters_cnn']) is str:
-            self.opt['filters_cnn'] = [int(x) for x in
-                                       self.opt['filters_cnn'].split(' ')]
-
         inp = Input(shape=(params['text_size'], params['embedding_size']))
 
-        output = inp
-
+        outputs = []
         for i in range(len(params['kernel_sizes_cnn'])):
-            output = Conv1D(params['filters_cnn'][i], kernel_size=params['kernel_sizes_cnn'][i],
-                            activation=None,
-                            kernel_regularizer=l2(params['coef_reg_cnn']),
-                            padding='same')(output)
-            output = BatchNormalization()(output)
-            output = Activation('relu')(output)
-            output = MaxPooling1D()(output)
+            output_i = Conv1D(params['filters_cnn'], kernel_size=params['kernel_sizes_cnn'][i],
+                              activation=None,
+                              kernel_regularizer=l2(params['coef_reg_cnn']),
+                              padding='same')(inp)
+            output_i = BatchNormalization()(output_i)
+            output_i = Activation('relu')(output_i)
+            output_i = GlobalMaxPooling1D()(output_i)
+            outputs.append(output_i)
 
-        output = GlobalMaxPooling1D()(output)
+        output = concatenate(outputs, axis=1)
+
         output = Dropout(rate=params['dropout_rate'])(output)
         output = Dense(params['dense_size'], activation=None,
                        kernel_regularizer=l2(params['coef_reg_den']))(output)
@@ -190,8 +190,8 @@ class DCNN(object):
         return model
 
     def restore(self, model_name, fname, optimizer_name,
-                lr, decay, loss_name, metrics_names=None, add_metrics_file=None, loss_weights=None,
-                sample_weight_mode=None, weighted_metrics=None, target_tensors=None):
+             lr, decay, loss_name, metrics_names=None, add_metrics_file=None, loss_weights=None,
+             sample_weight_mode=None, weighted_metrics=None, target_tensors=None):
         """
         Method initiliazes intent_model from saved params and weights
         Args:
@@ -425,6 +425,7 @@ class DCNN(object):
 
         self.save()
 
+    # TODO we need more clever logic of prediction and test
     def predict(self, dataset, name, *args):
         """
         Method returns predictions on the given data
@@ -444,7 +445,7 @@ class DCNN(object):
         elif (type(data) is list) or isinstance(data, pd.Series):
             if len(data) > self.opt['batch_size']:
                 batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
-                                               data_type=name)
+                                               data_type=name, shuffle=False)
                 predictions = []
                 for batch in batch_gen:
                     ##############################################
@@ -456,8 +457,31 @@ class DCNN(object):
 
                 preds = predictions
             else:
-                preds = self.infer_on_batch(data)
-                preds = np.array(preds)
+
+                # TODO fix big batch
+                batch_gen = dataset.iter_batch(batch_size=self.opt['batch_size'],
+                                               data_type=name, shuffle=False)
+                predictions = []
+                for batch in batch_gen:
+                    ##############################################
+                    pred_batch = self.batch_reformat(batch)
+                    ##############################################
+                    preds = self.infer_on_batch(pred_batch[0])
+                    preds = np.array(preds)
+                    predictions.append(preds)
+
+                preds = predictions
+
+
+                # preds = self.infer_on_batch(data)
+                # preds = np.array(preds)
+
+            # preds = self.infer_on_batch(data)
+            # preds = np.array(preds)
         else:
             raise ValueError("Not understand data type for inference")
         return preds
+
+
+
+

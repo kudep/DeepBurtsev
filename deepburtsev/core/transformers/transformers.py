@@ -6,7 +6,7 @@ import pymorphy2
 import numpy as np
 
 from tqdm import tqdm
-from DeepBurtsev.core.utils import logging
+from deepburtsev.core.utils import logging
 from DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
 
 # metrics
