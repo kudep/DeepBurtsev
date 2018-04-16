@@ -222,12 +222,15 @@ class Dataset(object):
 
 
 class Watcher(Dataset):
-    def __init__(self, data, date, language, dataset_name, seed=None, classes_description=None, root=None,
+    def __init__(self, data, date, language, dataset_name, restype, seed=None, classes_description=None, root=None,
                  *args, **kwargs):
 
         super().__init__(data, seed, classes_description, *args, **kwargs)
 
         self.date = '{}-{}-{}'.format(date.year, date.month, date.day)
+        self.language = language
+        self.dataset_name = dataset_name
+        self.restype = restype
 
         if root is None:
             root = '/home/mks/projects/DeepBurtsev/'
@@ -334,7 +337,6 @@ class Watcher(Dataset):
             if key not in data_keys:
                 self.data[key] = {}
 
-            # TODO dell if it not need
             if 'Tokenizator_transformer' in config.keys() and 'TextConcatenator_transformer' not in config.keys():
                 self.data[key][request] = data[data['Unnamed: 0'] == key][request].apply(sam)
             else:

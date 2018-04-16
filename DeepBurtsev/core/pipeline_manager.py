@@ -1,22 +1,22 @@
 from .pipe_gen import PipelineGenerator
 from .pipeline import Pipeline
-# from .pipeline import PrepPipeline
 from DeepBurtsev.datasets.dataset import Watcher
 from .utils import *
 from .transformers import *
 from time import time
+from DeepBurtsev.datasets.dataset_readers import *
 
 
 class PipelineManager(object):
-    def __init__(self, language, dataset_name, file_name, hyper_search=False, n=20, seed=42):
+    def __init__(self, language, dataset_name, emb_name, hyper_search=False, n=20, seed=42,
+                 root='/home/mks/projects/DeepBurtsev/'):
         self.seed = seed
         self.hyper_search = hyper_search
         self.N = n
         self.language = language
         self.dataset_name = dataset_name
-        self.file_name = file_name
-        self.root = '/home/mks/projects/DeepBurtsev/'
-        self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
+        self.emb_name = emb_name
+        self.root = root
         self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
         self.data_root = join(self.root, 'data', self.language)
         self.date = datetime.now()
@@ -24,46 +24,23 @@ class PipelineManager(object):
         self.time = dict()
         self.pipeline_generator = None  # pipegen.pipeline_gen()
 
-    def init_dataset(self):
-        if self.language == 'russian':
-            pure_data = read_dataset(self.file_path,  True, True)
-            # pure_data = read_sber_dataset(self.file_path)
-            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                         seed=self.seed)
-        elif self.language == 'english':
-            #################################################
-            pure_data, desc = read_en_dataset(self.file_path, snips=True)
-            #################################################
-            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                         seed=self.seed, classes_description=desc)
-        else:
-            raise NotImplementedError("Language {} is not implemented yet.".format(self.language))
+    def init_dataset(self, pure_data, res_type, test_mode=False):
+        self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name, res_type,
+                                     seed=self.seed)
+
+        if test_mode:
+            dataset = self.start_dataset.split([0.1, 0.1])
+            data = dataset.data['test']
+            self.start_dataset = Watcher(data, self.date, self.language, self.dataset_name, res_type, seed=self.seed)
 
         return self
 
-    def init_dataset_tiny(self):
-        if self.language == 'russian':
-            pure_data = read_dataset(self.file_path,  True, True)
-            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                         seed=self.seed)
-        elif self.language == 'english':
-            pure_data, desc = read_en_dataset(self.file_path)
-            self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name,
-                                         seed=self.seed, classes_description=desc)
-        else:
-            raise NotImplementedError("Language {} is not implemented yet.".format(self.language))
+    def run(self, pipe, structure, res_type, pure_data, test_mode=False):
 
-        ######################################################################################
-        dataset = self.start_dataset.split([0.1, 0.1])
-        data = dataset.data['test']
-        self.start_dataset = Watcher(data, self.date, self.language, self.dataset_name, seed=self.seed)
-        ######################################################################################
+        print(res_type)
 
-        return self
-
-    def run(self, pipe, structure, res_type):
-
-        pipegen = PipelineGenerator(pipe, structure, self.data_root, self.dataset_name, res_type)
+        pipegen = PipelineGenerator(pipe, structure, self.data_root, self.dataset_name, self.emb_name,
+                                    res_type=res_type)
         self.pipeline_generator = pipegen.pipeline_gen()
 
         # Start generating pipelines configs
@@ -85,8 +62,7 @@ class PipelineManager(object):
             prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
 
             # initialize new dataset
-            # self.init_dataset_tiny()
-            self.init_dataset()
+            self.init_dataset(pure_data, res_type, test_mode=test_mode)
 
             self.time[model_name][pipe_name]['dataset_init'] = time() - self.time[model_name][pipe_name]['start']
             d_ = prer_pipeline.run(self.start_dataset)

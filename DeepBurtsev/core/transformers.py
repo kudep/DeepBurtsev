@@ -207,18 +207,6 @@ class FasttextVectorizer(BaseTransformer):
     def __init__(self, config=None):
 
         if config is None:
-            # self.config = {'op_type': 'vectorizer',
-            #                'name': 'fasttext',
-            #                'request_names': ['train', 'valid', 'test'],
-            #                'new_names': ['train_vec', 'valid_vec', 'test_vec'],
-            #                'input_x_type': pd.core.series.Series,
-            #                'input_y_type': pd.core.series.Series,
-            #                'output_x_type': pd.core.series.Series,
-            #                'output_y_type': pd.core.series.Series,
-            #                'path_to_model': './data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
-            #                'dimension': 300,
-            #                'file_type': 'bin'}
-
             self.config = {'op_type': 'vectorizer',
                            'name': 'fasttext',
                            'request_names': ['train', 'valid', 'test'],
@@ -312,96 +300,59 @@ class GetResult(BaseTransformer):
 
     def _transform(self, dataset):
         request, report = dataset.main_names
+        dataset_name = dataset.dataset_name
+        language = dataset.language
+        res_type = dataset.restype
 
-        pred_name = self.config['request_names'][0]
-        real_name = self.config['new_names'][0]
-        pred_data = dataset.data[pred_name]
-        real_data = np.array(dataset.data[real_name][report])
+        print(res_type)
 
-        preds = pred_data[0]
-        for x in pred_data[1:]:
-            preds = np.concatenate((preds, x), axis=0)
+        if res_type == 'neural':
+            pred_name = self.config['request_names'][0]
+            real_name = self.config['new_names'][0]
+            pred_data = dataset.data[pred_name]
+            real_data = np.array(dataset.data[real_name][report])
 
-        preds = np.argmax(preds, axis=1)
-        for i, x in enumerate(preds):
-            preds[i] = x + 1
+            preds = pred_data[0]
+            for x in pred_data[1:]:
+                preds = np.concatenate((preds, x), axis=0)
 
-        preds = preds[:len(real_data)]
+            preds = np.argmax(preds, axis=1)
+            for i, x in enumerate(preds):
+                preds[i] = x + 1
 
-        results = get_result(preds, real_data)
-        dataset.data['results'] = results
+            preds = preds[:len(real_data)]
 
-        conf = dataset.pipeline_config
-        date = dataset.date
+            results = get_result(preds, real_data)
+            dataset.data['results'] = results
 
-        names_ = list(conf.keys())
-        for u in conf[names_[-2]].keys():
-            if isinstance(conf[names_[-2]][u], np.int64):
-                conf[names_[-2]][u] = int(conf[names_[-2]][u])
+            conf = dataset.pipeline_config
+            date = dataset.date
 
-        # TODO fix dependencies
-        logging(results, conf, date, language='russian', dataset_name='sber')
+            names_ = list(conf.keys())
+            for u in conf[names_[-2]].keys():
+                if isinstance(conf[names_[-2]][u], np.int64):
+                    conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
-        return dataset
+            logging(results, conf, date, language=language, dataset_name=dataset_name)
+        elif res_type == 'linear':
+            pred_name = self.config['request_names'][0]
+            real_name = self.config['new_names'][0]
+            pred_data = np.array(dataset.data[pred_name])
 
+            real_data = np.array(dataset.data[real_name][report])
+            results = get_result(pred_data, real_data)
+            dataset.data['results'] = results
 
-class GetResultLinear(BaseTransformer):
-    def __init__(self, config=None):
-        if config is None:
-            self.config = {'op_type': 'transformer',
-                           'name': 'Resulter',
-                           'request_names': ['predicted_test'],
-                           'new_names': ['test']}
+            conf = dataset.pipeline_config
+            date = dataset.date
+
+            names_ = list(conf.keys())
+            for u in conf[names_[-2]].keys():
+                if isinstance(conf[names_[-2]][u], np.int64):
+                    conf[names_[-2]][u] = int(conf[names_[-2]][u])
+
+            logging(results, conf, date, language=language, dataset_name=dataset_name)
         else:
-            self.config = config
-
-        super().__init__(self.config)
-
-    def _transform(self, dataset):
-        request, report = dataset.main_names
-
-        pred_name = self.config['request_names'][0]
-        real_name = self.config['new_names'][0]
-        pred_data = np.array(dataset.data[pred_name])
-
-        real_data = np.array(dataset.data[real_name][report])
-        results = get_result(pred_data, real_data)
-        dataset.data['results'] = results
-        return dataset
-
-
-class GetResultLinear_W(BaseTransformer):
-    def __init__(self, config=None):
-        if config is None:
-            self.config = {'op_type': 'transformer',
-                           'name': 'Resulter',
-                           'request_names': ['predicted_test'],
-                           'new_names': ['test']}
-        else:
-            self.config = config
-
-        super().__init__(self.config)
-
-    def _transform(self, dataset):
-        request, report = dataset.main_names
-
-        pred_name = self.config['request_names'][0]
-        real_name = self.config['new_names'][0]
-        pred_data = np.array(dataset.data[pred_name])
-
-        real_data = np.array(dataset.data[real_name][report])
-        results = get_result(pred_data, real_data)
-        dataset.data['results'] = results
-
-        conf = dataset.pipeline_config
-        date = dataset.date
-
-        names_ = list(conf.keys())
-        for u in conf[names_[-2]].keys():
-            if isinstance(conf[names_[-2]][u], np.int64):
-                conf[names_[-2]][u] = int(conf[names_[-2]][u])
-
-        # TODO fix dependencies
-        logging(results, conf, date, language='russian', dataset_name='sber')
+            raise ValueError('Incorrect type: {}; need "neural" or "linear".'.format(res_type))
 
         return dataset

@@ -320,12 +320,13 @@ class PipelineGeneratorOld(object):
 
 
 class PipelineGenerator(object):
-    def __init__(self, pipe, structure, root, dataset_name, res_type='neural', vec_default=None, ops_dict=None):
+    def __init__(self, pipe, structure, root, dataset_name, emb_name, res_type, vec_default=None, ops_dict=None):
         self.pipe = pipe
         self.structure = structure
         self.res_type = res_type
         self.root = root
         self.dataset_name = dataset_name
+        self.emb_name = emb_name
 
         if vec_default is None:
             self.vec_default = {'op_type': 'vectorizer', 'name': 'tf-idf vectorizer',
@@ -353,12 +354,7 @@ class PipelineGenerator(object):
     # generation
     def pipeline_gen(self):
         gen = genc(self.pipe, self.structure)
-        if self.res_type == 'linear':
-            resulter = GetResultLinear_W
-        elif self.res_type == 'neural':
-            resulter = GetResult
-        else:
-            raise ValueError('Type of last operation must be linear or neural, but {} was found.'.format(self.res_type))
+        resulter = GetResult
 
         for conf in gen:
             if self.res_type == 'linear':
@@ -382,11 +378,7 @@ class PipelineGenerator(object):
                     if key == 'vectorizer':
                         if conf[key] == 'FasttextVectorizer':
                             config = get_config('./configs/ops/FasttextVectorizer.json')
-
-                            # TODO fix not only bin dependencies
-                            names = os.listdir(join(self.root, 'embeddings'))
-                            config['path_to_model'] = join(self.root, 'embeddings', names[0])
-
+                            config['path_to_model'] = join(self.root, 'embeddings', self.emb_name)
                             pipeline_config['FasttextVectorizer_vectorizer'] = config
                             pipe.append((self.ops_dict[conf[key]], config))
                         elif conf[key] == 'tf-idf':
