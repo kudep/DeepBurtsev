@@ -8,7 +8,7 @@ from DeepBurtsev.datasets.dataset_readers import *
 
 
 class PipelineManager(object):
-    def __init__(self, language, dataset_name, emb_name, hyper_search=False, n=20, seed=42,
+    def __init__(self, language, dataset_name, emb_name, emb_dim, hyper_search=False, n=20, seed=42,
                  root='/home/mks/projects/DeepBurtsev/'):
         self.seed = seed
         self.hyper_search = hyper_search
@@ -16,6 +16,7 @@ class PipelineManager(object):
         self.language = language
         self.dataset_name = dataset_name
         self.emb_name = emb_name
+        self.emb_dim = emb_dim
         self.root = root
         self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
         self.data_root = join(self.root, 'data', self.language)
@@ -40,7 +41,7 @@ class PipelineManager(object):
         print(res_type)
 
         pipegen = PipelineGenerator(pipe, structure, self.data_root, self.dataset_name, self.emb_name,
-                                    res_type=res_type)
+                                    self.emb_dim, res_type=res_type)
         self.pipeline_generator = pipegen.pipeline_gen()
 
         # Start generating pipelines configs

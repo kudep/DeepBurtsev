@@ -320,13 +320,14 @@ class PipelineGeneratorOld(object):
 
 
 class PipelineGenerator(object):
-    def __init__(self, pipe, structure, root, dataset_name, emb_name, res_type, vec_default=None, ops_dict=None):
+    def __init__(self, pipe, structure, root, dataset_name, emb_name, emb_dim, res_type, vec_default=None, ops_dict=None):
         self.pipe = pipe
         self.structure = structure
         self.res_type = res_type
         self.root = root
         self.dataset_name = dataset_name
         self.emb_name = emb_name
+        self.emb_dim = emb_dim
 
         if vec_default is None:
             self.vec_default = {'op_type': 'vectorizer', 'name': 'tf-idf vectorizer',
@@ -379,6 +380,7 @@ class PipelineGenerator(object):
                         if conf[key] == 'FasttextVectorizer':
                             config = get_config('./configs/ops/FasttextVectorizer.json')
                             config['path_to_model'] = join(self.root, 'embeddings', self.emb_name)
+                            config['dimension'] = int(self.emb_dim)
                             pipeline_config['FasttextVectorizer_vectorizer'] = config
                             pipe.append((self.ops_dict[conf[key]], config))
                         elif conf[key] == 'tf-idf':
