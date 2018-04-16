@@ -1,4 +1,4 @@
-from DeepBurtsev.core.transformers import BaseTransformer
+from DeepBurtsev.core.transformers.transformers import BaseTransformer
 
 
 class skwrapper(BaseTransformer):

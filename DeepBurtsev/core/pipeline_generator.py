@@ -1,18 +1,19 @@
 from collections import OrderedDict
-from DeepBurtsev.core.utils import ConfGen
-from DeepBurtsev.core.transformers import *
-from DeepBurtsev.core.skwrappers import *
-from DeepBurtsev.core.BaseModel import *
-from DeepBurtsev.models.cnn import *
+from itertools import product
 
+from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
-import json
-from itertools import product
+
+from DeepBurtsev.core.models.BaseModel import *
+from DeepBurtsev.core.transformers.transformers import *
+from DeepBurtsev.core.vectorizers.vectorizers import *
+from DeepBurtsev.core.utils import ConfGen
+from DeepBurtsev.core.wrappers.skwrappers import *
+from DeepBurtsev.models.cnn import *
 
 
 class GetCNN(BaseModel):
@@ -92,14 +93,13 @@ class PipeGen(object):
 
     def pipeline_gen(self, model_type):
         # generation
+        resulter = GetResult
         if model_type == 'neural':
             pipe_conf = ConfGen(self.neural[0], self.neural[1]).sample_params()
-            resulter = GetResult
         elif model_type == 'linear':
             pipe_conf = ConfGen(self.linear[0], self.linear[1]).sample_params()
             pipe_conf['Tokenizer'] = pipe_conf['Lemmatizer']
             pipe_conf['Textconcatenator'] = pipe_conf['Lemmatizer']
-            resulter = GetResultLinear
         else:
             raise ValueError('')
 
@@ -107,14 +107,14 @@ class PipeGen(object):
         pipe = []
         for key in pipe_conf.keys():
             if isinstance(pipe_conf[key], bool):
-                path = './configs/ops/' + key + '.json'
+                path = './DeepBurtsev/configs/ops/' + key + '.json'
                 conf = get_config(path)
                 pipeline_config[str(key) + '_transformer'] = conf
                 pipe.append((self.ops_dict[key], conf))
             elif isinstance(pipe_conf[key], str):
                 if key == 'vectorizer':
                     if pipe_conf[key] == 'FasttextVectorizer':
-                        conf = get_config('./configs/ops/FasttextVectorizer.json')
+                        conf = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
                         pipeline_config['FasttextVectorizer_vectorizer'] = conf
                         pipe.append((self.ops_dict[pipe_conf[key]], conf))
                     elif pipe_conf[key] == 'tf-idf':
@@ -134,13 +134,13 @@ class PipeGen(object):
                 elif key == 'model':
                     if pipe_conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                           'RandomForestClassifier', 'LinearSVC']:
-                        path = './configs/models/' + pipe_conf[key] + '.json'
+                        path = './DeepBurtsev/configs/models/' + pipe_conf[key] + '.json'
                         conf = get_config(path)
                         model = skmodel(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config[pipe_conf[key] + '_model'] = conf
                         pipe.append((model,))
                     elif pipe_conf[key] == 'CNN':
-                        path = './configs/models/CNN.json'
+                        path = './DeepBurtsev/configs/models/CNN.json'
                         conf = get_config(path)
                         WCNN = GetCNN(self.ops_dict[pipe_conf[key]], conf)
                         pipeline_config['WCNN_model'] = conf
@@ -245,14 +245,13 @@ class PipelineGeneratorOld(object):
     # generation
     def pipeline_gen(self):
         model_types = ['neural', 'linear']
+        resulter = GetResult
 
         for type_ in model_types:
             if type_ == 'neural':
                 gen = genc(self.neural_pipe, self.neural_struct)
-                resulter = GetResult
             elif type_ == 'linear':
                 gen = genc(self.linear_pipe, self.linear_struct)
-                resulter = GetResultLinear_W
             else:
                 raise ValueError('')
 
@@ -265,14 +264,14 @@ class PipelineGeneratorOld(object):
                 pipe = []
                 for key in conf.keys():
                     if isinstance(conf[key], bool):
-                        path = './configs/ops/' + key + '.json'
+                        path = './DeepBurtsev/configs/ops/' + key + '.json'
                         config = get_config(path)
                         pipeline_config[str(key) + '_transformer'] = config
                         pipe.append((self.ops_dict[key], config))
                     elif isinstance(conf[key], str):
                         if key == 'vectorizer':
                             if conf[key] == 'FasttextVectorizer':
-                                config = get_config('./configs/ops/FasttextVectorizer.json')
+                                config = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
                                 pipeline_config['FasttextVectorizer_vectorizer'] = config
                                 pipe.append((self.ops_dict[conf[key]], config))
                             elif conf[key] == 'tf-idf':
@@ -292,13 +291,13 @@ class PipelineGeneratorOld(object):
                         elif key == 'model':
                             if conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                              'RandomForestClassifier', 'LinearSVC']:
-                                path = './configs/models/' + conf[key] + '.json'
+                                path = './DeepBurtsev/configs/models/' + conf[key] + '.json'
                                 config = get_config(path)
                                 model = skmodel(self.ops_dict[conf[key]], config)
                                 pipeline_config[conf[key] + '_model'] = config
                                 pipe.append((model,))
                             elif conf[key] == 'CNN':
-                                path = './configs/models/CNN.json'
+                                path = './DeepBurtsev/configs/models/CNN.json'
                                 config = get_config(path)
                                 WCNN = GetCNN(self.ops_dict[conf[key]], config)
                                 pipeline_config['WCNN_model'] = config
@@ -306,7 +305,7 @@ class PipelineGeneratorOld(object):
                             else:
                                 raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
                         elif key == 'Resulter':
-                            path = './configs/ops/'+key+'.json'
+                            path = './DeepBurtsev/configs/ops/'+key+'.json'
                             config = get_config(path)
                             pipeline_config['Resulter_transformer'] = config
                             pipe.append((resulter, config))
@@ -320,7 +319,8 @@ class PipelineGeneratorOld(object):
 
 
 class PipelineGenerator(object):
-    def __init__(self, pipe, structure, root, dataset_name, emb_name, emb_dim, res_type, vec_default=None, ops_dict=None):
+    def __init__(self, pipe, structure, root, dataset_name, emb_name, emb_dim, res_type, vec_default=None,
+                 ops_dict=None):
         self.pipe = pipe
         self.structure = structure
         self.res_type = res_type
@@ -369,7 +369,7 @@ class PipelineGenerator(object):
             for key in conf.keys():
                 if isinstance(conf[key], bool):
                     if conf[key]:
-                        path = './configs/ops/' + key + '.json'
+                        path = './DeepBurtsev/configs/ops/' + key + '.json'
                         config = get_config(path)
                         pipeline_config[str(key) + '_transformer'] = config
                         pipe.append((self.ops_dict[key], config))
@@ -378,7 +378,7 @@ class PipelineGenerator(object):
                 elif isinstance(conf[key], str):
                     if key == 'vectorizer':
                         if conf[key] == 'FasttextVectorizer':
-                            config = get_config('./configs/ops/FasttextVectorizer.json')
+                            config = get_config('./DeepBurtsev/configs/ops/FasttextVectorizer.json')
                             config['path_to_model'] = join(self.root, 'embeddings', self.emb_name)
                             config['dimension'] = int(self.emb_dim)
                             pipeline_config['FasttextVectorizer_vectorizer'] = config
@@ -400,13 +400,13 @@ class PipelineGenerator(object):
                     elif key == 'model':
                         if conf[key] in ['LogisticRegression', 'LGBMClassifier',
                                          'RandomForestClassifier', 'LinearSVC']:
-                            path = './configs/models/' + conf[key] + '.json'
+                            path = './DeepBurtsev/configs/models/' + conf[key] + '.json'
                             config = get_config(path)
                             model = skmodel(self.ops_dict[conf[key]], config)
                             pipeline_config[conf[key] + '_model'] = config
                             pipe.append((model,))
                         elif conf[key] == 'CNN':
-                            path = './configs/models/CNN.json'
+                            path = './DeepBurtsev/configs/models/CNN.json'
                             config = get_config(path)
 
                             config['checkpoint_path'] = join(self.root, self.dataset_name, 'checkpoints', 'CNN')
@@ -417,7 +417,7 @@ class PipelineGenerator(object):
                         else:
                             raise ValueError('Model {} is not implemented yet.'.format(conf[key]))
                     elif key == 'Resulter':
-                        path = './configs/ops/'+key+'.json'
+                        path = './DeepBurtsev/configs/ops/'+key+'.json'
                         config = get_config(path)
                         pipeline_config['Resulter_transformer'] = config
                         pipe.append((resulter, config))

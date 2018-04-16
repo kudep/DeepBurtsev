@@ -1,10 +1,11 @@
-from .pipe_gen import PipelineGenerator
-from .pipeline import Pipeline, PrepPipeline
-from DeepBurtsev.datasets.dataset import Watcher
-from .utils import *
-from .transformers import *
 from time import time
-from DeepBurtsev.datasets.dataset_readers import *
+
+from DeepBurtsev.core.datasets.dataset import Watcher
+from DeepBurtsev.core.datasets.dataset_readers import *
+from DeepBurtsev.core.pipelines.pipeline import Pipeline, PrepPipeline
+from DeepBurtsev.core.transformers.transformers import *
+from .pipeline_generator import PipelineGenerator
+from .utils import *
 
 
 class PipelineManager(object):
