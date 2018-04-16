@@ -1,5 +1,5 @@
 from .pipe_gen import PipelineGenerator
-from .pipeline import Pipeline
+from .pipeline import Pipeline, PrepPipeline
 from DeepBurtsev.datasets.dataset import Watcher
 from .utils import *
 from .transformers import *
@@ -45,8 +45,8 @@ class PipelineManager(object):
 
         # Start generating pipelines configs
         for x in self.pipeline_generator:
-            prer_pipe = x[0][:-2]
-            model_pipe = x[0][-2:]
+            prer_pipe = x[0][:-3]  # 2
+            model_pipe = x[0][-3:]  # 2
             pipe_conf = x[1]
 
             # time meshure
@@ -58,8 +58,8 @@ class PipelineManager(object):
 
             self.time[model_name][pipe_name]['start'] = time()
 
-            # prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
-            prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
+            prer_pipeline = PrepPipeline(prer_pipe, mode='infer', output='dataset')
+            # prer_pipeline = Pipeline(prer_pipe, mode='infer', output='dataset')
 
             # initialize new dataset
             self.init_dataset(pure_data, res_type, test_mode=test_mode)

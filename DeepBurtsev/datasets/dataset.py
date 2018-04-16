@@ -2,7 +2,7 @@ import random
 import pandas as pd
 import json
 import secrets
-from os.path import join, isfile
+from os.path import join, isfile, isdir
 import os
 from collections import OrderedDict
 from typing import Generator
@@ -257,6 +257,15 @@ class Watcher(Dataset):
         return self
 
     def check_config(self, conf):
+        # check file
+        if not isdir(self.conf_dict):
+            os.makedirs(self.conf_dict)
+        if not isfile(join(self.conf_dict, 'pipe_conf_dict.json')):
+            with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'w') as d:
+                d.write('{}')
+                d.close()
+
+        # read config file
         with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r+') as d:
             conf_ = json.load(d)
 
@@ -343,6 +352,8 @@ class Watcher(Dataset):
             else:
                 self.data[key][request] = data[data['Unnamed: 0'] == key][request]
             self.data[key][report] = data[data['Unnamed: 0'] == key][report]
+            self.data[key].dropna(inplace=True)
+            # self.data[key].reset_index(inplace=True)
 
         for key in data_keys:
             if key not in keys:
@@ -352,8 +363,7 @@ class Watcher(Dataset):
 
         #################################################
         # changes
-        for key in keys:
-            self.data[key] = self.data[key].dropna()
-            self.data[key] = self.data[key].reset_index()
+        # for key in keys:
+        #     self.data[key] = self.data[key].dropna().reset_index()
 
         return self

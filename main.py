@@ -37,5 +37,5 @@ file_path = join(root, 'data', language, dataset_name, 'data', file_name)
 pure_data = read_sber_dataset(file_path)
 
 Manager = PipelineManager(language, dataset_name, emb_name, hyper_search=False)
-Manager.run(linear_pipe, linear_struct, 'linear', pure_data, test_mode=False)
-# Manager.run(neural_pipe, neural_struct, pure_data, 'neural')
+# Manager.run(linear_pipe, linear_struct, 'linear', pure_data, test_mode=False)
+Manager.run(neural_pipe, neural_struct, 'neural', pure_data)
