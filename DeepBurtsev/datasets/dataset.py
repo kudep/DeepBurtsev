@@ -347,4 +347,10 @@ class Watcher(Dataset):
 
         del data
 
+        #################################################
+        # changes
+        for key in keys:
+            self.data[key] = self.data[key].dropna()
+            self.data[key] = self.data[key].reset_index()
+
         return self
