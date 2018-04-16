@@ -121,7 +121,7 @@ class PipelineManager(object):
                         print(params)
                         raise
 
-        results_summarization(self.date, self.language, self.dataset_name)
+        results_summarization(self.root, self.date, self.language, self.dataset_name)
         self.time_log()
 
         return None

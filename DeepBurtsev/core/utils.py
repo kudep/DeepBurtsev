@@ -305,7 +305,7 @@ def scrab_data(path):
     return info
 
 
-def get_table(dang, savepath, filename='report', ext='pdf'):
+def get_table(dang, savepath, root, filename='report', ext='pdf'):
     # make dataframe table
     fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
     table = pd.DataFrame({'Models': list(dang.keys()),
@@ -329,7 +329,7 @@ def get_table(dang, savepath, filename='report', ext='pdf'):
                 best_model[y].append(a[x][y])
 
     # create pdf table
-    env = Environment(loader=FileSystemLoader('/home/mks/projects/DeepBurtsev/'))
+    env = Environment(loader=FileSystemLoader(root))
     template = env.get_template("./DeepBurtsev/core/template.html")
     template_vars = {"title": "Results ",
                      "national_pivot_table": table.to_html()}
@@ -511,7 +511,7 @@ def plot_k(date=None, path=None, savepath='./results/russian/images/'):
     return None
 
 
-def results_summarization(date=None, language='russian', dataset_name='vkusvill'):
+def results_summarization(root, date=None, language='russian', dataset_name='vkusvill'):
     path = join('./results/', language, dataset_name)
 
     if date is None:
@@ -553,7 +553,7 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info, date_path)
+    table, best_model = get_table(info, date_path, root)
 
     # ploting results
     model_names = tuple(table.index)
