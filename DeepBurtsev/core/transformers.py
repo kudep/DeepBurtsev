@@ -6,8 +6,15 @@ import fasttext
 import numpy as np
 
 from tqdm import tqdm
-from DeepBurtsev.core.utils import labels2onehot_one, get_result, logging
+from DeepBurtsev.core.utils import labels2onehot_one, logging
 from DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
+
+# metrics
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
 
 
 class BaseTransformer(object):
@@ -288,13 +295,22 @@ class TextConcat(BaseTransformer):
 
 class GetResult(BaseTransformer):
     def __init__(self, config=None):
+
+        self.metrices = ['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix']
+        self.category_description = None
+
         if config is None:
             self.config = {'op_type': 'transformer',
                            'name': 'Resulter',
                            'request_names': ['predicted_test'],
-                           'new_names': ['test']}
+                           'new_names': ['test'],
+                           'metrics': ['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix']}
         else:
             self.config = config
+
+        for metr in self.config['metrics']:
+            if metr not in self.metrices:
+                raise ValueError('{} metrics is not implemented yet.'.format(metr))
 
         super().__init__(self.config)
 
@@ -303,6 +319,10 @@ class GetResult(BaseTransformer):
         dataset_name = dataset.dataset_name
         language = dataset.language
         res_type = dataset.restype
+
+        self.category_description = dataset.classes_description
+        if self.category_description is None:
+            self.category_description = dataset.classes
 
         print(res_type)
 
@@ -322,7 +342,7 @@ class GetResult(BaseTransformer):
 
             preds = preds[:len(real_data)]
 
-            results = get_result(preds, real_data)
+            results = self.get_results(preds, real_data)
             dataset.data['results'] = results
 
             conf = dataset.pipeline_config
@@ -340,7 +360,7 @@ class GetResult(BaseTransformer):
             pred_data = np.array(dataset.data[pred_name])
 
             real_data = np.array(dataset.data[real_name][report])
-            results = get_result(pred_data, real_data)
+            results = self.get_results(pred_data, real_data)
             dataset.data['results'] = results
 
             conf = dataset.pipeline_config
@@ -356,3 +376,52 @@ class GetResult(BaseTransformer):
             raise ValueError('Incorrect type: {}; need "neural" or "linear".'.format(res_type))
 
         return dataset
+
+    def get_results(self, y_pred, y_true):
+
+        results = dict()
+        results['classes'] = {}
+        for metr in self.config['metrics']:
+            results[metr] = self.return_metric(metr, y_true, y_pred)
+
+        for i in range(len(self.category_description)):
+            y_bin_pred = np.zeros(y_pred.shape)
+            y_bin_pred[y_pred == i] = 1
+            y_bin_answ = np.zeros(y_pred.shape)
+            y_bin_answ[y_true == i] = 1
+
+            precision_tmp = precision_score(y_bin_answ, y_bin_pred)
+            recall_tmp = recall_score(y_bin_answ, y_bin_pred)
+            if recall_tmp == 0 and precision_tmp == 0:
+                f1_tmp = 0.
+            else:
+                f1_tmp = 2 * recall_tmp * precision_tmp / (precision_tmp + recall_tmp)
+
+            results['classes'][str(self.category_description[i])] = \
+                {'number_test_objects': y_bin_answ[y_true == i].shape[0],
+                 'precision': precision_tmp,
+                 'recall': recall_tmp,
+                 'f1': f1_tmp}
+
+        # string_to_format = '{:7} number_test_objects: {:4}   precision: {:5.3}   recall: {:5.3}  f1: {:5.3}'
+        # results['classes'].append(string_to_format.format(self.category_description[i],
+        #                                                   y_bin_answ[y_true == i].shape[0],
+        #                                                   precision_tmp,
+        #                                                   recall_tmp,
+        #                                                   f1_tmp))
+
+        return results
+
+    def return_metric(self, metr, y_true, y_pred):
+        if metr == 'accuracy':
+            res = accuracy_score(y_true, y_pred)
+        elif metr == 'f1_macro':
+            res = f1_score(y_true, y_pred, average='macro')
+        elif metr == 'f1_weighted':
+            res = f1_score(y_true, y_pred, average='weighted')
+        elif metr == 'confusion_matrix':
+            res = confusion_matrix(y_true, y_pred).tolist()
+        else:
+            raise ValueError
+
+        return res

@@ -21,7 +21,6 @@ class Dataset(object):
         self.random_state = random.getstate()
         random.setstate(rs)
 
-        self.classes_description = classes_description
         self.data = dict()
 
         if data.get('train') is not None:
@@ -32,6 +31,8 @@ class Dataset(object):
             self.data['valid'] = data.get('valid')
         else:
             self.data['base'] = data
+
+        self.classes_description = classes_description
 
         self.classes = self.get_classes()
         self.classes_distribution = self.get_distribution()

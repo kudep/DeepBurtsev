@@ -178,7 +178,7 @@ class ConfGen(object):
             yield self.config
 
 
-# -------------------------- Logging ----------------------------------
+# -------------------------- Common ----------------------------------
 
 
 def get_result(y_pred, y_test):
@@ -218,6 +218,9 @@ def get_result(y_pred, y_test):
     #                                                   f1_tmp))
 
     return results
+
+
+# -------------------------- Logging ----------------------------------
 
 
 def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
@@ -289,8 +292,8 @@ def scrab_data(path):
                 pipe_conf = y['pipeline configuration']
                 # model_conf = y['model configuration']
                 ind = i
-            if float(z['accuracy'].split(' ')[-1]) >= acc_max:  # fix
-                acc_max = float(z['accuracy'].split(' ')[-1])  # fix
+            if float(z['accuracy']) >= acc_max:  # fix .split(' ')[-1]
+                acc_max = float(z['accuracy'])  # fix .split(' ')[-1]
 
         info[x]['max_f1_macro'] = f1_max
         info[x]['max_f1_weighted'] = f1w_max

@@ -2,5 +2,6 @@
   "op_type": "transformer",
   "name": "Resulter",
   "request_names": ["predicted_test"],
-  "new_names": ["test"]
+  "new_names": ["test"],
+  "metrics": ["accuracy", "f1_macro", "f1_weighted", "confusion_matrix"]
 }
