@@ -1,7 +1,7 @@
 from .pipe_gen import PipelineGenerator
 from .pipeline import Pipeline
 # from .pipeline import PrepPipeline
-from .dataset import Watcher
+from DeepBurtsev.datasets.dataset import Watcher
 from .utils import *
 from .transformers import *
 from time import time
@@ -15,7 +15,7 @@ class PipelineManager(object):
         self.language = language
         self.dataset_name = dataset_name
         self.file_name = file_name
-        self.root = '/home/mks/projects/intent_classification_script/'
+        self.root = '/home/mks/projects/DeepBurtsev/'
         self.file_path = join(self.root, 'data', self.language, self.dataset_name, 'data', self.file_name)
         self.time_log_file = join(self.root, 'data', self.language, self.dataset_name, 'log_data', 'time_log.json')
         self.data_root = join(self.root, 'data', self.language)

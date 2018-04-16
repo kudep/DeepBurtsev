@@ -55,15 +55,6 @@ linear_pipe = OrderedDict(Tokenizer=True,
                           Resulter='Resulter')
 ###############################################################################################
 
-Manager = PipelineManager(language, dataset_name, file_name, hyper_search=True)
+Manager = PipelineManager(language, dataset_name, file_name, hyper_search=False)
 Manager.run(linear_pipe, linear_struct, 'linear')
 # Manager.run(neural_pipe, neural_struct, 'neural')
-
-
-# if __name__ == '__main__':
-#     language = 'russian'
-#     dataset_name = 'vkusvill'
-#     file_name = 'vkusvill_all_categories.csv'
-#
-#     Manager.run(linear_pipe, linear_struct, 'linear')
-#     Manager.run(neural_pipe, neural_struct, 'neural')

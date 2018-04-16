@@ -230,7 +230,7 @@ class Watcher(Dataset):
         self.date = '{}-{}-{}'.format(date.year, date.month, date.day)
 
         if root is None:
-            root = '/home/mks/projects/intent_classification_script/'
+            root = '/home/mks/projects/DeepBurtsev/'
 
         self.conf_dict = join(root, 'data', language, dataset_name, 'log_data')
         self.save_path = join(self.conf_dict, 'data')

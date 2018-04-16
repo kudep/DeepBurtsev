@@ -224,7 +224,7 @@ def get_result(y_pred, y_test):
 def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
     log = {'pipeline configuration': pipe_conf, 'results': res}
 
-    root = '/home/mks/projects/intent_classification_script/'
+    root = '/home/mks/projects/DeepBurtsev/'
     path = join(root, 'results', language, dataset_name, name)
 
     if not os.path.isdir(path):
@@ -327,7 +327,7 @@ def get_table(dang, savepath, filename='report', ext='pdf'):
                 best_model[y].append(a[x][y])
 
     # create pdf table
-    env = Environment(loader=FileSystemLoader('/home/mks/projects/intent_classification_script/'))
+    env = Environment(loader=FileSystemLoader('/home/mks/projects/DeepBurtsev/'))
     template = env.get_template("./DeepBurtsev/core/template.html")
     template_vars = {"title": "Results ",
                      "national_pivot_table": table.to_html()}
@@ -522,9 +522,10 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
         if not isdir(image_path):
             os.makedirs(image_path)
 
-        log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
-                   '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+        log = join(date_path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
         if not isfile(log):
+            # with open(log, 'w') as log_file:
+            #     log_file.close()
             raise FileExistsError('File with results {}'
                                   ' is not exist'.format('{}-{}-{}.txt'.format(date.year, date.month, date.day)))
 
@@ -537,8 +538,7 @@ def results_summarization(date=None, language='russian', dataset_name='vkusvill'
         if not isdir(image_path):
             os.makedirs(image_path)
 
-        log = join(path, '{}-{}-{}'.format(date.year, date.month, date.day),
-                   '{}-{}-{}.txt'.format(date.year, date.month, date.day))
+        log = join(date_path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
 
         if not isfile(log):
             # with open(log, 'w') as log_file:

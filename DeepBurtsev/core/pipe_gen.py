@@ -1,7 +1,8 @@
 from collections import OrderedDict
 from DeepBurtsev.core.utils import ConfGen
 from DeepBurtsev.core.transformers import *
-from DeepBurtsev.core.models import *
+from DeepBurtsev.core.skwrappers import *
+from DeepBurtsev.core.BaseModel import *
 from DeepBurtsev.models.cnn import *
 
 from sklearn.feature_extraction.text import CountVectorizer

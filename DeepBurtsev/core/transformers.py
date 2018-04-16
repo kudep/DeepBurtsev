@@ -340,7 +340,7 @@ class GetResult(BaseTransformer):
                 conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
         # TODO fix dependencies
-        logging(results, conf, date, language='russian', dataset_name='vkusvill')
+        logging(results, conf, date, language='russian', dataset_name='sber')
 
         return dataset
 
@@ -402,6 +402,6 @@ class GetResultLinear_W(BaseTransformer):
                 conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
         # TODO fix dependencies
-        logging(results, conf, date, language='russian', dataset_name='vkusvill')
+        logging(results, conf, date, language='russian', dataset_name='sber')
 
         return dataset
