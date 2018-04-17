@@ -1,23 +1,30 @@
 from .base_model import BaseModel
 
 
-class Model(BaseModel):
+class KerasModel(BaseModel):
 
     def init_model(self, dataset):
         if not self.model_init:
-            self.model = self.model_(self.config)
+            # compilation
+            self.model.compile(optimizer=self.optimizer,
+                               loss=self.loss,
+                               metrics=self.metrics_funcs,
+                               loss_weights=None,
+                               sample_weight_mode=None,
+                               # weighted_metrics=weighted_metrics,
+                               # target_tensors=target_tensors
+                               )
+
+            self.metrics_names = self.model.metrics_names
+            self.metrics_values = len(self.metrics_names) * [0.]
+
             self.model_init = True
         else:
-            # TODO it strange!
-            if hasattr(self.model, 'reset'):
-                self.save()
-                # self.model.reset()
-                self.model = self.model_(self.config)
-            else:
-                raise AttributeError('Model was already initialized. Add reset method in your model'
-                                     'or create new pipeline')
+            raise AttributeError('Model was already initialized. Add reset method in your model'
+                                 'or create new pipeline')
         return self
 
+    # TODO rewrite as hole train function
     def fit(self, dataset, train_name=None):
         self._validate_names(dataset)
         self.init_model(dataset)
