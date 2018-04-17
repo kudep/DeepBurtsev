@@ -71,7 +71,7 @@ class BaseTransformer(object):
     def _transform(self, dataset):
         return None
 
-    def transform(self, dataset):
+    def fit_transform(self, dataset):
         self._validate_names(dataset)
         return self._transform(dataset)
 
@@ -306,6 +306,7 @@ class GetResult(BaseTransformer):
                     conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
             logging(results, conf, date, language=language, dataset_name=dataset_name)
+
         elif res_type == 'linear':
             pred_name = self.config['request_names'][0]
             real_name = self.config['new_names'][0]
@@ -324,6 +325,7 @@ class GetResult(BaseTransformer):
                     conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
             logging(results, conf, date, language=language, dataset_name=dataset_name)
+
         else:
             raise ValueError('Incorrect type: {}; need "neural" or "linear".'.format(res_type))
 

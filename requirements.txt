@@ -8,7 +8,7 @@ sklearn
 h5py
 tqdm
 pymorphy2
-fasttext
+git+https://github.com/facebookresearch/fastText.git@3872afadb3a9f30de7c7792ff2ff1bda64242097
 jupyter notebook
 lightgbm
 matplotlib

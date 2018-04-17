@@ -58,13 +58,13 @@ class Pipeline(object):
 
         # logic of methods calls
         if op_type == 'transformer':
-            dataset_ = operation.transform(dataset)
+            dataset_ = operation.fit_transform(dataset)
             return dataset_
         elif op_type == 'vectorizer':
             # TODO i don't like it
             if 'train' not in dataset.data.keys():
                 dataset = dataset.split()
-            dataset_ = operation.transform(dataset)
+            dataset_ = operation.fit_transform(dataset)
             return dataset_
         elif op_type == 'model':
             if self.mode == 'infer':
@@ -207,7 +207,7 @@ class PrepPipeline(Pipeline):
             have = dataset.test_config(operation.config)
             if isinstance(have, bool):
                 if not have:
-                    dataset_ = operation.transform(dataset)
+                    dataset_ = operation.fit_transform(dataset)
                     dataset_.save_data()
                     return dataset_
                 else:
@@ -226,7 +226,7 @@ class PrepPipeline(Pipeline):
             have = dataset.test_config(operation.config)
             if isinstance(have, bool):
                 if not have:
-                    dataset_ = operation.transform(dataset)
+                    dataset_ = operation.fit_transform(dataset)
                     dataset_.save_data()
                     return dataset_
                 else:
