@@ -1,38 +1,107 @@
+# only for python 3.3+
+from inspect import signature
+from collections import defaultdict
+
+
 class BaseModel(object):
-    def __init__(self, model, config):  # , fit_name=None, predict_names=None, new_names=None
-        # config resist
-        if not isinstance(config, dict):
-            raise ValueError('Input config must be dict or None, but {} was found.'.format(type(config)))
-
-        # keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names', 'input_x_type', 'input_y_type',
-        #         'output_x_type', 'output_y_type']
-
-        keys = ['op_type', 'name', 'fit_names', 'predict_names', 'new_names']
-
-        self.info = dict()
-
-        for x in keys:
-            if x not in config.keys():
-                raise ValueError('Input config must contain {} key.'.format(x))
-            self.info[x] = config[x]
-
-        for x in keys:
-            if x == 'fit_names' or x == 'predict_names' or x == 'new_names':
-                if not isinstance(config[x], list):
-                    raise ValueError('Parameters fit_names, predict_names and new_names in config must be a list,'
-                                     ' but {} "{}" was found.'.format(type(config[x]), config[x]))
-
-        self.config = config
-        self.trained = False
-        self.model_init = False
-        self._validate_model(model)
-        self.pure_model = model
-        self.model = None
+    def __init__(self, fit_name=None, predict_names=None, new_names=None, op_type='model',
+                 op_name='base_model'):
+        self.op_type = op_type
+        self.op_name = op_name
 
         # named spaces
-        self.new_names = config['new_names']
-        self.fit_names = config['fit_names']
-        self.request_names = config['predict_names']
+        self.new_names = new_names
+        self.fit_names = fit_name
+        self.request_names = predict_names
+
+        self.trained = False
+        self.model_init = False
+        # self._validate_model(model)
+        # self.model_ = model
+        self.model = None
+
+    def set_params(self, **params):
+        """Set the parameters of this estimator.
+        The method works on simple estimators as well as on nested objects
+        (such as pipelines). The latter have parameters of the form
+        ``<component>__<parameter>`` so that it's possible to update each
+        component of a nested object.
+        Returns
+        -------
+        self
+        """
+        if not params:
+            # Simple optimization to gain speed (inspect is slow)
+            return self
+        valid_params = self.get_params(deep=True)
+
+        nested_params = defaultdict(dict)  # grouped by prefix
+        for key, value in params.items():
+            key, delim, sub_key = key.partition('__')
+            if key not in valid_params:
+                raise ValueError('Invalid parameter %s for estimator %s. '
+                                 'Check the list of available parameters '
+                                 'with `estimator.get_params().keys()`.' %
+                                 (key, self))
+
+            if delim:
+                nested_params[key][sub_key] = value
+            else:
+                setattr(self, key, value)
+                valid_params[key] = value
+
+        for key, sub_params in nested_params.items():
+            valid_params[key].set_params(**sub_params)
+
+        return self
+
+    @classmethod
+    def _get_param_names(cls):
+        """Get parameter names for the estimator"""
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
+        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
+        if init is object.__init__:
+            # No explicit constructor to introspect
+            return []
+
+        # introspect the constructor arguments to find the model parameters
+        # to represent
+        init_signature = signature(init)
+        # Consider the constructor parameters excluding 'self'
+        parameters = [p for p in init_signature.parameters.values()
+                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        for p in parameters:
+            if p.kind == p.VAR_POSITIONAL:
+                raise RuntimeError("scikit-learn estimators should always "
+                                   "specify their parameters in the signature"
+                                   " of their __init__ (no varargs)."
+                                   " %s with constructor %s doesn't "
+                                   " follow this convention."
+                                   % (cls, init_signature))
+        # Extract and sort argument names excluding 'self'
+        return sorted([p.name for p in parameters])
+
+    def get_params(self, deep=True):
+        """Get parameters for this estimator.
+        Parameters
+        ----------
+        deep : boolean, optional
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+        Returns
+        -------
+        params : mapping of string to any
+            Parameter names mapped to their values.
+        """
+        out = dict()
+        for key in self._get_param_names():
+            value = getattr(self, key, None)
+            if deep and hasattr(value, 'get_params'):
+                deep_items = value.get_params().items()
+                out.update((key + '__' + k, val) for k, val in deep_items)
+            out[key] = value
+        return out
 
     def _validate_names(self, dataset):
         if self.fit_names is not None:
@@ -68,14 +137,14 @@ class BaseModel(object):
 
     def init_model(self, dataset):
         if not self.model_init:
-            self.model = self.pure_model(self.config)
+            self.model = self.model_(self.config)
             self.model_init = True
         else:
             # TODO it strange!
             if hasattr(self.model, 'reset'):
                 self.save()
                 # self.model.reset()
-                self.model = self.pure_model(self.config)
+                self.model = self.model_(self.config)
             else:
                 raise AttributeError('Model was already initialized. Add reset method in your model'
                                      'or create new pipeline')
@@ -147,13 +216,6 @@ class BaseModel(object):
         prediction = self.predict_data(dataset)
         return prediction
 
-    def get_params(self):
-        return self.config
-
-    def set_params(self, params):
-        self.config = params
-        return self
-
     def save(self, path=None):
         if path is not None:
             self.model.save(path)
@@ -173,56 +235,3 @@ class BaseModel(object):
             self.trained = True
 
         return self
-
-
-class ModelXY(BaseModel):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-
-    def fit(self, dataset):
-        self._validate_names(dataset)
-        request, report = dataset.main_names
-
-        for name in self.fit_names:
-            X = dataset.data[name][request]
-            Y = dataset.data[name][report]
-            self.model.fit(X, Y)
-
-        return self
-
-    def predict(self, dataset):
-        self._validate_names(dataset)
-        request, report = dataset.main_names
-
-        if not self.trained:
-            raise TypeError('Model is not trained yet.')
-
-        for name, new_name in zip(self.request_names, self.new_names):
-            X = dataset.data[name][request]
-            dataset.data[new_name] = self.model.predict(X)
-
-        return dataset
-
-    def predict_data(self, dataset):
-        self._validate_names(dataset)
-        request, report = dataset.main_names
-
-        if not self.trained:
-            raise TypeError('Model is not trained yet.')
-
-        prediction = {}
-        for name, new_name in zip(self.request_names, self.new_names):
-            X = dataset.data[name][request]
-            prediction[new_name] = self.model.predict(X)
-
-        return prediction
-
-    def fit_predict(self, dataset):
-        self.fit(dataset)
-        dataset = self.predict(dataset)
-        return dataset
-
-    def fit_predict_data(self, dataset):
-        self.fit(dataset)
-        prediction = self.predict_data(dataset)
-        return prediction
