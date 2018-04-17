@@ -234,7 +234,9 @@ class Watcher(Dataset):
         self.restype = restype
 
         if root is None:
-            root = '/home/mks/projects/deepburtsev/'
+            self.root = '/home/mks/projects/DeepBurtsev/'
+        else:
+            self.root = root
 
         self.conf_dict = join(root, 'data', language, dataset_name, 'log_data')
         self.save_path = join(self.conf_dict, 'data')

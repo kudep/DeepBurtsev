@@ -250,6 +250,7 @@ class GetResult(BaseTransformer):
 
         self.metrices = ['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix']
         self.category_description = None
+        self.root = None
 
         if config is None:
             self.config = {'op_type': 'transformer',
@@ -271,6 +272,7 @@ class GetResult(BaseTransformer):
         dataset_name = dataset.dataset_name
         language = dataset.language
         res_type = dataset.restype
+        self.root = dataset.root
 
         self.category_description = dataset.classes_description
         if self.category_description is None:
@@ -305,7 +307,7 @@ class GetResult(BaseTransformer):
                 if isinstance(conf[names_[-2]][u], np.int64):
                     conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
-            logging(results, conf, date, language=language, dataset_name=dataset_name)
+            logging(results, conf, date, language=language, dataset_name=dataset_name, root=self.root)
 
         elif res_type == 'linear':
             pred_name = self.config['request_names'][0]
@@ -324,7 +326,7 @@ class GetResult(BaseTransformer):
                 if isinstance(conf[names_[-2]][u], np.int64):
                     conf[names_[-2]][u] = int(conf[names_[-2]][u])
 
-            logging(results, conf, date, language=language, dataset_name=dataset_name)
+            logging(results, conf, date, language=language, dataset_name=dataset_name, root=self.root)
 
         else:
             raise ValueError('Incorrect type: {}; need "neural" or "linear".'.format(res_type))

@@ -223,10 +223,10 @@ def get_result(y_pred, y_test):
 # -------------------------- Logging ----------------------------------
 
 
-def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill'):
+def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill', root='/home/mks/projects/DeepBurtsev/'):
     log = {'pipeline configuration': pipe_conf, 'results': res}
 
-    root = '/home/mks/projects/DeepBurtsev/'
+    root = root
     path = join(root, 'results', language, dataset_name, name)
 
     if not os.path.isdir(path):
