@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
-from deepburtsev.core.models.BaseModel import *
+from deepburtsev.core.models.base_model import *
 from deepburtsev.core.transformers.transformers import *
 from deepburtsev.core.vectorizers.vectorizers import *
 from deepburtsev.core.utils import ConfGen

@@ -22,45 +22,7 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
 
-class BaseTransformer(object):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='base_transformer'):
-        # named spaces
-        self.op_type = op_type
-        self.op_name = op_name
-        self.new_names = new_names
-        self.worked_names = request_names
-        self.request_names = []
-
-    def _validate_names(self, dataset):
-        if self.worked_names is not None:
-            if not isinstance(self.worked_names, list):
-                raise ValueError('Request_names must be a list, but {} was found.'.format(type(self.worked_names)))
-
-            for name in self.worked_names:
-                if name not in dataset.data.keys():
-                    raise KeyError('Key {} not found in dataset.'.format(name))
-                else:
-                    self.request_names.append(name)
-        else:
-            self.worked_names = ['base', 'train', 'valid', 'test']
-            for name in self.worked_names:
-                if name in dataset.data.keys():
-                    self.request_names.append(name)
-            if len(self.request_names) == 0:
-                raise KeyError('Keys from {} not found in dataset.'.format(self.worked_names))
-
-        if self.new_names is None:
-            self.new_names = self.request_names
-
-        return self
-
-    def transform(self, dataset):
-        raise AttributeError("Method 'transform' is not defined. Determine the method.")
-
-    def fit_transform(self, dataset):
-        self._validate_names(dataset)
-        return self.transform(dataset)
-
+class BaseClass(object):
     # def get_params(self):
     #     return self.config
 
@@ -150,6 +112,46 @@ class BaseTransformer(object):
                 out.update((key + '__' + k, val) for k, val in deep_items)
             out[key] = value
         return out
+
+
+class BaseTransformer(BaseClass):
+    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='base_transformer'):
+        # named spaces
+        self.op_type = op_type
+        self.op_name = op_name
+        self.new_names = new_names
+        self.worked_names = request_names
+        self.request_names = []
+
+    def _validate_names(self, dataset):
+        if self.worked_names is not None:
+            if not isinstance(self.worked_names, list):
+                raise ValueError('Request_names must be a list, but {} was found.'.format(type(self.worked_names)))
+
+            for name in self.worked_names:
+                if name not in dataset.data.keys():
+                    raise KeyError('Key {} not found in dataset.'.format(name))
+                else:
+                    self.request_names.append(name)
+        else:
+            self.worked_names = ['base', 'train', 'valid', 'test']
+            for name in self.worked_names:
+                if name in dataset.data.keys():
+                    self.request_names.append(name)
+            if len(self.request_names) == 0:
+                raise KeyError('Keys from {} not found in dataset.'.format(self.worked_names))
+
+        if self.new_names is None:
+            self.new_names = self.request_names
+
+        return self
+
+    def transform(self, dataset):
+        raise AttributeError("Method 'transform' is not defined. Determine the method.")
+
+    def fit_transform(self, dataset):
+        self._validate_names(dataset)
+        return self.transform(dataset)
 
 
 class Speller(BaseTransformer):
