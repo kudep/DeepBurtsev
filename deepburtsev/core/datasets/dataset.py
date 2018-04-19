@@ -238,6 +238,8 @@ class Watcher(Dataset):
         else:
             self.root = root
 
+        print(root)
+
         self.conf_dict = join(root, 'data', language, dataset_name, 'log_data')
         self.save_path = join(self.conf_dict, 'data')
 

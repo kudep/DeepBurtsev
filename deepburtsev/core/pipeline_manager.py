@@ -28,7 +28,7 @@ class PipelineManager(object):
 
     def init_dataset(self, pure_data, res_type, test_mode=False):
         self.start_dataset = Watcher(pure_data, self.date, self.language, self.dataset_name, res_type,
-                                     seed=self.seed)
+                                     seed=self.seed, root=self.root)
 
         if test_mode:
             dataset = self.start_dataset.split([0.1, 0.1])
@@ -89,7 +89,7 @@ class PipelineManager(object):
 
                 model_conf_name = list(pipe_conf.keys())[-2].split('_')[0] + '_params.json'
                 model_conf = pipe_conf[list(pipe_conf.keys())[-2]]
-                path_to_model_conf = join(self.root, 'configs', 'models', model_conf_name)
+                path_to_model_conf = join(self.root, 'deepburtsev', 'configs', 'models', model_conf_name)
 
                 if isfile(path_to_model_conf):
                     with open(path_to_model_conf, 'r') as file:
@@ -108,9 +108,9 @@ class PipelineManager(object):
                             if isinstance(params[u], np.int64):
                                 params[u] = int(params[u])
 
-                        model_op = model_pipe[0][0]
+                        model_op = model_pipe[1][0]
                         mod = (model_op, params)
-                        model_pipe[0] = mod
+                        model_pipe[1] = mod
 
                         model_pipeline = Pipeline(model_pipe, mode='infer', output='dataset')
                         end_dataset = model_pipeline.run(d_)
