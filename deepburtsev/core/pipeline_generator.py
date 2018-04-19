@@ -41,8 +41,7 @@ class PipeGen(object):
                             'new_names': ['train_vec', 'valid_vec', 'test_vec']}
 
         # Concatenator
-        self.ops_dict = {'Speller': Speller,
-                         'Tokenizer': Tokenizer,
+        self.ops_dict = {'Tokenizer': Tokenizer,  # 'Speller': Speller,
                          'Lemmatizer': Lemmatizer,
                          'Textconcatenator': TextConcat,
                          'FasttextVectorizer': FasttextVectorizer,
@@ -185,8 +184,7 @@ class PipelineGeneratorOld(object):
                             'new_names': ['train_vec', 'valid_vec', 'test_vec']}
 
         # Concatenator
-        self.ops_dict = {'Speller': Speller,
-                         'Tokenizer': Tokenizer,
+        self.ops_dict = {'Tokenizer': Tokenizer,  # 'Speller': Speller,
                          'Lemmatizer': Lemmatizer,
                          'Textсoncatenator': TextConcat,
                          'FasttextVectorizer': FasttextVectorizer,
@@ -337,8 +335,7 @@ class PipelineGenerator(object):
             self.vec_default = vec_default
 
         if ops_dict is None:
-            self.ops_dict = {'Speller': Speller,
-                             'Tokenizer': Tokenizer,
+            self.ops_dict = {'Tokenizer': Tokenizer,  # 'Speller': Speller,
                              'Lemmatizer': Lemmatizer,
                              'Textсoncatenator': TextConcat,
                              'FasttextVectorizer': FasttextVectorizer,
