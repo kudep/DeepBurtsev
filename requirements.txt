@@ -15,4 +15,3 @@ matplotlib
 requests
 jinja2
 weasyprint
-tensorflow_hub
