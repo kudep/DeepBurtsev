@@ -411,7 +411,7 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
-def plot_i(date=None, path=None):
+def plot_i(date=None, path=None, root=''):
     if path is None and date is None:
         date = datetime.now()
         path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
@@ -427,7 +427,7 @@ def plot_i(date=None, path=None):
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info, path)
+    table, best_model = get_table(info, path, root=root)
 
     # ploting results
     model_names = tuple(table.index)
@@ -479,7 +479,7 @@ def plot_j(date=None, path=None, savepath='./results/russian/images/'):
     return None
 
 
-def plot_k(date=None, path=None, savepath='./results/russian/images/'):
+def plot_k(date=None, path=None, savepath='./results/russian/images/', root=''):
     if path is None and date is None:
         date = datetime.now()
         path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
@@ -496,7 +496,7 @@ def plot_k(date=None, path=None, savepath='./results/russian/images/'):
     info = scrab_data(log)
 
     # make dataframe table
-    table, best_model = get_table(info, path)
+    table, best_model = get_table(info, path, root=root)
 
     # ploting results
     model_names = tuple(table.index)
