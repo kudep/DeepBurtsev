@@ -7,7 +7,7 @@ import numpy as np
 
 from tqdm import tqdm
 from deepburtsev.core.utils import logging
-from DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
+# from DeepPavlov.deeppavlov.core.commands.infer import build_model_from_config
 
 # metrics
 from sklearn.metrics import accuracy_score
@@ -84,46 +84,46 @@ class BaseTransformer(object):
         return self
 
 
-class Speller(BaseTransformer):
-    def __init__(self, config=None):
-        if config is None:
-            self.config = {'op_type': 'transformer',
-                           'name': 'Speller',
-                           'request_names': ['base'],
-                           'new_names': ['base'],
-                           'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
-        else:
-            need_names = ['path']
-            for name in need_names:
-                if name not in config.keys():
-                    raise ValueError('Input config must contain {}.'.format(name))
-
-            self.config = config
-
-        super().__init__(self.config)
-
-        self.conf_path = self.config['path']
-        with open(self.conf_path) as config_file:
-            self.speller_config = json.load(config_file)
-
-        self.speller = build_model_from_config(self.speller_config)
-
-    def _transform(self, dataset):
-        print('[ Speller start working ... ]')
-
-        request, report = dataset.main_names
-        for name, new_name in zip(self.request_names, self.new_names):
-            data = dataset.data[name]
-            refactor = list()
-
-            for x in tqdm(data[request]):
-                refactor.append(self.speller([x])[0])
-
-            dataset.data[new_name] = pd.DataFrame({request: refactor,
-                                                   report: data[report]})
-
-        print('[ Speller done. ]')
-        return dataset
+# class Speller(BaseTransformer):
+#     def __init__(self, config=None):
+#         if config is None:
+#             self.config = {'op_type': 'transformer',
+#                            'name': 'Speller',
+#                            'request_names': ['base'],
+#                            'new_names': ['base'],
+#                            'path': './DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json'}
+#         else:
+#             need_names = ['path']
+#             for name in need_names:
+#                 if name not in config.keys():
+#                     raise ValueError('Input config must contain {}.'.format(name))
+#
+#             self.config = config
+#
+#         super().__init__(self.config)
+#
+#         self.conf_path = self.config['path']
+#         with open(self.conf_path) as config_file:
+#             self.speller_config = json.load(config_file)
+#
+#         self.speller = build_model_from_config(self.speller_config)
+#
+#     def _transform(self, dataset):
+#         print('[ Speller start working ... ]')
+#
+#         request, report = dataset.main_names
+#         for name, new_name in zip(self.request_names, self.new_names):
+#             data = dataset.data[name]
+#             refactor = list()
+#
+#             for x in tqdm(data[request]):
+#                 refactor.append(self.speller([x])[0])
+#
+#             dataset.data[new_name] = pd.DataFrame({request: refactor,
+#                                                    report: data[report]})
+#
+#         print('[ Speller done. ]')
+#         return dataset
 
 
 class Tokenizer(BaseTransformer):
