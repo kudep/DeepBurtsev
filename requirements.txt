@@ -16,3 +16,5 @@ requests
 jinja2
 weasyprint
 tensorflow_hub
+kenlm
+lxml

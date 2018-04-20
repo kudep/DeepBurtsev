@@ -3,8 +3,8 @@ import pymorphy2
 import tensorflow_hub as hub
 import tensorflow as tf
 import fastText
-import pandas as pd
 import numpy as np
+import random
 
 # only for python 3.3+
 from inspect import signature
@@ -12,8 +12,9 @@ from inspect import signature
 from collections import defaultdict
 from tqdm import tqdm
 
-from deepburtsev.core.utils import logging
 from deepburtsev.core.utils import labels2onehot_one
+from deepburtsev.models.spellers.utils import RussianWordsVocab
+from deepburtsev.models.spellers.error_model import ErrorModel
 
 # metrics
 from sklearn.metrics import accuracy_score
@@ -116,94 +117,91 @@ class BaseClass(object):
 
 
 class BaseTransformer(BaseClass):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='base_transformer'):
+    def __init__(self, request_names=None, new_names=None, op_type=None, op_name=None):
         # named spaces
-        self.op_type = op_type
-        self.op_name = op_name
-        self.new_names = new_names
-        self.worked_names = request_names
         self.request_names = []
 
-    def _validate_names(self, dataset):
+        if self._check_names(request_names):
+            self.worked_names = request_names
+        else:
+            self.worked_names = [request_names]
+
+        if self._check_names(new_names):
+            self.new_names = new_names
+        else:
+            self.new_names = [new_names]
+
+        if len(self.new_names) != len(self.worked_names):
+            raise ValueError('The number of requested and new names must match.')
+
+        self.op_type = op_type
+        self.op_name = op_name
+
+    @staticmethod
+    def _check_names(names):
+        if isinstance(names, list):
+            for i, x in enumerate(names):
+                if not isinstance(x, str):
+                    raise ValueError('A list of names must contain strings,'
+                                     ' but {0} was found in position {1}.'.format(type(x), i))
+        elif isinstance(names, str):
+            return False
+        else:
+            raise ValueError('Input parameters must be string or a list of strings.')
+        return True
+
+    def _fill_names(self, x_name, y_name):
+        if x_name is not None:
+            self.worked_names = x_name
+        if y_name is not None:
+            self.new_names = y_name
+
+        if len(self.new_names) != len(self.worked_names):
+            raise ValueError('The number of requested and new names must match.')
+
+        return self
+
+    def _validate_names(self, dictionary):
         if self.worked_names is not None:
             if not isinstance(self.worked_names, list):
                 raise ValueError('Request_names must be a list, but {} was found.'.format(type(self.worked_names)))
 
             for name in self.worked_names:
-                if name not in dataset.data.keys():
-                    raise KeyError('Key {} not found in dataset.'.format(name))
+                if name not in dictionary.keys():
+                    raise KeyError('Key {} not found in input dictionary.'.format(name))
                 else:
                     self.request_names.append(name)
         else:
             self.worked_names = ['base', 'train', 'valid', 'test']
             for name in self.worked_names:
-                if name in dataset.data.keys():
+                if name in dictionary.keys():
                     self.request_names.append(name)
             if len(self.request_names) == 0:
-                raise KeyError('Keys from {} not found in dataset.'.format(self.worked_names))
+                raise KeyError('Keys from {} not found in input dictionary.'.format(self.worked_names))
 
         if self.new_names is None:
             self.new_names = self.request_names
 
         return self
 
-    def transform(self, dataset):
+    def transform(self, dictionary):
         raise AttributeError("Method 'transform' is not defined. Determine the method.")
 
-    def fit_transform(self, dataset):
-        self._validate_names(dataset)
-        return self.transform(dataset)
-
-
-# class Speller(BaseTransformer):
-#     def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Speller',
-#                  model_path='DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json',
-#                  root='/home/mks/projects/DeepBurtsev/'):
-#
-#         super().__init__(request_names, new_names, op_type, op_name)
-#
-#         self.model_path = join(root, model_path)
-#         with open(self.model_path) as config_file:
-#             self.speller_config = json.load(config_file)
-#             config_file.close()
-#
-#         self.speller = build_model_from_config(self.speller_config)
-#
-#     def transform(self, dataset, request_names=None, new_names=None):
-#         print('[ Speller start working ... ]')
-#
-#         if request_names is not None:
-#             self.worked_names = request_names
-#         if new_names is not None:
-#             self.new_names = new_names
-#
-#         request, report = dataset.main_names
-#         for name, new_name in zip(self.request_names, self.new_names):
-#             data = dataset.data[name]
-#             refactor = list()
-#
-#             for x in tqdm(data[request]):
-#                 refactor.append(self.speller([x])[0])
-#
-#             dataset.data[new_name] = pd.DataFrame({request: refactor,
-#                                                    report: data[report]})
-#
-#         print('[ Speller done. ]')
-#         return dataset
+    def fit_transform(self, dictionary):
+        self._validate_names(dictionary)
+        return self.transform(dictionary)
 
 
 class Tokenizer(BaseTransformer):
-    def transform(self, dataset, request_names=None, new_names=None):
+    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Tokenizer'):
+        super().__init__(request_names, new_names, op_type, op_name)
+
+    def transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting tokenization ... ]')
+        self._fill_names(request_names, new_names)
 
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
-
-        request, report = dataset.main_names
         for name, new_name in zip(self.request_names, self.new_names):
-            data = dataset.data[name][request]
+            data = dictionary[name]['x']
             tok_data = list()
 
             for x in tqdm(data):
@@ -212,152 +210,103 @@ class Tokenizer(BaseTransformer):
                 tokens = [val for sublist in word_toks for val in sublist]
                 tok_data.append(tokens)
 
-            dataset.data[new_name] = pd.DataFrame({request: tok_data,
-                                                   report: dataset.data[name][report]})
+            dictionary[new_name] = {'x': tok_data, 'y': dictionary[name]['y']}
 
         print('[ Tokenization was done. ]')
-        return dataset
+        return dictionary
 
 
 class Lemmatizer(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Lemmatizer'):
+    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lemmatizer'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.morph = pymorphy2.MorphAnalyzer()
 
-    def transform(self, dataset, request_names=None, new_names=None):
+    def transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting lemmatization ... ]')
+        self._fill_names(request_names, new_names)
 
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
-
-        request, report = dataset.main_names
         for name, new_name in zip(self.request_names, self.new_names):
-            data = dataset.data[name][request]
+            data = dictionary[name]['x']
             morph_data = list()
 
             for x in tqdm(data):
                 mp_data = [self.morph.parse(el)[0].normal_form for el in x]
                 morph_data.append(mp_data)
 
-            dataset.data[new_name] = pd.DataFrame({request: morph_data,
-                                                   report: dataset.data[name][report]})
+                dictionary[new_name] = {'x': morph_data, 'y': dictionary[name]['y']}
         print('[ Ended lemmatization. ]')
-        return dataset
+        return dictionary
 
 
 class TextConcat(BaseTransformer):
-    def transform(self, dataset, request_names=None, new_names=None):
-        print('[ Starting text merging ... ]')
-        request, report = dataset.main_names
+    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Concatenator'):
+        super().__init__(request_names, new_names, op_type, op_name)
 
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
+    def transform(self, dictionary, request_names=None, new_names=None):
+        print('[ Starting text merging ... ]')
+        self._fill_names(request_names, new_names)
 
         for name, new_name in zip(self.request_names, self.new_names):
-            data = dataset.data[name][request]
+            data = dictionary[name]['x']
             text_request = []
 
             for x in tqdm(data):
                 text_request.append(' '.join([z for z in x]))
 
-            dataset.data[new_name] = pd.DataFrame({request: text_request,
-                                                   report: dataset.data[name][report]})
+                dictionary[new_name] = {'x': text_request, 'y': dictionary[name]['y']}
 
         print('[ Text concatenation was ended. ]')
-        return dataset
+        return dictionary
 
 
-class GetResult(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Results summarizator',
-                 metrics=None):
+class ResultsCollector(BaseTransformer):
+    def __init__(self, request_names='test', new_names='results', y_pred='y_pred', y_true='y_true',
+                 op_type='transformer', op_name='ResultsCollector', metrics=None):
         super().__init__(request_names, new_names, op_type, op_name)
 
-        self.available_metrics = ['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix']
+        self.y_pred = y_pred
+        self.y_true = y_true
+        self.category_description = None
+
+        self.available_metrics = ['accuracy', 'f1_macro', 'f1_weighted']
         if metrics is None:
             self.metrics = self.available_metrics
         else:
-            for metric in self.available_metrics:
-                if metric not in self.metrics:
-                    raise ValueError('{} metrics is not implemented yet.'.format(metric))
-            self.metrics = self.available_metrics
+            for metric in metrics:
+                if metric not in self.available_metrics:
+                    raise ValueError('Sorry {} metrics is not implemented yet.'.format(metric))
+            self.metrics = metrics
 
-        self.category_description = None
-        self.root = None
-
-    def transform(self, dataset, request_names=None, new_names=None):
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
-
-        request, report = dataset.main_names
-        dataset_name = dataset.dataset_name
-        language = dataset.language
-        res_type = dataset.restype
-        self.root = dataset.root
-
-        self.category_description = dataset.classes_description
-        if self.category_description is None:
-            self.category_description = dataset.classes
-
-        print(res_type)
-
-        if res_type == 'neural':
-            pred_name = self.request_names[0]
-            real_name = self.new_names[0]
-            pred_data = dataset.data[pred_name]
-            real_data = np.array(dataset.data[real_name][report])
-
-            preds = pred_data[0]
-            for x in pred_data[1:]:
-                preds = np.concatenate((preds, x), axis=0)
-
-            preds = np.argmax(preds, axis=1)
-            for i, x in enumerate(preds):
-                preds[i] = x + 1
-
-            preds = preds[:len(real_data)]
-
-            results = self.get_results(preds, real_data)
-            dataset.data['results'] = results
-
-            conf = dataset.pipeline_config
-            date = dataset.date
-
-            names_ = list(conf.keys())
-            for u in conf[names_[-2]].keys():
-                if isinstance(conf[names_[-2]][u], np.int64):
-                    conf[names_[-2]][u] = int(conf[names_[-2]][u])
-
-            logging(results, conf, date, language=language, dataset_name=dataset_name, root=self.root)
-
-        elif res_type == 'linear':
-            pred_name = self.request_names[0]
-            real_name = self.new_names[0]
-            pred_data = np.array(dataset.data[pred_name])
-
-            real_data = np.array(dataset.data[real_name][report])
-            results = self.get_results(pred_data, real_data)
-            dataset.data['results'] = results
-
-            conf = dataset.pipeline_config
-            date = dataset.date
-
-            names_ = list(conf.keys())
-            for u in conf[names_[-2]].keys():
-                if isinstance(conf[names_[-2]][u], np.int64):
-                    conf[names_[-2]][u] = int(conf[names_[-2]][u])
-
-            logging(results, conf, date, language=language, dataset_name=dataset_name, root=self.root)
-
+    def _check_data_format(self, data):
+        if isinstance(data, np.ndarray):
+            if len(np.shape(data)) != 1:
+                raise ValueError('y_pred and y_true must be numpy.ndarray with rang=1 or list.')
+            else:
+                return self
+        elif isinstance(data, list):
+            return self
         else:
-            raise ValueError('Incorrect type: {}; need "neural" or "linear".'.format(res_type))
+            raise ValueError('y_pred and y_true must be numpy.ndarray with rang=1 or list')
 
-        return dataset
+    def transform(self, dictionary, request_names=None, new_names=None):
+        self._fill_names(request_names, new_names)
+
+        for name, new_name in zip(self.request_names, self.new_names):
+            pred_data = dictionary[name][self.y_pred]
+            real_data = dictionary[name][self.y_true]
+            self._check_data_format(pred_data)
+            self._check_data_format(real_data)
+
+            # get amount of classes as list
+            self.category_description = [i for i in range(len(dictionary[self.request_names[1]][0]))]
+
+            # protector from excess batch elements
+            pred_data = pred_data[:len(real_data)]
+
+            results = self.get_results(pred_data, real_data)
+            dictionary[new_name] = results
+
+        return dictionary
 
     def get_results(self, y_pred, y_true):
 
@@ -403,118 +352,197 @@ class GetResult(BaseTransformer):
         return res
 
 
-# Old fasttext
-# class FasttextVectorizer(BaseTransformer):
-#     def __init__(self, config=None):
-#
-#         if config is None:
-#             self.config = {'op_type': 'vectorizer',
-#                            'name': 'fasttext',
-#                            'request_names': ['train', 'valid', 'test'],
-#                            'new_names': ['train_vec', 'valid_vec', 'test_vec'],
-#                            'path_to_model': './data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin',
-#                            'dimension': 300,
-#                            'file_type': 'bin'}
-#
-#         else:
-#             need_names = ['path_to_model', 'dimension', 'file_type']
-#             for name in need_names:
-#                 if name not in config.keys():
-#                     raise ValueError('Input config must contain {}.'.format(name))
-#
-#             self.config = config
-#
-#         super().__init__(self.config)
-#
-#         self.vectorizer = fasttext.load_model(self.config['path_to_model'])
-#
-#     def _transform(self, dataset):
-#         print('[ Starting vectorization ... ]')
-#         request, report = dataset.main_names
-#
-#         for name, new_name in zip(self.request_names, self.new_names):
-#             print('[ Vectorization of {} part of dataset ... ]'.format(name))
-#             data = dataset.data[name][request]
-#             vec_request = []
-#
-#             for x in tqdm(data):
-#                 matrix_i = np.zeros((len(x), self.config['dimension']))
-#                 for j, y in enumerate(x):
-#                     matrix_i[j] = self.vectorizer[y]
-#                 vec_request.append(matrix_i)
-#
-#             vec_report = list(labels2onehot_one(dataset.data[name][report], dataset.classes))
-#
-#             dataset.data[new_name] = pd.DataFrame({request: vec_request,
-#                                                    report: vec_report})
-#
-#         print('[ Vectorization was ended. ]')
-#         return dataset
-
-
 class FasttextVectorizer(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='vectorizer', op_name='fasttext',
-                 dimension=300, file_type='bin', model_path='./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'):
+    def __init__(self, request_names=None, new_names=None, classes_name='classes', op_type='vectorizer',
+                 op_name='fasttext', dimension=300, file_type='bin',
+                 model_path='./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.file_type = file_type
+        self.classes_name = classes_name
         self.dimension = dimension
         self.model_path = model_path
         self.vectorizer = fastText.load_model(self.model_path)
 
-    def _transform(self, dataset, request_names=None, new_names=None):
+    def transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting vectorization ... ]')
+        self._fill_names(request_names, new_names)
 
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
-
-        request, report = dataset.main_names
+        if dictionary.get(self.classes_name) is None:
+            raise ValueError("The inbound dictionary should contain list of classes for one-hot"
+                             " vectorization of y_true values.")
 
         for name, new_name in zip(self.request_names, self.new_names):
             print('[ Vectorization of {} part of dataset ... ]'.format(name))
-            data = dataset.data[name][request]
+            data = dictionary[name]['x']
             vec_request = []
 
             for x in tqdm(data):
-                matrix_i = np.zeros((len(x), self.config['dimension']))
+                matrix_i = np.zeros((len(x), self.dimension))
                 for j, y in enumerate(x):
                     matrix_i[j] = self.vectorizer.get_word_vector(y)
                 vec_request.append(matrix_i)
 
-            vec_report = list(labels2onehot_one(dataset.data[name][report], dataset.classes))
+            vec_report = list(labels2onehot_one(dictionary[name]['y'], dictionary[self.classes_name]))
 
-            dataset.data[new_name] = pd.DataFrame({request: vec_request,
-                                                   report: vec_report})
+            dictionary[new_name] = {'x': vec_request, 'y': vec_report}
 
         print('[ Vectorization was ended. ]')
-        return dataset
+        return dictionary
 
 
 class SentEmbedder(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='vectorizer', op_name='SentEmbedder',
+    def __init__(self, request_names=None, new_names=None, op_type='vectorizer', op_name='GoogleSentEmbedder',
                  model_path="https://tfhub.dev/google/universal-sentence-encoder/1"):
         super().__init__(request_names, new_names, op_type, op_name)
         self.model_path = model_path
         self.model = hub.Module(self.model_path)
 
-    def _transform(self, dataset, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ SentEmbedder start working ... ]')
-
-        if request_names is not None:
-            self.worked_names = request_names
-        if new_names is not None:
-            self.new_names = new_names
-
-        request, report = dataset.main_names
+        self._fill_names(request_names, new_names)
 
         with tf.Session() as session:
-            for name, new_name in zip(self.config['request_names'], self.config['new_names']):
+            for name, new_name in zip(self.request_names, self.new_names):
                 session.run([tf.global_variables_initializer(), tf.tables_initializer()])
-                message_embeddings = session.run(self.model(list(dataset.data[name][request])))
+                message_embeddings = session.run(self.model(list(dictionary[name]['x'])))
 
-                print(message_embeddings.shape)
+                dictionary[new_name]['x'] = message_embeddings
+                dictionary[new_name]['y'] = list(dictionary[name]['y'])
 
-                dataset.data[new_name][request] = message_embeddings
-                dataset.data[new_name][report] = list(dataset.data[name][report])
-        return dataset
+        print('[ SentEmbedder and work. ]')
+        return dictionary
+
+
+# TODO check work
+class Splitter(BaseTransformer):
+    def __init__(self, split_names=None, new_names=None, op_type='transformer', op_name='Splitter',
+                 splitting_proportions=None, delete_parent=True, classes_name='classes'):
+        super().__init__(split_names, new_names, op_type, op_name)
+        self.splitting_proportions = splitting_proportions
+        self.delete_parent = delete_parent
+        self.classes_name = classes_name
+
+    def transform(self, dictionary, splitting_proportions=None, delete_parent=True):
+
+        # self._fill_names(request_names, new_names)
+
+        if dictionary.get(self.classes_name) is None:
+            raise ValueError("The inbound dictionary should contain list of classes for one-hot"
+                             " vectorization of y_true values.")
+
+        dd = dict()
+        cd = dictionary[self.classes_name]
+        train = list()
+        valid = list()
+        test = list()
+
+        if splitting_proportions is None:
+            splitting_proportions = [0.1, 0.1]
+
+        for name, new_names in zip(self.request_names, self.new_names):
+            dataset = dictionary[name]
+
+            for x, y in zip(dataset['x'], dataset['y']):
+                if y not in dd.keys():
+                    dd[y] = list()
+                    dd[y].append((x, y))
+                else:
+                    dd[y].append((x, y))
+
+            if type(splitting_proportions) is list:
+                assert len(splitting_proportions) == 2
+                assert type(splitting_proportions[0]) is float
+
+                valid_ = dict()
+                test_ = dict()
+
+                for x in dd.keys():
+                    num = int(cd[x] * splitting_proportions[0])
+                    valid_[x] = random.sample(dd[x], num)
+                    [dd[x].remove(t) for t in valid_[x]]
+
+                for x in dd.keys():
+                    num = int(cd[x] * splitting_proportions[1])
+                    test_[x] = random.sample(dd[x], num)
+                    [dd[x].remove(t) for t in test_[x]]
+            else:
+                raise ValueError('Split proportion must be list of floats, with length = 2')
+
+            train_ = dd
+
+            for x in train_.keys():
+                for z_, z in zip([train_, valid_, test_], [train, valid, test]):
+                    z.extend(z_[x])
+
+            del train_, valid_, test_, dd, cd, dataset
+
+            for z in [train, valid, test]:
+                z = random.shuffle(z)
+
+            utrain, uvalid, utest, ctrain, cvalid, ctest = list(), list(), list(), list(), list(), list()
+            for z, n, c in zip([train, valid, test], [utrain, uvalid, utest], [ctrain, cvalid, ctest]):
+                for x in z:
+                    n.append(x[0])
+                    c.append(x[1])
+
+            dictionary[name]['train'] = {'x': utrain, 'y': ctrain}
+            dictionary[name]['valid'] = {'x': uvalid, 'y': cvalid}
+            dictionary[name]['test'] = {'x': utest, 'y': ctest}
+
+            if delete_parent:
+                a = dictionary[name].pop('base', [])
+                del a
+
+        return self
+
+
+# TODO check work
+class Speller(BaseTransformer):
+    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Speller',
+                 dict_path='',
+                 model_save_path='',
+                 model_load_path=''):
+
+        super().__init__(request_names, new_names, op_type, op_name)
+
+        self.save_path = model_save_path
+        self.load_path = model_load_path
+        self.dict_path = dict_path
+
+        self.russian_word_dictionary = RussianWordsVocab(data_dir=self.dict_path)
+        self.speller = ErrorModel(self.russian_word_dictionary, lm_file='',
+                                  save_path=self.save_path, load_path=self.load_path)
+
+    def transform(self, dictionary, request_names=None, new_names=None):
+        print('[ Speller start working ... ]')
+        self._fill_names(request_names, new_names)
+
+        for name, new_name in zip(self.request_names, self.new_names):
+            data = dictionary[name]
+            refactor = list()
+
+            for x in tqdm(data['x']):
+                refactor.append(self.speller([x])[0])
+
+            dictionary[new_name] = {'x': refactor, 'y': data['y']}
+
+        print('[ Speller done. ]')
+        return dictionary
+
+
+# TODO check work
+class Lower(BaseTransformer):
+    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Lowercase'):
+        super().__init__(request_names, new_names, op_type, op_name)
+
+    def transform(self, dictionary, request_names=None, new_names=None):
+        print('[ Lowercase ]')
+        self._fill_names(request_names, new_names)
+
+        for name, new_name in zip(self.request_names, self.new_names):
+            lower = []
+            for x in dictionary[name]['x']:
+                lower.append(x.lower())
+            dictionary[new_name] = {'x': lower, 'y': dictionary[name]['y']}
+
+        return dictionary
