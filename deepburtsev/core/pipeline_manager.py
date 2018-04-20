@@ -1,9 +1,5 @@
-from time import time
-
-from deepburtsev.core.datasets.dataset import Watcher
-from deepburtsev.core.datasets.dataset_readers import *
-from deepburtsev.core.pipelines.pipeline import Pipeline, PrepPipeline
-from deepburtsev.core.transformers.transformers import *
+from deepburtsev.core.dataset import Watcher
+from deepburtsev.core.pipeline import Pipeline, PrepPipeline
 from .pipeline_generator import PipelineGenerator
 from .utils import *
 

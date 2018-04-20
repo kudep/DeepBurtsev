@@ -11,7 +11,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
-from deepburtsev.core.base_model import *
+from deepburtsev.core.model_wrappers import *
 from deepburtsev.core.utils import ConfGen
 from deepburtsev.models.intent_classification.cnn import *
 
