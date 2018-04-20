@@ -3,7 +3,7 @@ from collections import OrderedDict
 from os.path import join
 
 from deepburtsev.core.pipeline_manager import PipelineManager
-from deepburtsev.core.datasets.dataset_readers import *
+from dataset_readers import read_sber_dataset
 
 language = sys.argv[1]
 dataset_name = sys.argv[2]

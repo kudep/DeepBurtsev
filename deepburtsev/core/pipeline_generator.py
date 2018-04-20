@@ -13,7 +13,7 @@ from sklearn.svm import LinearSVC
 
 from deepburtsev.core.base_model import *
 from deepburtsev.core.utils import ConfGen
-from deepburtsev.models.cnn import *
+from deepburtsev.models.intent_classification.cnn import *
 
 
 class GetCNN(BaseModel):
