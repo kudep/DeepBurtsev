@@ -1,6 +1,9 @@
 from collections import OrderedDict
 from itertools import product
 
+from deepburtsev.core.transformers.transformers import *
+from deepburtsev.core.vectorizers.vectorizers import *
+from deepburtsev.core.wrappers.skwrappers import *
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
@@ -8,11 +11,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
-from deepburtsev.core.models.base_model import *
-from deepburtsev.core.transformers.transformers import *
-from deepburtsev.core.vectorizers.vectorizers import *
+from deepburtsev.core.base_model import *
 from deepburtsev.core.utils import ConfGen
-from deepburtsev.core.wrappers.skwrappers import *
 from deepburtsev.models.cnn import *
 
 

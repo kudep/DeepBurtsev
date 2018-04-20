@@ -1,19 +1,19 @@
-from deepburtsev.core.models.keras_model import KerasModel
-from deepburtsev.core import metrics as metrics_file
-# from deepburtsev.core.utils import log_metrics
-
-import tensorflow as tf
 import keras.metrics
 import keras.optimizers
-
+import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
-from keras.models import Model
 from keras.layers import Dense, Input, concatenate, Activation
-from keras.layers.pooling import GlobalMaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
+from keras.layers.pooling import GlobalMaxPooling1D
+from keras.models import Model
 from keras.regularizers import l2
+
+from deepburtsev.core import metrics as metrics_file
+from deepburtsev.core.keras_model import KerasModel
+
+# from deepburtsev.core.utils import log_metrics
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
