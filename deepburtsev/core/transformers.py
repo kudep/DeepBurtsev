@@ -184,8 +184,12 @@ class BaseTransformer(BaseClass):
 
         return self
 
-    def transform(self, dictionary):
+    def _transform(self, dictionary):
         raise AttributeError("Method 'transform' is not defined. Determine the method.")
+
+    def transform(self, dictionary):
+        self._validate_names(dictionary)
+        return self._transform(dictionary)
 
     def fit_transform(self, dictionary):
         self._validate_names(dictionary)
@@ -196,7 +200,7 @@ class Tokenizer(BaseTransformer):
     def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Tokenizer'):
         super().__init__(request_names, new_names, op_type, op_name)
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting tokenization ... ]')
         self._fill_names(request_names, new_names)
 
@@ -221,7 +225,7 @@ class Lemmatizer(BaseTransformer):
         super().__init__(request_names, new_names, op_type, op_name)
         self.morph = pymorphy2.MorphAnalyzer()
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting lemmatization ... ]')
         self._fill_names(request_names, new_names)
 
@@ -242,7 +246,7 @@ class TextConcat(BaseTransformer):
     def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Concatenator'):
         super().__init__(request_names, new_names, op_type, op_name)
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting text merging ... ]')
         self._fill_names(request_names, new_names)
 
@@ -288,7 +292,7 @@ class ResultsCollector(BaseTransformer):
         else:
             raise ValueError('y_pred and y_true must be numpy.ndarray with rang=1 or list')
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         self._fill_names(request_names, new_names)
 
         for name, new_name in zip(self.request_names, self.new_names):
@@ -363,7 +367,7 @@ class FasttextVectorizer(BaseTransformer):
         self.model_path = model_path
         self.vectorizer = fastText.load_model(self.model_path)
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Starting vectorization ... ]')
         self._fill_names(request_names, new_names)
 
@@ -413,16 +417,16 @@ class SentEmbedder(BaseTransformer):
         return dictionary
 
 
-# TODO check work
+# TODO fix
 class Splitter(BaseTransformer):
-    def __init__(self, split_names=None, new_names=None, op_type='transformer', op_name='Splitter',
-                 splitting_proportions=None, delete_parent=True, classes_name='classes'):
+    def __init__(self, split_names='base', new_names=['train', 'test'], op_type='transformer', op_name='Splitter',
+                 splitting_proportions=[0.9, 0.1], delete_parent=True, classes_name='classes'):
         super().__init__(split_names, new_names, op_type, op_name)
         self.splitting_proportions = splitting_proportions
         self.delete_parent = delete_parent
         self.classes_name = classes_name
 
-    def transform(self, dictionary, splitting_proportions=None, delete_parent=True):
+    def _transform(self, dictionary, splitting_proportions=None, delete_parent=True):
 
         # self._fill_names(request_names, new_names)
 
@@ -496,12 +500,11 @@ class Splitter(BaseTransformer):
         return self
 
 
-# TODO check work
 class Speller(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Speller',
-                 dict_path='',
-                 model_save_path='',
-                 model_load_path=''):
+    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Speller',
+                 dict_path='./russian_words_vocab',
+                 model_save_path='./deepburtsev/models/spellers',
+                 model_load_path='./deepburtsev/models/spellers'):
 
         super().__init__(request_names, new_names, op_type, op_name)
 
@@ -513,7 +516,7 @@ class Speller(BaseTransformer):
         self.speller = ErrorModel(self.russian_word_dictionary, lm_file='',
                                   save_path=self.save_path, load_path=self.load_path)
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Speller start working ... ]')
         self._fill_names(request_names, new_names)
 
@@ -530,12 +533,11 @@ class Speller(BaseTransformer):
         return dictionary
 
 
-# TODO check work
 class Lower(BaseTransformer):
     def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lowercase'):
         super().__init__(request_names, new_names, op_type, op_name)
 
-    def transform(self, dictionary, request_names=None, new_names=None):
+    def _transform(self, dictionary, request_names=None, new_names=None):
         print('[ Lowercase ]')
         self._fill_names(request_names, new_names)
 
