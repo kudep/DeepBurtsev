@@ -532,7 +532,7 @@ class Speller(BaseTransformer):
 
 # TODO check work
 class Lower(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='transformer', op_name='Lowercase'):
+    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lowercase'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def transform(self, dictionary, request_names=None, new_names=None):
