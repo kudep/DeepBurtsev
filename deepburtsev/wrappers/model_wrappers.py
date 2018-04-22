@@ -1,4 +1,4 @@
-from .transformers import BaseClass
+from deepburtsev.core.transformers import BaseClass
 
 
 class BaseModel(BaseClass):

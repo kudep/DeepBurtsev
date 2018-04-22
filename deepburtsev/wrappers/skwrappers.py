@@ -2,71 +2,14 @@ from deepburtsev.core.transformers import BaseTransformer
 
 
 class skwrapper(BaseTransformer):
-    def __init__(self, t, config=None):
-        super().__init__(config)
+    def __init__(self, t, request_names=None, new_names=None, op_type=None, op_name=None, **kwargs):
+        super().__init__(request_names, new_names, op_type, op_name)
+        self.trained = False
 
-        self.transformer = t()
+        self.transformer = t(**kwargs)
         if not ((hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform")):
             raise TypeError("Methods fit, fit_transform, transform are not implemented in class {} "
                             "Sklearn transformers and estimators shoud implement fit and transform.".format(t))
-
-        self.trained = False
-        params = self.transformer.get_params()
-        for key in params.keys():
-            if key in self.config.keys():
-                params[key] = self.config[key]
-
-        self.transformer.set_params(**params)
-
-    def set_params(self, config):
-        params = self.transformer.get_params()
-        for key in params.keys():
-            if key in config.keys():
-                params[key] = config[key]
-
-        self.transformer.set_params(**params)
-        return self
-
-
-class sktransformer(skwrapper):
-    def __init__(self, t, config=None):
-        super().__init__(t, config)
-
-    def _transform(self, dataset):
-        request, report = dataset.main_names
-        if hasattr(self.transformer, 'fit_transform') and not self.trained:
-            if 'base' not in dataset.data.keys():
-                dataset.merge_data(fields_to_merge=self.request_names, delete_parent=False, new_name='base')
-                X = dataset.data['base'][request]
-                y = dataset.data['base'][report]
-                # fit
-                self.transformer.fit(X, y)
-                self.trained = True
-
-                # delete 'base' from dataset
-                dataset.del_data(['base'])
-            else:
-                X = dataset.data['base'][request]
-                y = dataset.data['base'][report]
-                # fit
-                self.transformer.fit(X, y)
-                self.trained = True
-
-            # transform all fields
-            for name, new_name in zip(self.request_names, self.new_names):
-                X = dataset.data[name][request]
-                y = dataset.data[name][report]
-                dataset.data[new_name] = {request: self.transformer.transform(X),
-                                          report: y}
-
-        else:
-            for name, new_name in zip(self.request_names, self.new_names):
-                X = dataset.data[name][request]
-                y = dataset.data[name][report]
-                dataset.data[new_name] = {request: self.transformer.transform(X),
-                                          report: y}
-
-        return dataset
 
 
 class skmodel(skwrapper):
