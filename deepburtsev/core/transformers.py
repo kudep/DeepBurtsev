@@ -502,9 +502,9 @@ class Splitter(BaseTransformer):
 
 class Speller(BaseTransformer):
     def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Speller',
-                 dict_path='./russian_words_vocab',
-                 model_save_path='./deepburtsev/models/spellers',
-                 model_load_path='./deepburtsev/models/spellers'):
+                 dict_path='./downloads/error_model/',
+                 model_save_path='./downloads/error_model/',
+                 model_load_path='./downloads/error_model/'):
 
         super().__init__(request_names, new_names, op_type, op_name)
 

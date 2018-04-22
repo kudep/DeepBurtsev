@@ -41,12 +41,12 @@ class Pipeline(object):
             else:
                 op = element[0].set_params(**element[1])
         else:
-            if not hasattr(element[0], '__call__'):
-                op = element()
-            else:
+            if not hasattr(element, '__call__'):
                 op = element
+            else:
+                op = element()
 
-        dataset_ = op.fit_predict(dataset)
+        dataset_ = op.fit_transform(dataset)
 
         # collecting models
         if op.op_type == 'model':
