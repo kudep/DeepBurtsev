@@ -722,14 +722,23 @@ def labels2onehot(labels, classes):
     return y
 
 
-def labels2onehot_one(labels, classes):
-    n_classes = len(classes)
+# def labels2onehot_one(labels, classes, batch_size):
+#     n_classes = classes
+#     eye = np.eye(n_classes)
+#     y = []
+#     for sample in labels:
+#         curr = eye[sample-1]
+#         y.append(curr)
+#     y = np.asarray(y)
+#     return y
+
+
+def labels2onehot_one(labels, classes, batch_size):
+    n_classes = classes
     eye = np.eye(n_classes)
-    y = []
-    for sample in labels:
-        curr = eye[sample-1]
-        y.append(curr)
-    y = np.asarray(y)
+    y = np.zeros((batch_size, n_classes))
+    for i, sample in enumerate(labels):
+        y[i] = eye[sample-1]
     return y
 
 

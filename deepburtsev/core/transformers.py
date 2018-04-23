@@ -371,9 +371,9 @@ class FasttextVectorizer(BaseTransformer):
         print('[ Starting vectorization ... ]')
         self._fill_names(request_names, new_names)
 
-        if dictionary.get(self.classes_name) is None:
-            raise ValueError("The inbound dictionary should contain list of classes for one-hot"
-                             " vectorization of y_true values.")
+        # if dictionary.get(self.classes_name) is None:
+        #     raise ValueError("The inbound dictionary should contain list of classes for one-hot"
+        #                      " vectorization of y_true values.")
 
         for name, new_name in zip(self.request_names, self.new_names):
             print('[ Vectorization of {} part of dataset ... ]'.format(name))
@@ -386,9 +386,9 @@ class FasttextVectorizer(BaseTransformer):
                     matrix_i[j] = self.vectorizer.get_word_vector(y)
                 vec_request.append(matrix_i)
 
-            vec_report = list(labels2onehot_one(dictionary[name]['y'], dictionary[self.classes_name]))
+            # vec_report = list(labels2onehot_one(dictionary[name]['y'], dictionary[self.classes_name]))
 
-            dictionary[new_name] = {'x': vec_request, 'y': vec_report}
+            dictionary[new_name] = {'x': vec_request, 'y': dictionary[name]['y']}
 
         print('[ Vectorization was ended. ]')
         return dictionary

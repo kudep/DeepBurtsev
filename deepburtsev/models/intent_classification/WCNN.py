@@ -18,7 +18,7 @@ from keras.regularizers import l2
 
 from deepburtsev.core import metrics as metrics_file
 from deepburtsev.wrappers.model_wrappers import BaseModel
-from deepburtsev.core.utils import log_metrics
+from deepburtsev.core.utils import log_metrics, labels2onehot_one
 from os.path import join, isdir
 from pathlib import Path
 from collections import OrderedDict
@@ -37,23 +37,21 @@ class Dataset(object):
     def __init__(self, data, seed=None, classes_description=None, *args, **kwargs):
 
         self.main_names = ['x', 'y']
-        self.pipeline_config = OrderedDict()
-
         rs = random.getstate()
         random.seed(seed)
         self.random_state = random.getstate()
         random.setstate(rs)
 
-        self.data = dict()
+        self.data = data
 
-        if data.get('train') is not None:
-            self.data['train'] = data.get('train')
-        elif data.get('test') is not None:
-            self.data['test'] = data.get('test')
-        elif data.get('valid') is not None:
-            self.data['valid'] = data.get('valid')
-        else:
-            self.data['base'] = data
+        # if data.get('train') is not None:
+        #     self.data['train'] = data.get('train')
+        # elif data.get('test') is not None:
+        #     self.data['test'] = data.get('test')
+        # elif data.get('valid') is not None:
+        #     self.data['valid'] = data.get('valid')
+        # else:
+        #     self.data['base'] = data
 
         self.classes_description = classes_description
 
@@ -70,7 +68,7 @@ class Dataset(object):
             batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
         """
         data = self.data[data_type]
-        data_len = len(data)
+        data_len = len(data['x'])
         order = list(range(data_len))
 
         rs = random.getstate()
@@ -84,12 +82,16 @@ class Dataset(object):
         #     yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
         if not only_request:
             for i in range((data_len - 1) // batch_size + 1):
-                o = order[i * batch_size:(i + 1) * batch_size]
-                yield list((list(data[self.main_names[0]][o]), list(data[self.main_names[1]][o])))
+                # o = order[i * batch_size: (i + 1) * batch_size]
+                # print(type(o))
+                # print(o)
+
+                yield list((list(data[self.main_names[0]][i * batch_size: (i + 1) * batch_size]),
+                            list(data[self.main_names[1]][i * batch_size: (i + 1) * batch_size])))
         else:
             for i in range((data_len - 1) // batch_size + 1):
                 o = order[i * batch_size:(i + 1) * batch_size]
-                yield list((list(data[self.main_names[0]][o]),))
+                yield list((list(self.data[self.main_names[0]][o]),))
 
     def iter_all(self, data_type: str = 'base', only_request: bool = False) -> Generator:
         """
@@ -134,7 +136,8 @@ class WCNN(BaseModel):
                  val_every_n_epochs=30,
                  verbose=True,
                  val_patience=5,
-                 classes=None):
+                 classes=None,
+                 metrics_names='fmeasure'):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -168,7 +171,7 @@ class WCNN(BaseModel):
         self.val_every_n_epochs = val_every_n_epochs
         self.verbose = verbose
         self.val_patience = val_patience
-        self.metrics_names = None
+        self.metrics_names = metrics_names
         self.metrics_values = None
 
         # load weights if need
@@ -179,7 +182,7 @@ class WCNN(BaseModel):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch()
+                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
                 self.model_init = True
 
     # model graph
@@ -247,18 +250,21 @@ class WCNN(BaseModel):
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        metrics_names = self.metrics_names.split(' ')
-        metrics_funcs = []
-        for i in range(len(metrics_names)):
-            metrics_func = getattr(keras.metrics, metrics_names[i], None)
-            if callable(metrics_func):
-                metrics_funcs.append(metrics_func)
-            else:
-                metrics_func = getattr(add_metrics_file, metrics_names[i], None)
+        if self.metrics_names is None:
+            metrics_funcs = getattr(keras.metrics, self.lear_metrics, None)
+        else:
+            self.metrics_names = self.metrics_names.split(' ')
+            metrics_funcs = []
+            for i in range(len(self.metrics_names)):
+                metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
                 if callable(metrics_func):
                     metrics_funcs.append(metrics_func)
                 else:
-                    raise AttributeError("Metric {} is not defined".format(metrics_names[i]))
+                    metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
+                    if callable(metrics_func):
+                        metrics_funcs.append(metrics_func)
+                    else:
+                        raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
 
         model.compile(optimizer=optimizer_,
                       loss=loss,
@@ -313,18 +319,18 @@ class WCNN(BaseModel):
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        metrics_names = self.metrics_names.split(' ')
+        self.metrics_names = self.metrics_names.split(' ')
         metrics_funcs = []
-        for i in range(len(metrics_names)):
-            metrics_func = getattr(keras.metrics, metrics_names[i], None)
+        for i in range(len(self.metrics_names)):
+            metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
             if callable(metrics_func):
                 metrics_funcs.append(metrics_func)
             else:
-                metrics_func = getattr(add_metrics_file, metrics_names[i], None)
+                metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
                 if callable(metrics_func):
                     metrics_funcs.append(metrics_func)
                 else:
-                    raise AttributeError("Metric {} is not defined".format(metrics_names[i]))
+                    raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
 
         model.compile(optimizer=optimizer_,
                       loss=loss,
@@ -369,10 +375,13 @@ class WCNN(BaseModel):
 
     def batch_reformat(self, batch):
         vectors = list(batch[0])
-        labels_vec = np.array(batch[1])
-        if len(labels_vec) != self.batch_size:
-            shape = (self.batch_size - len(labels_vec), len(labels_vec[0]))
-            labels_vec = np.concatenate((labels_vec, np.zeros(shape)), axis=0)
+        labels = list(batch[1])
+
+        onehot_labels = labels2onehot_one(labels, self.n_classes, self.batch_size)
+
+        # if len(labels_vec) != self.batch_size:
+        #     shape = (self.batch_size - len(labels_vec), len(labels_vec[0]))
+        #     labels_vec = np.concatenate((labels_vec, np.zeros(shape)), axis=0)
 
         matrix = np.zeros((self.batch_size, self.text_size, self.embedding_size))
         for i, x in enumerate(vectors):
@@ -381,7 +390,7 @@ class WCNN(BaseModel):
                     for k, d in enumerate(y):
                             matrix[i][j][k] = d
 
-        batch = (matrix, labels_vec)
+        batch = (matrix, onehot_labels)
 
         return batch
 
@@ -437,14 +446,15 @@ class WCNN(BaseModel):
         val_increase = 0
         epochs_done = 0
 
-        n_train_samples = len(dictionary[self.fit_name])
+        n_train_samples = len(dictionary[self.fit_name]['x'])
         print('\n____Training over {} samples____\n\n'.format(n_train_samples))
 
         # get classes amount and init model
         if not self.model_init:
             self.n_classes = len(list(set(dictionary[self.fit_name]['y'])))
             self.model = self.cnn_model()
-            self.init_model_from_scratch()
+            self.init_model_from_scratch(add_metrics_file=metrics_file)
+            self.model_init = True
 
         # init dataset object
         dataset = Dataset(dictionary, seed=SEED)
@@ -534,11 +544,15 @@ class WCNN(BaseModel):
                     batch_gen = dataset.iter_batch(batch_size=self.batch_size,
                                                    data_type=name, shuffle=False)
                     predictions = []
+                    k = 0
                     for batch in batch_gen:
                         pred_batch = self.batch_reformat(batch)
-                        preds = self.infer_on_batch(pred_batch[0])
-                        preds = np.array(preds)
-                        predictions.append(preds)
+                        prediction = self.infer_on_batch(pred_batch[0])
+                        prediction = np.array(prediction)
+                        predictions.append(prediction)
+                        k += 1
+
+                    print(k)
 
                     # create one list of predictions from list of batches
                     preds = predictions[0]
