@@ -1,3 +1,9 @@
+import json
+import numpy as np
+import pandas as pd
+import os
+import random
+
 import keras.metrics
 import keras.optimizers
 import tensorflow as tf
@@ -11,18 +17,99 @@ from keras.models import Model
 from keras.regularizers import l2
 
 from deepburtsev.core import metrics as metrics_file
-from deepburtsev.core.keras_model import KerasModel
-
-# from deepburtsev.core.utils import log_metrics
+from deepburtsev.wrappers.model_wrappers import BaseModel
+from deepburtsev.core.utils import log_metrics
+from os.path import join, isdir
+from pathlib import Path
+from collections import OrderedDict
+from typing import Generator
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
+SEED = 42
 
-class WCNN(KerasModel):
-    def __init__(self, fit_name=["train_vec"], predict_names=["predicted_test"], new_names=["test_vec"],
+
+class Dataset(object):
+
+    def __init__(self, data, seed=None, classes_description=None, *args, **kwargs):
+
+        self.main_names = ['x', 'y']
+        self.pipeline_config = OrderedDict()
+
+        rs = random.getstate()
+        random.seed(seed)
+        self.random_state = random.getstate()
+        random.setstate(rs)
+
+        self.data = dict()
+
+        if data.get('train') is not None:
+            self.data['train'] = data.get('train')
+        elif data.get('test') is not None:
+            self.data['test'] = data.get('test')
+        elif data.get('valid') is not None:
+            self.data['valid'] = data.get('valid')
+        else:
+            self.data['base'] = data
+
+        self.classes_description = classes_description
+
+    def iter_batch(self, batch_size: int, data_type: str = 'base', shuffle: bool = True,
+                   only_request: bool = False) -> Generator:
+        """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
+         batches
+        Args:
+            batch_size (int): number of samples in batch
+            data_type (str): can be either 'train', 'test', or 'valid'
+            shuffle (bool): shuffle trigger
+            only_request (bool): trigger that told what data will be returned
+        Returns:
+            batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
+        """
+        data = self.data[data_type]
+        data_len = len(data)
+        order = list(range(data_len))
+
+        rs = random.getstate()
+        random.setstate(self.random_state)
+        if shuffle:
+            random.shuffle(order)
+        self.random_state = random.getstate()
+        random.setstate(rs)
+
+        # for i in range((data_len - 1) // batch_size + 1):
+        #     yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
+        if not only_request:
+            for i in range((data_len - 1) // batch_size + 1):
+                o = order[i * batch_size:(i + 1) * batch_size]
+                yield list((list(data[self.main_names[0]][o]), list(data[self.main_names[1]][o])))
+        else:
+            for i in range((data_len - 1) // batch_size + 1):
+                o = order[i * batch_size:(i + 1) * batch_size]
+                yield list((list(data[self.main_names[0]][o]),))
+
+    def iter_all(self, data_type: str = 'base', only_request: bool = False) -> Generator:
+        """
+        Iterate through all data. It can be used for building dictionary or
+        Args:
+            data_type (str): can be either 'train', 'test', or 'valid'
+            only_request (bool): trigger that told what data will be returned
+        Returns:
+            samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
+        """
+        data = self.data[data_type]
+        for x, y in zip(data[self.main_names[0]], data[self.main_names[1]]):
+            if not only_request:
+                yield (x, y)
+            else:
+                yield (x,)
+
+
+class WCNN(BaseModel):
+    def __init__(self, fit_name="train", predict_names=["test", "valid"], new_names=["pred_test", "pred_valid"],
                  op_type='keras_model', op_name='WCNN',
                  checkpoint_path="./data/russian/vkusvill/checkpoints/CNN/",
                  kernel_sizes_cnn="1 2 3",
@@ -47,7 +134,7 @@ class WCNN(KerasModel):
                  val_every_n_epochs=30,
                  verbose=True,
                  val_patience=5,
-                 n_classes=None):
+                 classes=None):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -62,7 +149,8 @@ class WCNN(KerasModel):
         self.dense_size = dense_size
         self.coef_reg_cnn = coef_reg_cnn
         self.coef_reg_den = coef_reg_den
-        self.n_classes = n_classes
+        self.classes = classes
+        self.n_classes = None
 
         # learning parameters
         self.lear_metrics = lear_metrics
@@ -83,7 +171,25 @@ class WCNN(KerasModel):
         self.metrics_names = None
         self.metrics_values = None
 
-        # model graph
+        # load weights if need
+        if self.model_from_saved:
+            self.model = self.restore(self.checkpoint_path)
+            self.model_init = True
+        else:
+            if self.classes is not None:
+                self.n_classes = np.array(self.classes.split(" ")).shape[0]
+                self.model = self.cnn_model()
+                self.model = self.init_model_from_scratch()
+                self.model_init = True
+
+    # model graph
+    def cnn_model(self):
+        """
+        Method builds uncompiled intent_model of shallow-and-wide CNN
+        Args:
+        Returns:
+            Uncompiled intent_model
+        """
         if type(self.kernel_sizes_cnn) is str:
             self.kernel_sizes_cnn = [int(x) for x in self.kernel_sizes_cnn.split(' ')]
 
@@ -102,7 +208,7 @@ class WCNN(KerasModel):
 
         output = concatenate(outputs, axis=1)
 
-        output = Dropout(rate=self.dropout_rate)(output)
+        output = Dropout(self.dropout_rate)(output)
         output = Dense(self.dense_size, activation=None,
                        kernel_regularizer=l2(self.coef_reg_den))(output)
         output = BatchNormalization()(output)
@@ -112,59 +218,366 @@ class WCNN(KerasModel):
                        kernel_regularizer=l2(self.coef_reg_den))(output)
         output = BatchNormalization()(output)
         act_output = Activation(self.last_activation)(output)
-        self.model = Model(inputs=inp, outputs=act_output)
+        model = Model(inputs=inp, outputs=act_output)
+        return model
 
-        # load weights if need
-        if self.model_from_saved:
-            self.model = self.restore(self.checkpoint_path)
+    def init_model_from_scratch(self, add_metrics_file=None, loss_weights=None, sample_weight_mode=None):
+        """
+        Method initializes intent_model from scratch with given params
+        Args:
+            add_metrics_file: file with additional metrics functions
+            loss_weights: optional parameter as in keras.intent_model.compile
+            sample_weight_mode: optional parameter as in keras.intent_model.compile
 
-        # check metrics and optimizers
+        Returns:
+            compiled intent_model with given network and learning parameters
+        """
+        print('[ Initializing intent_model from scratch ]')
+        model = self.model
         optimizer_func = getattr(keras.optimizers, self.optimizer, None)
 
         if callable(optimizer_func):
-            self.optimizer = optimizer_func(lr=self.lear_rate, decay=self.lear_rate_decay)
+            optimizer_ = optimizer_func(lr=self.lear_rate, decay=self.lear_rate_decay)
         else:
             raise AttributeError("Optimizer {} is not callable".format(self.optimizer))
 
         loss_func = getattr(keras.losses, self.loss, None)
         if callable(loss_func):
-            self.loss = loss_func
+            loss = loss_func
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        metrics_names = self.lear_metrics.split(' ')
-        self.metrics_funcs = []
+        metrics_names = self.metrics_names.split(' ')
+        metrics_funcs = []
         for i in range(len(metrics_names)):
             metrics_func = getattr(keras.metrics, metrics_names[i], None)
             if callable(metrics_func):
-                self.metrics_funcs.append(metrics_func)
+                metrics_funcs.append(metrics_func)
             else:
-                metrics_func = getattr(metrics_file, metrics_names[i], None)
+                metrics_func = getattr(add_metrics_file, metrics_names[i], None)
                 if callable(metrics_func):
-                    self.metrics_funcs.append(metrics_func)
+                    metrics_funcs.append(metrics_func)
                 else:
                     raise AttributeError("Metric {} is not defined".format(metrics_names[i]))
 
-    def init_model(self, dataset):
+        model.compile(optimizer=optimizer_,
+                      loss=loss,
+                      metrics=metrics_funcs,
+                      loss_weights=loss_weights,
+                      sample_weight_mode=sample_weight_mode)
+        return model
 
-        self.n_classes = len(dataset.get_classes())
+    def restore(self, add_metrics_file=None, loss_weights=None, sample_weight_mode=None):
+        """
+        Method initiliazes intent_model from saved params and weights
+        Args:
+            add_metrics_file: file with additional metrics functions
+            loss_weights: optional parameter as in keras.intent_model.compile
+            sample_weight_mode: optional parameter as in keras.intent_model.compile
+
+        Returns:
+            intent_model with loaded weights and network parameters from files
+            but compiled with given learning parameters
+        """
+        print('___Initializing intent_model from saved___'
+              '\nModel weights file is %s.h5'
+              '\nNetwork parameters are from %s_opt.json' % (self.checkpoint_path, self.checkpoint_path))
+
+        weights_fname = self.model_name + '.h5'
+        opt_fname = self.model_name + '_opt.json'
+
+        opt_path = join(self.checkpoint_path, opt_fname)
+        weights_path = join(self.checkpoint_path, weights_fname)
+
+        if Path(opt_path).is_file():
+            with open(opt_path, 'r') as opt_file:
+                opt = json.load(opt_file)
+        else:
+            raise IOError("Error: config file %s_opt.json of saved intent_model does not exist" % self.checkpoint_path)
+
+        self.set_params(**opt)
+        model = self.cnn_model()
+
+        print("Loading wights from `{}`".format(self.checkpoint_path + opt['model_name'] + '.h5'))
+        model.load_weights(weights_path)
+
+        optimizer_func = getattr(keras.optimizers, self.optimizer, None)
+        if callable(optimizer_func):
+            optimizer_ = optimizer_func(lr=self.lear_rate, decay=self.lear_rate_decay)
+        else:
+            raise AttributeError("Optimizer {} is not callable".format(self.optimizer))
+
+        loss_func = getattr(keras.losses, self.loss, None)
+        if callable(loss_func):
+            loss = loss_func
+        else:
+            raise AttributeError("Loss {} is not defined".format(self.loss))
+
+        metrics_names = self.metrics_names.split(' ')
+        metrics_funcs = []
+        for i in range(len(metrics_names)):
+            metrics_func = getattr(keras.metrics, metrics_names[i], None)
+            if callable(metrics_func):
+                metrics_funcs.append(metrics_func)
+            else:
+                metrics_func = getattr(add_metrics_file, metrics_names[i], None)
+                if callable(metrics_func):
+                    metrics_funcs.append(metrics_func)
+                else:
+                    raise AttributeError("Metric {} is not defined".format(metrics_names[i]))
+
+        model.compile(optimizer=optimizer_,
+                      loss=loss,
+                      metrics=metrics_funcs,
+                      loss_weights=loss_weights,
+                      sample_weight_mode=sample_weight_mode)
+        return model
+
+    def save(self, fname=None):
+        """
+        Method saves the intent_model parameters into <<fname>>_opt.json (or <<model_file>>_opt.json)
+        and intent_model weights into <<fname>>.h5 (or <<model_file>>.h5)
+        Args:
+            fname: file_path to save intent_model. If not explicitly given seld.opt["model_file"] will be used
+
+        Returns:
+            nothing
+        """
+        fname = self.checkpoint_path if fname is None else fname
+        opt_path = join(fname, self.model_name + '_opt.json')
+        weights_path = join(fname, self.model_name + '.h5')
+
+        if isdir(fname):
+            pass
+        else:
+            os.makedirs(fname)
+
+        # opt_path = Path.joinpath(self.model_path_, opt_fname)
+        # weights_path = Path.joinpath(self.model_path_, weights_fname)
+        # print("[ saving intent_model: {} ]".format(str(opt_path)))
+        self.model.save_weights(weights_path)
+
+        opt = self.get_params()
+        with open(opt_path, 'w') as outfile:
+            json.dump(opt, outfile)
+
+        return str(weights_path)
+
+    def reset(self):
+        tf.reset_default_graph()
+        return self
+
+    def batch_reformat(self, batch):
+        vectors = list(batch[0])
+        labels_vec = np.array(batch[1])
+        if len(labels_vec) != self.batch_size:
+            shape = (self.batch_size - len(labels_vec), len(labels_vec[0]))
+            labels_vec = np.concatenate((labels_vec, np.zeros(shape)), axis=0)
+
+        matrix = np.zeros((self.batch_size, self.text_size, self.embedding_size))
+        for i, x in enumerate(vectors):
+            for j, y in enumerate(x):
+                if j < self.text_size:
+                    for k, d in enumerate(y):
+                            matrix[i][j][k] = d
+
+        batch = (matrix, labels_vec)
+
+        return batch
+
+    def train_on_batch(self, batch):
+        """
+        Method pipelines the intent_model on the given batch
+        Args:
+            batch - list of tuples (preprocessed text, labels)
+
+        Returns:
+            loss and metrics values on the given batch
+        """
+        features = batch[0]
+        onehot_labels = batch[1]
+        metrics_values = self.model.train_on_batch(features, onehot_labels)
+        return metrics_values
+
+    def infer_on_batch(self, batch, labels=None):
+        """
+        Method infers the model on the given batch
+        Args:
+            batch - list of texts
+
+        Returns:
+            loss and metrics values on the given batch, if labels are given
+            predictions, otherwise
+        """
+        if labels:
+            features = batch
+            onehot_labels = labels
+            metrics_values = self.model.test_on_batch(features, onehot_labels.reshape(-1, self.n_classes))
+            return metrics_values
+        else:
+            predictions = self.model.predict(batch)
+            return predictions
+
+    def fit(self, dictionary, fit_name=None):
+        """
+        Method pipelines the intent_model using batches and validation
+        Args:
+            dictionary: dictionary
+            fit_name: str name of key in input dictionary
+
+        Returns: None
+
+        """
+
+        self._fill_names(fit_name, None, None)
+
+        updates = 0
+
+        val_loss = 1e100
+        val_increase = 0
+        epochs_done = 0
+
+        n_train_samples = len(dictionary[self.fit_name])
+        print('\n____Training over {} samples____\n\n'.format(n_train_samples))
+
+        # get classes amount and init model
+        if not self.model_init:
+            self.n_classes = len(list(set(dictionary[self.fit_name]['y'])))
+            self.model = self.cnn_model()
+            self.init_model_from_scratch()
+
+        # init dataset object
+        dataset = Dataset(dictionary, seed=SEED)
+
+        while epochs_done < self.epochs:
+            batch_gen = dataset.iter_batch(batch_size=self.batch_size,
+                                           data_type=self.fit_name)
+
+            for step, batch in enumerate(batch_gen):
+                batch = self.batch_reformat(batch)
+                metrics_values = self.train_on_batch(batch)
+                updates += 1
+
+                if self.verbose and step % 500 == 0:
+                    log_metrics(names=self.metrics_names,
+                                values=metrics_values,
+                                updates=updates,
+                                mode='train')
+
+            epochs_done += 1
+            if epochs_done % self.val_every_n_epochs == 0:
+                if 'valid' in dataset.data.keys():
+
+                    valid_batch_gen = dataset.iter_batch(batch_size=self.batch_size,
+                                                         data_type='valid')
+                    valid_metrics_values = []
+                    for valid_step, valid_batch in enumerate(valid_batch_gen):
+                        valid_batch = self.batch_reformat(valid_batch)
+                        valid_metrics_values.append(self.infer_on_batch(valid_batch[0],
+                                                                        labels=valid_batch[1]))
+
+                    valid_metrics_values = np.mean(np.asarray(valid_metrics_values), axis=0)
+                    log_metrics(names=self.metrics_names,
+                                values=valid_metrics_values,
+                                mode='valid')
+                    if valid_metrics_values[0] > val_loss:
+                        val_increase += 1
+                        print("__Validation impatience {} out of {}".format(
+                            val_increase, self.val_patience))
+                        if val_increase == self.val_patience:
+                            print("___Stop training: validation is out of patience___")
+                            break
+                    else:
+                        val_increase = 0
+                        val_loss = valid_metrics_values[0]
+            print('epochs_done: {}'.format(epochs_done))
+
+        self.trained = True
+        self.save()
+
+        return self
+
+    def predict(self, dictionary, pred_names=None, new_names=None):
+        """
+        Method returns predictions on the given data
+        Args:
+            dictionary: sentence or list of sentences
+            pred_names: str or list of keys of input dictionary
+            new_names: str or list of keys of input dictionary
+
+        Returns:
+            Predictions for the given data
+        """
+
+        self._fill_names(None, pred_names, new_names)
 
         if not self.model_init:
-            # compilation
-            self.model.compile(optimizer=self.optimizer,
-                               loss=self.loss,
-                               metrics=self.metrics_funcs,
-                               loss_weights=None,
-                               sample_weight_mode=None,
-                               # weighted_metrics=weighted_metrics,
-                               # target_tensors=target_tensors
-                               )
+            raise ValueError('Model is not initialized.')
+        if not self.trained:
+            raise ValueError('Model is not trained.')
 
-            self.metrics_names = self.model.metrics_names
-            self.metrics_values = len(self.metrics_names) * [0.]
+        # init dataset object
+        dataset = Dataset(dictionary, seed=SEED)
 
-            self.model_init = True
-        else:
-            raise AttributeError('Model was already initialized. Add reset method in your model'
-                                 'or create new pipeline')
-        return self
+        for name, new_name in zip(self.request_names, self.new_names):
+
+            if isinstance(dictionary[name], dict):
+                data = dictionary[name]['x']
+            else:
+                data = dictionary[name]
+
+            if type(data) is str:
+                preds = self.infer_on_batch([data])[0]
+                preds = np.array(preds)
+            elif (type(data) is list) or isinstance(data, pd.Series):
+                if len(data) > self.batch_size:
+                    batch_gen = dataset.iter_batch(batch_size=self.batch_size,
+                                                   data_type=name, shuffle=False)
+                    predictions = []
+                    for batch in batch_gen:
+                        pred_batch = self.batch_reformat(batch)
+                        preds = self.infer_on_batch(pred_batch[0])
+                        preds = np.array(preds)
+                        predictions.append(preds)
+
+                    # create one list of predictions from list of batches
+                    preds = predictions[0]
+                    for x in predictions[1:]:
+                        preds = np.concatenate((preds, x), axis=0)
+
+                    preds = np.argmax(preds, axis=1)
+                    for i, x in enumerate(preds):
+                        preds[i] = x + 1
+
+                else:
+                    # TODO fix big batch
+                    batch_gen = dataset.iter_batch(batch_size=self.batch_size,
+                                                   data_type=name, shuffle=False)
+                    predictions = []
+                    for batch in batch_gen:
+                        pred_batch = self.batch_reformat(batch)
+
+                        preds = self.infer_on_batch(pred_batch[0])
+                        preds = np.array(preds)
+                        predictions.append(preds)
+
+                    preds = predictions
+            else:
+                raise ValueError("Not understand data type for inference")
+
+            if isinstance(dictionary[name], dict):
+                if 'y' in dictionary[name].keys():
+                    dictionary[new_name] = {'y_pred': preds, 'y_true': dictionary[name]['y']}
+                else:
+                    dictionary[new_name] = {'y_pred': preds}
+            else:
+                dictionary[new_name] = {'y_pred': preds}
+
+        return dictionary
+
+    def fit_transform(self, dictionary, fit_name=None, pred_names=None, new_names=None):
+        self._fill_names(fit_name, pred_names, new_names)
+
+        self.fit(dictionary)
+        out = self.predict(dictionary)
+        return out

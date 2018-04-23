@@ -1,9 +1,8 @@
 from collections import OrderedDict
 from itertools import product
 
-from deepburtsev.core.transformers.transformers import *
-from deepburtsev.core.vectorizers.vectorizers import *
-from deepburtsev.core.wrappers.skwrappers import *
+from deepburtsev.core.transformers import *
+from deepburtsev.wrappers.skwrappers import *
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer

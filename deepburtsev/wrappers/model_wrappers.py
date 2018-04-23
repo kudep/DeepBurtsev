@@ -9,18 +9,16 @@ class BaseModel(BaseClass):
 
         # named spaces
         self.new_names = new_names
-        self.fit_names = fit_name
+        self.fit_name = fit_name
         self.request_names = predict_names
 
         self.trained = False
         self.model_init = False
-        # self._validate_model(model)
-        # self.model_ = model
         self.model = None
 
     def _validate_names(self, dataset):
-        if self.fit_names is not None:
-            for name in self.fit_names:
+        if self.fit_name is not None:
+            for name in self.fit_name:
                 if name not in dataset.data.keys():
                     raise KeyError('Key {} not found in dataset.'.format(name))
         else:
@@ -34,11 +32,6 @@ class BaseModel(BaseClass):
         return self
 
     def _validate_model(self, model):
-        # need_atr = ['fit', 'predict', 'fit_predict', 'save', 'restore']
-        # for atr in need_atr:
-        #     if not hasattr(model, atr):
-        #         raise AttributeError("Model don't supported {} method.".format(atr))
-
         # TODO init check
         if not (hasattr(model, 'fit') or hasattr(model, 'train')):
             raise AttributeError("Model don't supported fit or train methods method.")
@@ -49,6 +42,32 @@ class BaseModel(BaseClass):
         elif not hasattr(model, 'predict'):
             raise AttributeError("Model don't supported predict or load methods method.")
 
+    def _fill_names(self, fit, pred, new):
+        if fit is not None:
+            if isinstance(fit, str):
+                self.fit_name = fit
+            else:
+                raise ValueError('Fit name must be str, but {} was found.'.format(type(fit)))
+
+        if pred is not None:
+            if isinstance(pred, list):
+                self.request_names = pred
+            elif isinstance(pred, str):
+                self.request_names = [pred]
+            else:
+                raise ValueError('Prediction names must be a string or a list of strings.')
+
+        if new is not None:
+            if isinstance(new, list):
+                self.new_names = new
+            elif isinstance(pred, str):
+                self.new_names = [new]
+            else:
+                raise ValueError('New names must be a string or a list of strings.')
+
+        if len(self.new_names) != len(self.request_names):
+            raise ValueError('Lists with predicted names and new names must have equal length.')
+        return self
 
 class Model(BaseModel):
     def __init__(self, model, fit_name=None, predict_names=None, new_names=None, op_type='model',
