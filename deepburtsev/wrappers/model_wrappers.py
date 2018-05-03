@@ -69,6 +69,7 @@ class BaseModel(BaseClass):
             raise ValueError('Lists with predicted names and new names must have equal length.')
         return self
 
+
 class Model(BaseModel):
     def __init__(self, model, fit_name=None, predict_names=None, new_names=None, op_type='model',
                  op_name='model'):

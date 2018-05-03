@@ -21,7 +21,7 @@ from deepburtsev.wrappers.model_wrappers import BaseModel
 from deepburtsev.core.utils import log_metrics, labels2onehot_one
 from os.path import join, isdir
 from pathlib import Path
-from collections import OrderedDict
+# from collections import OrderedDict
 from typing import Generator
 
 config = tf.ConfigProto()
