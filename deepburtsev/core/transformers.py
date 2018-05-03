@@ -12,7 +12,7 @@ from inspect import signature
 from collections import defaultdict
 from tqdm import tqdm
 
-from deepburtsev.core.utils import labels2onehot_one
+# from deepburtsev.core.utils import labels2onehot_one
 from deepburtsev.models.spellers.utils import RussianWordsVocab
 from deepburtsev.models.spellers.error_model import ErrorModel
 
