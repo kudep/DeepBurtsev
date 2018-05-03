@@ -1,6 +1,6 @@
 from deepburtsev.core.dataset import Watcher
 from deepburtsev.core.pipeline import Pipeline, PrepPipeline
-from .pipeline_generator import PipelineGenerator
+from .old_pipeline_generator import PipelineGenerator
 from .utils import *
 
 
