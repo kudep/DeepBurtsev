@@ -11,6 +11,9 @@ class PipelineGenerator(object):
         self.pipes = []
         self.generator = self.pipeline_gen()
 
+    def __call__(self, *args, **kwargs):
+        return self.generator
+
     def check_struct(self):
         if not isinstance(self.structure, list):
             raise ValueError("Input must be a list.")
@@ -32,7 +35,7 @@ class PipelineGenerator(object):
                     if not isinstance(x[1], dict):
                         raise ValueError("Configuration of operation or search must have a dict type.")
 
-                    if not 'search' in x[1].keys():
+                    if 'search' not in x[1].keys():
                         pass
                     else:
                         conf_gen = self.rand_param_gen(x[1])
