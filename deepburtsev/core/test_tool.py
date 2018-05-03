@@ -8,7 +8,7 @@ struct = [[Tokenizer, Tokenizer], (Lemmatizer, {"op_name": "test_lem"}), (TextCo
           Lower]
 
 
-pipegen = PipelineGenerator(struct)
+pipegen = PipelineGenerator(struct, n=3)
 
 k = 0
 for x in pipegen():
