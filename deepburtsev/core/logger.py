@@ -6,12 +6,13 @@ from os.path import join, isdir
 
 
 class Logger(object):
-    def __init__(self, name, root, info, date):
+    def __init__(self, name, root, info, date, target_metric='f1_weighted'):
         self.exp_name = name
         self.exp_inf = info
         self.root = root
         self.date = date
-        self.metrics = None
+        self.target_metric = target_metric
+        self.metrics = []
 
         # tmp parameters
         self.pipe_ind = 0
@@ -49,14 +50,41 @@ class Logger(object):
         with open(self.log_file, 'w') as log_file:
             json.dump(self.log, log_file)
 
+    def add_metrics(self, metrics):
+        if isinstance(metrics, str):
+            if len(self.metrics) == 0:
+                self.metrics.append(metrics)
+            else:
+                if metrics not in self.metrics:
+                    self.metrics.append(metrics)
+                else:
+                    pass
+        elif isinstance(metrics, list):
+            if len(self.metrics) == 0:
+                self.metrics.extend(metrics)
+            else:
+                for x in metrics:
+                    if x not in self.metrics:
+                        self.metrics.append(x)
+                    else:
+                        pass
+
+        return self
+
     def get_pipe_log(self):
         ops_times = {}
         self.pipe_conf = OrderedDict()
         for i in range(len(self.ops.keys())):
             time = self.ops[str(i)].pop('time')
             name = self.ops[str(i)]['op_name']
+
+            # add metrics
+            if name == 'ResultsCollector':
+                self.add_metrics(self.ops[str(i)]['metrics'])
+            # find main model
             if self.ops[str(i)]['op_type'] == 'model':
                 self.model = name
+
             self.pipe_conf[name] = {'conf': self.ops[str(i)]}
             ops_times[name] = time
 
@@ -78,3 +106,6 @@ class Logger(object):
 
         self.tmp_reset()
         return self
+
+    def results_analysis(self):
+        pass
