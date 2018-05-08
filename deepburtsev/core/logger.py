@@ -6,100 +6,75 @@ from os.path import join, isdir
 
 
 class Logger(object):
-    def __init__(self, exp_name, root, language, dataset_name, date, hp_search):
-        self.exp_name = exp_name
+    def __init__(self, name, root, info, date):
+        self.exp_name = name
+        self.exp_inf = info
         self.root = root
-        self.language = language
-        self.dataset_name = dataset_name
         self.date = date
-        self.hp_search = hp_search
+        self.metrics = None
 
         # tmp parameters
-        self.model = None
         self.pipe_ind = 0
         self.pipe_conf = None
-        self.metrics = None
-        self.pipe_start_time = None
-        self.pipe_end_time = None
+        self.model = None
+        self.pipe_res = None
+        self.pipe_time = None
+        self.ops = {}
 
         # build folder dependencies
-        self.log_path = join(self.root, 'results', self.language, self.dataset_name,
-                             '{0}-{1}-{2}'.format(date.year, date.month, date.day),
-                             self.exp_name)
+        self.log_path = join(self.root, 'results', '{0}-{1}-{2}'.format(date.year, date.month, date.day), self.exp_name)
         self.log_file = join(self.log_path, self.exp_name + '.json')
 
         if not isdir(self.log_path):
             os.makedirs(self.log_path)
             os.makedirs(join(self.log_path, 'images'))
 
-        self.log = OrderedDict(experiment_parameters=OrderedDict(date='{0}-{1}-{2}'.format(date.year,
-                                                                                           date.month,
-                                                                                           date.day),
-                                                                 exp_name=self.exp_name,
-                                                                 language=self.language,
-                                                                 dataset_name=self.dataset_name,
-                                                                 hp_search=self.hp_search,
-                                                                 root=self.root),
-                               dataset={'init_time': None},
+        self.log = OrderedDict(experiment_info=OrderedDict(date='{0}-{1}-{2}'.format(date.year, date.month, date.day),
+                                                           exp_name=self.exp_name,
+                                                           root=self.root,
+                                                           info=self.exp_inf),
+                               dataset={},
                                experiments=OrderedDict())
+
+    def tmp_reset(self):
+        # tmp parameters
+        self.pipe_ind = 0
+        self.pipe_conf = None
+        self.model = None
+        self.pipe_res = None
+        self.pipe_time = None
+        self.ops = {}
 
     def save(self):
         with open(self.log_file, 'w') as log_file:
             json.dump(self.log, log_file)
 
-    def pipe_log(self, conf, time):
-        last_op_name = list(conf.keys())[-1]
-        last_conf = conf.pop(last_op_name)
-        del last_conf
-
-        model = list(conf.keys())[-1].split('_')[0]
-
-        self.model = model
-        self.pipe_ind += 1
-        self.pipe_conf = conf
-        self.pipe_start_time = time
-
-        pipe_name = '-->'.join([x.split('_')[0] for x in list(conf.keys())])
-
-        if model not in self.log['experiments'].keys():
-            self.pipe_ind = 1
-            self.log['experiments'][model] = OrderedDict()
-            self.log['experiments'][model][self.pipe_ind] = OrderedDict({'pipeline_config': conf,
-                                                                         'light_config': pipe_name,
-                                                                         'results': None,
-                                                                         'time': time,
-                                                                         'ops_time': {}})
-        else:
-            self.log['experiments'][model][self.pipe_ind] = OrderedDict({'config': conf,
-                                                                         'light_config': pipe_name,
-                                                                         'results': None,
-                                                                         'time': time,
-                                                                         'ops_time': {}})
-        return self
-
-    def hipe_log(self, conf, time):
-        self.pipe_ind += 1
-        self.pipe_conf[list(self.pipe_conf.keys())[-1]] = conf
+    def get_pipe_log(self):
+        ops_times = {}
+        self.pipe_conf = OrderedDict()
+        for i in range(len(self.ops.keys())):
+            time = self.ops[str(i)].pop('time')
+            name = self.ops[str(i)]['op_name']
+            if self.ops[str(i)]['op_type'] == 'model':
+                self.model = name
+            self.pipe_conf[name] = {'conf': self.ops[str(i)]}
+            ops_times[name] = time
 
         pipe_name = '-->'.join([x.split('_')[0] for x in list(self.pipe_conf.keys())])
 
         if self.model not in self.log['experiments'].keys():
             self.log['experiments'][self.model] = OrderedDict()
-            self.log['experiments'][self.model][self.pipe_ind] = OrderedDict({'config': self.pipe_conf,
-                                                                              'light_config': pipe_name,
-                                                                              'results': None,
-                                                                              'time': time,
-                                                                              'ops_time': {}})
+            self.log['experiments'][self.model][self.pipe_ind] = {'config': self.pipe_conf,
+                                                                  'light_config': pipe_name,
+                                                                  'time': self.pipe_time,
+                                                                  'ops_time': ops_times,
+                                                                  'results': self.pipe_res}
         else:
-            self.log['experiments'][self.model][self.pipe_ind] = OrderedDict({'config': self.pipe_conf,
-                                                                              'light_config': pipe_name,
-                                                                              'results': None,
-                                                                              'time': time,
-                                                                              'ops_time': {}})
-        return self
+            self.log['experiments'][self.model][self.pipe_ind] = {'config': self.pipe_conf,
+                                                                  'light_config': pipe_name,
+                                                                  'time': self.pipe_time,
+                                                                  'ops_time': ops_times,
+                                                                  'results': self.pipe_res}
 
-    def get_res(self, res, time, metrics):
-        self.metrics = metrics
-        self.log['experiments'][self.model][self.pipe_ind]['results'] = res
-        self.log['experiments'][self.model][self.pipe_ind]['time'] = time
+        self.tmp_reset()
         return self

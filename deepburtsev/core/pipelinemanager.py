@@ -1,12 +1,16 @@
+from time import time
+from datetime import datetime
 from .pipegen import PipelineGenerator
-from .utils import *
+from .logger import Logger
+from .utils import normal_time
 
 
 class PipelineManager(object):
-    def __init__(self, dataset, structure, info, root='./experiments/', analitic_func=None, k_fold=None, k_num=1,
+    def __init__(self, dataset, structure, exp_name, info=None, root='./experiments/', analitic_func=None, k_fold=None, k_num=1,
                  seed=42, hyper_search='random', sample_num=10):
         self.dataset = dataset
         self.structure = structure
+        self.exp_name = exp_name
         self.info = info
         self.data_func = analitic_func
         self.k_fold = k_fold
@@ -27,9 +31,8 @@ class PipelineManager(object):
         else:
             raise ValueError("Structure parameter must be a list or dict")
 
-        # self.time = {}
-        # self.logger = Logger(exp_name, root, language, dataset_name, self.date, self.hyper_search)
-        # self.logger.log['experiment_parameters']['full_tume'] = time()
+        self.logger = Logger(exp_name, root, self.info, self.date)
+        self.start_exp = time()
 
     def check_dataset(self):
         if isinstance(self.dataset, dict):
@@ -46,7 +49,10 @@ class PipelineManager(object):
 
         # analytics of dataset
         if self.data_func is not None:
+            an_start = time()
             data_info = self.data_func(self.dataset)
+            self.logger.log['dataset']['time'] = normal_time(time() - an_start)
+            self.logger.log['dataset'].update(**data_info)
 
         # TODO make grid_search and fix it
         # create PipelineGenerator
@@ -63,13 +69,27 @@ class PipelineManager(object):
 
         # Start generating pipelines configs
         for i, pipe in enumerate(self.pipeline_generator()):
+            self.logger.pipe_ind = i
+            pipe_start = time()
+
             dataset_i = self.dataset
             for j in range(pipe.length):
                 try:
+                    op_start = time()
                     conf = pipe.get_op_config(j)
+                    self.logger.ops[str(j)] = conf
+
                     dataset_i = pipe.step(j, dataset_i)
+
+                    t = {'time': normal_time(time() - op_start)}
+                    self.logger.ops[str(j)].update(**t)
                 except:
                     print('Operation with number {0};'.format(i + 1))
                     raise
 
+            self.logger.pipe_time = normal_time(time() - pipe_start)
+            self.logger.pipe_res = dataset_i.data['results']
+            self.logger.get_pipe_log()
+
+        self.logger.exp_inf['full_time'] = normal_time(time() - self.start_exp)
         return None

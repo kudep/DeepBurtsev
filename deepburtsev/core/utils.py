@@ -31,10 +31,13 @@ morph = pymorphy2.MorphAnalyzer()
 
 
 def normal_time(z):
-    h = z/3600
-    m = z % 3600/60
-    s = z % 3600 % 60
-    t = '%i:%i:%i' % (h, m, s)
+    if z > 1:
+        h = z/3600
+        m = z % 3600/60
+        s = z % 3600 % 60
+        t = '%i:%i:%i' % (h, m, s)
+    else:
+        t = z
     return t
 
 
