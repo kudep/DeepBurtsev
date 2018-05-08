@@ -35,7 +35,7 @@ class PipelineManager(object):
         if isinstance(self.dataset, dict):
             if not ('train' in self.dataset.keys() and 'test' in self.dataset.keys()):
                 raise ValueError("Input dataset must contain 'train' and 'test' keys with data.")
-            elif len(self.dataset['train']) == 0 or len(self.dataset['test']):
+            elif len(self.dataset['train']) == 0 or len(self.dataset['test']) == 0:
                 raise ValueError("Input dict is empty.")
         else:
             raise ValueError("Input dataset must be a dict.")
@@ -66,6 +66,7 @@ class PipelineManager(object):
             dataset_i = self.dataset
             for j in range(pipe.length):
                 try:
+                    conf = pipe.get_op_config(j)
                     dataset_i = pipe.step(j, dataset_i)
                 except:
                     print('Operation with number {0};'.format(i + 1))

@@ -44,9 +44,9 @@
 #                 op = element[0].set_params(**element[1])
 #         else:
 #             if not hasattr(element, '__call__'):
-#                 op = element
-#             else:
 #                 op = element()
+#             else:
+#                 op = element
 #
 #         dataset_ = op.fit_transform(dataset)
 #
@@ -55,19 +55,6 @@
 #             self.models.append(op)
 #
 #         return dataset_
-#
-#     def get_config(self):
-#         for i, element in enumerate(self.pipe):
-#             if isinstance(element, tuple):
-#                 if not hasattr(element[0], '__call__'):
-#                     op = element[0](**element[1])
-#                 else:
-#                     op = element[0].set_params(**element[1])
-#             else:
-#                 if not hasattr(element, '__call__'):
-#                     op = element
-#                 else:
-#                     op = element()
 #     ###############################################################################
 #
 #     def step_(self, element, dataset):
@@ -78,9 +65,9 @@
 #                 op = element[0].set_params(**element[1])
 #         else:
 #             if not hasattr(element, '__call__'):
-#                 op = element()
-#             else:
 #                 op = element
+#             else:
+#                 op = element()
 #
 #         dataset_ = op.fit_transform(dataset)
 #
@@ -139,9 +126,9 @@ class Pipeline(object):
         element = self.pipe[i]
         if isinstance(element, tuple):
             if not hasattr(element[0], '__call__'):
-                op = element[0](**element[1])
-            else:
                 op = element[0].set_params(**element[1])
+            else:
+                op = element[0](**element[1])
         else:
             if not hasattr(element, '__call__'):
                 op = element
@@ -184,9 +171,9 @@ class Pipeline(object):
     def step_(self, element, dataset):
         if isinstance(element, tuple):
             if not hasattr(element[0], '__call__'):
-                op = element[0](**element[1])
-            else:
                 op = element[0].set_params(**element[1])
+            else:
+                op = element[0](**element[1])
         else:
             if not hasattr(element, '__call__'):
                 op = element
@@ -205,16 +192,20 @@ class Pipeline(object):
         element = self.pipe[i]
         if isinstance(element, tuple):
             if not hasattr(element[0], '__call__'):
-                op = element[0](**element[1])
+                op = element[0].set_params(**element[1])
             else:
-                op = element[0]
+                op = element[0](**element[1])
         else:
             if not hasattr(element, '__call__'):
-                op = element()
-            else:
                 op = element
+            else:
+                op = element()
 
         dataset_ = op.fit_transform(dataset)
+
+        # collecting models
+        if op.op_type == 'model':
+            self.models.append(op)
 
         return dataset_
 
