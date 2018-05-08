@@ -1,5 +1,5 @@
 from deepburtsev.core.transformers import Tokenizer, Lemmatizer, TextConcat, Lower
-from deepburtsev.core.pipegen import PipelineGenerator
+from deepburtsev.core.pipelinemanager import PipelineManager
 
 struct = [[Tokenizer, Tokenizer], (Lemmatizer, {"op_name": "test_lem"}), (TextConcat, {"search": True,
                                                                                        "op_name": ['name1',
@@ -8,11 +8,9 @@ struct = [[Tokenizer, Tokenizer], (Lemmatizer, {"op_name": "test_lem"}), (TextCo
           Lower]
 
 
-pipegen = PipelineGenerator(struct, n=3)
+info = {'name': "test",
+        'root': './'}
 
-k = 0
-for x in pipegen():
-    print(x)
-    k += 1
+path = '../../data/'
 
-print(k)
+manager = PipelineManager()

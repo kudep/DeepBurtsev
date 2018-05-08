@@ -8,20 +8,10 @@ from collections import OrderedDict
 
 
 class Watcher(object):
-    def __init__(self, date, language, dataset_name, seed=None, root=None):
-
-        self.date = '{}-{}-{}'.format(date.year, date.month, date.day)
-        self.language = language
-        self.dataset_name = dataset_name
-        self.pipeline_config = OrderedDict()
+    def __init__(self, root, seed=None):
+        self.root = root
         self.seed = seed
-
-        # TODO fix
-        if root is None:
-            self.root = '/home/mks/projects/deepburtsev/'
-        else:
-            self.root = root
-
+        self.pipeline_config = OrderedDict()
         self.conf_dict = join(self.root, 'log_data')
         self.save_path = join(self.conf_dict, 'data')
 

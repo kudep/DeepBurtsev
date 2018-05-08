@@ -4,11 +4,13 @@ from deepburtsev.core.pipeline import Pipeline
 
 
 class PipelineGenerator(object):
-    def __init__(self, structure, n=10):
+    def __init__(self, structure, n=10, dtype='list'):
         self.structure = structure
+        self.dtype = dtype
         self.check_struct()
         self.N = n
         self.pipes = []
+
         self.generator = self.pipeline_gen()
 
     def __call__(self, *args, **kwargs):
