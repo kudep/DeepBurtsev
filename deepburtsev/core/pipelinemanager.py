@@ -2,12 +2,13 @@ from time import time
 from datetime import datetime
 from .pipegen import PipelineGenerator
 from .logger import Logger
+from .watcher import Watcher
 from .utils import normal_time
 
 
 class PipelineManager(object):
     def __init__(self, dataset, structure, exp_name, info=None, root='./experiments/', analitic_func=None, k_fold=None, k_num=1,
-                 seed=42, hyper_search='random', sample_num=10):
+                 seed=42, hyper_search='random', sample_num=10, add_watcher=True):
         self.dataset = dataset
         self.structure = structure
         self.exp_name = exp_name
@@ -19,6 +20,7 @@ class PipelineManager(object):
         self.hyper_search = hyper_search
         self.sample_num = sample_num
         self.date = datetime.now()
+        self.add_watcher = add_watcher
 
         self.root = root
         self.pipeline_generator = None
@@ -71,15 +73,28 @@ class PipelineManager(object):
         for i, pipe in enumerate(self.pipeline_generator()):
             self.logger.pipe_ind = i
             pipe_start = time()
-
             dataset_i = self.dataset
+
+            # add watcher if need
+            if self.add_watcher:
+                watcher = Watcher(self.root, self.seed)
+
             for j in range(pipe.length):
                 try:
                     op_start = time()
                     conf = pipe.get_op_config(j)
                     self.logger.ops[str(j)] = conf
 
-                    dataset_i = pipe.step(j, dataset_i)
+                    if self.add_watcher:
+                        test = watcher.test_config(conf, dataset_i)
+                        if test is False:
+                            dataset_i = pipe.step(j, dataset_i)
+                            watcher.save_data(dataset_i)
+                        else:
+                            dataset_i = test
+
+                    else:
+                        dataset_i = pipe.step(j, dataset_i)
 
                     t = {'time': normal_time(time() - op_start)}
                     self.logger.ops[str(j)].update(**t)

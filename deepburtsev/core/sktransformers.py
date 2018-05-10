@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 
 class Tfidf(TfidfVectorizer):
-    def __init__(self, request_names='base', new_names='base', op_type=None, op_name=None, **kwargs):
+    def __init__(self, request_names='base', new_names='base', op_type='vectorizer', op_name=None, **kwargs):
         super().__init__(**kwargs)
 
         if isinstance(request_names, list):
@@ -48,7 +48,7 @@ class Tfidf(TfidfVectorizer):
 
 
 class Count(CountVectorizer):
-    def __init__(self, request_names='base', new_names='base', op_type=None, op_name=None, **kwargs):
+    def __init__(self, request_names='base', new_names='base', op_type='vectorizer', op_name=None, **kwargs):
         super().__init__(**kwargs)
 
         if isinstance(request_names, list):

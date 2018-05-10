@@ -472,7 +472,6 @@ class CNN(object):
 
                 preds = predictions
 
-
                 # preds = self.infer_on_batch(data)
                 # preds = np.array(preds)
 

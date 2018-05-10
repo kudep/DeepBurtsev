@@ -21,13 +21,7 @@ class Watcher(object):
         self.pipeline_config[name + '_' + op_type] = conf
         return self
 
-    def del_data(self, fields_to_del):
-        for name in fields_to_del:
-            a = self.data.pop(name)
-            del a
-        return self
-
-    def test_config(self, conf):
+    def test_config(self, conf, dictionary):
         self.add_config(conf)
         status = self.check_config(self.pipeline_config)
 
@@ -36,8 +30,8 @@ class Watcher(object):
                 # self.save_data(self.pipeline_config)
                 return False
         elif isinstance(status, str):
-            # self.load_data(status)
-            return status
+            d = self.load_data(status, dictionary)
+            return d
         else:
             print(type(status))
             raise ValueError('Incorrect')
@@ -72,15 +66,22 @@ class Watcher(object):
                     return True
         return None
 
-    def save_data(self):
-        names = self.data.keys()
+    def save_data(self, dictionary):
         dataframes = []
-        datanames = []
-        for name in names:
-            if isinstance(self.data[name], pd.DataFrame):
-                dataframes.append(self.data[name])
-                datanames.append(name)
-        data = pd.concat(dataframes, keys=datanames)
+        names = []
+        main_names = ['train', 'test', 'valid']
+
+        for name in main_names:
+            if name in dictionary.keys():
+                dataframes.append({name: {'x': dictionary[name]['x'], 'y': dictionary[name]['y']}})
+                names.append(name)
+            else:
+                pass
+
+        for i, x in enumerate(dataframes):
+            dataframes[i] = pd.DataFrame(x)
+
+        data = pd.concat(dataframes, keys=names)
 
         # saving in file
         secret_name = secrets.token_hex(nbytes=16)
@@ -113,11 +114,9 @@ class Watcher(object):
 
         return self
 
-    def load_data(self, name):
+    def load_data(self, name, dictionary):
         filepath = join(self.save_path, name + '.csv')
-        file = open(filepath, 'r')
-        data = pd.read_csv(file)
-        file.close()
+        data = pd.read_csv(filepath)
 
         with open(join(self.conf_dict, 'pipe_conf_dict.json'), 'r') as f:
             conf = json.load(f)
@@ -125,26 +124,20 @@ class Watcher(object):
 
         config = conf[name]
 
-        keys = list(data['Unnamed: 0'].unique())
-        data_keys = list(self.data.keys())
         sam = lambda s: [x[1:-1] for x in s[1:-1].split(', ')]
 
+        keys = list(data['Unnamed: 0'].unique())
+
         for key in keys:
-            if key not in data_keys:
-                self.data[key] = {}
-
             if 'Tokenizator_transformer' in config.keys() and 'TextConcatenator_transformer' not in config.keys():
-                self.data[key][request] = data[data['Unnamed: 0'] == key][request].apply(sam)
+                dictionary[key]['x'] = data[data['Unnamed: 0'] == key]['x'].apply(sam)
             else:
-                self.data[key][request] = data[data['Unnamed: 0'] == key][request]
-            self.data[key][report] = data[data['Unnamed: 0'] == key][report]
-            self.data[key].dropna(inplace=True)
-            # self.data[key].reset_index(inplace=True)
+                dictionary[key]['x'] = data[data['Unnamed: 0'] == key]['x']
 
-        for key in data_keys:
-            if key not in keys:
-                self.del_data([key])
+            dictionary[key]['y'] = data[data['Unnamed: 0'] == key]['y']
+            dictionary[key].dropna(inplace=True)
+            # dictionary[key].reset_index(inplace=True)
 
         del data
 
-        return self
+        return dictionary
