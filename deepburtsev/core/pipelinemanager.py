@@ -4,6 +4,7 @@ from .pipegen import PipelineGenerator
 from .logger import Logger
 from .watcher import Watcher
 from .utils import normal_time
+from os.path import join
 
 
 class PipelineManager(object):
@@ -77,7 +78,8 @@ class PipelineManager(object):
 
             # add watcher if need
             if self.add_watcher:
-                watcher = Watcher(self.root, self.seed)
+                watcher = Watcher(join(self.root, '{0}-{1}-{2}'.format(self.date.year, self.date.month, self.date.day),
+                                       self.exp_name), self.seed)
 
             for j in range(pipe.length):
                 try:

@@ -23,12 +23,12 @@ class Logger(object):
         self.ops = {}
 
         # build folder dependencies
-        self.log_path = join(self.root, 'results', '{0}-{1}-{2}'.format(date.year, date.month, date.day), self.exp_name)
+        self.log_path = join(self.root, '{0}-{1}-{2}'.format(date.year, date.month, date.day), self.exp_name)
         self.log_file = join(self.log_path, self.exp_name + '.json')
 
         if not isdir(self.log_path):
             os.makedirs(self.log_path)
-            os.makedirs(join(self.log_path, 'images'))
+            os.makedirs(join(self.log_path, 'results', 'images'))
 
         self.log = OrderedDict(experiment_info=OrderedDict(date='{0}-{1}-{2}'.format(date.year, date.month, date.day),
                                                            exp_name=self.exp_name,

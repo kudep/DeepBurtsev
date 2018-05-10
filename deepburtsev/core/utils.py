@@ -302,59 +302,6 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
     return main
 
 
-def scrab_data(path):
-    # reading data
-    info = {}
-
-    with open(path, 'r') as f:
-        for line in f:
-            jline = json.loads(line)
-            jl = jline['pipeline configuration']
-            rnum = jline['pipeline configuration']['Resulter_transformer']['num_op']
-            for x in jline['pipeline configuration'].keys():
-                if jl[x]['num_op'] == rnum - 1:
-                    name = x.split('_')[0]
-
-            if name not in info.keys():
-                info[name] = dict()
-                info[name]['list'] = list()
-                info[name]['list'].append(jline)
-            else:
-                info[name]['list'].append(jline)
-
-    # analize data
-    for x in info.keys():
-        f1_max = 0
-        acc_max = 0
-        f1w_max = 0
-        ind = 0
-        pipe_conf = None
-        # model_conf = None
-
-        for i, y in enumerate(info[x]['list']):
-
-            z = y['results']
-
-            if float(z['f1_macro']) > f1_max:
-                f1_max = float(z['f1_macro'])
-            if float(z['f1_weighted']) >= f1w_max:
-                f1w_max = float(z['f1_weighted'])
-                pipe_conf = y['pipeline configuration']
-                # model_conf = y['model configuration']
-                ind = i
-            if float(z['accuracy']) >= acc_max:  # fix .split(' ')[-1]
-                acc_max = float(z['accuracy'])  # fix .split(' ')[-1]
-
-        info[x]['max_f1_macro'] = f1_max
-        info[x]['max_f1_weighted'] = f1w_max
-        info[x]['max_acc'] = acc_max
-        info[x]['best_pipe_conf'] = pipe_conf
-        # info[x]['best_model_conf'] = model_conf
-        info[x]['index_of_best'] = ind
-
-    return info
-
-
 def get_table(dang, savepath, root, filename='report', ext='pdf'):
     # make dataframe table
     fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
@@ -394,40 +341,144 @@ def get_table(dang, savepath, root, filename='report', ext='pdf'):
     return table, [name_best_model, best_model]
 
 
-def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6), axes_names=['X', 'Y'],
-                 x_lables=None, y_lables=None, xticks=True, legend=True, ext='png', savepath='./results/images/'):
-    fig, ax = plt.subplots(figsize=plot_size)
-    rects = ax.bar(x, y, width, color=color)
+def plot_res_table(info, save=False, savepath='./', width=0.35, ext='png'):
+    # prepeare data
+    bar_list = []
+    models = list(info.keys())
+    metrics = list(info[models[0]].keys())
+    n = len(metrics)
+
+    for met in metrics:
+        tmp = []
+        for model in models:
+            tmp.append(info[model][met][0])
+        bar_list.append(tmp)
+
+    x = np.arange(len(models))
+
+    # ploting
+    fig, ax = plt.subplots()
+
+    colors = plt.cm.Paired(np.linspace(0, 0.5, len(bar_list)))
+
+    bars = []
+    for i, y in enumerate(bar_list):
+        if i == 0:
+            bars.append(ax.bar(x, y, width, color=colors[i]))
+        else:
+            bars.append(ax.bar(x + width, y, width, color=colors[i]))
+
+    # Plot bars and create text labels for the table
+    cell_text = []
+    for row in range(n):
+        cell_text.append(['test' for x in models])
+
+    # Add a table at the bottom of the axes
+    the_table = plt.table(cellText=cell_text,
+                          rowLabels=metrics,
+                          rowColours=colors,
+                          colLabels=models,
+                          loc='bottom')
+
+    # Adjust layout to make room for the table:
+    plt.subplots_adjust(left=0.2, bottom=0.2)
+
+    # plot x sticks and labels
+    plt.xticks([])
 
     # add some text for labels, title and axes ticks
-    ax.set_xlabel(axes_names[0])
-    ax.set_ylabel(axes_names[1])
-    ax.set_title(plot_name)
+    ax.set_ylabel('Scores')
+    ax.set_title('Scores by metric')
 
-    if xticks and x_lables is not None:
-        ax.set_xticks(x)
-        ax.set_xticklabels(x_lables)
+    # plot legend
+    ax.legend(tuple([bar[0] for bar in bars]), tuple(metrics))
 
-    if legend and y_lables is not None:
-        ax.legend((rects[0],), y_lables)
-
-    def autolabel(rects):
+    # auto lables
+    def autolabel(bars):
         """
         Attach a text label above each bar displaying its height
         """
-        for rect in rects:
-            height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width() / 2., 1.01 * height,
-                    '{0:.3}'.format(float(height)),
-                    ha='center', va='bottom')
+        for rects in bars:
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
+                        '%d' % int(height),
+                        ha='center', va='bottom')
 
-    autolabel(rects)
+    autolabel(bars)
 
-    if not isdir(savepath):
-        mkdir(savepath)
-    adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
-    fig.savefig(adr, dpi=100)
-    plt.close(fig)
+    # show the picture
+    if save:
+        if not isdir(savepath):
+            mkdir(savepath)
+        adr = join(savepath, '{0}.{1}'.format('main_hist', ext))
+        fig.savefig(adr, dpi=100)
+        plt.close(fig)
+    else:
+        plt.show()
+    return None
+
+
+def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
+    # prepeare data
+    bar_list = []
+    models = list(info.keys())
+    metrics = list(info[models[0]].keys())
+    n = len(metrics)
+
+    for met in metrics:
+        tmp = []
+        for model in models:
+            tmp.append(info[model][met][0])
+        bar_list.append(tmp)
+
+    x = np.arange(len(models))
+
+    # ploting
+    fig, ax = plt.subplots()
+
+    colors = plt.cm.Paired(np.linspace(0, 0.5, len(bar_list)))
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Scores')
+    ax.set_title('Scores by metric')
+
+    bars = []
+    for i, y in enumerate(bar_list):
+        if i == 0:
+            bars.append(ax.bar(x, y, width, color=colors[i]))
+        else:
+            bars.append(ax.bar(x + width, y, width, color=colors[i]))
+
+    # plot x sticks and labels
+    ax.set_xticks(ind - width / 2 + n * width / 2)
+    ax.set_xticklabels(tuple(models))
+
+    # plot legend
+    ax.legend(tuple([bar[0] for bar in bars]), tuple(metrics))
+
+    # auto lables
+    def autolabel(bars):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rects in bars:
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
+                        '%d' % int(height),
+                        ha='center', va='bottom')
+
+    autolabel(bars)
+
+    # show the picture
+    if not save:
+        plt.show()
+    else:
+        if not isdir(savepath):
+            mkdir(savepath)
+        adr = join(savepath, '{0}.{1}'.format('main_hist', ext))
+        fig.savefig(adr, dpi=100)
+        plt.close(fig)
 
     return None
 
@@ -463,105 +514,33 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     return None
 
 
-def plot_i(date=None, path=None):
-    if path is None and date is None:
-        date = datetime.now()
-        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    elif path is None and date is not None:
-        log = join('./results/russian/vkusvill/', date)
-    elif date is None and path is not None:
-        date = datetime.now()
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    else:
-        log = join(path, date + '.txt')
-    # reading and scrabbing data
-    info = scrab_data(log)
+######################################################################################
 
-    # make dataframe table
-    table, best_model = get_table(info, path)
+# # data
+# N = 5
+# ind = np.arange(N)
+#
+# men_means = (20, 35, 30, 35, 27)
+# women_means = (25, 32, 34, 20, 25)
+#
+# info = {}
+# for i, x in enumerate(ind):
+#     info[str(x)] = {'Men': [men_means[i]], 'Women': [women_means[i]]}
+# #     info[str(x)] = {'Men': [men_means[i]]}
+#
+# def results_visualization(root):
+#     save_path = join(root, 'results')
+#     with open(join(root, root.split('/')[-1] + '.json'), 'r') as log_file:
+#         log = json.load(log_file)
+#         log_file.close()
+#
+#     # reading and scrabbing data
+#     info = results_analizator(log)
+#     plot_res(info, save_path)
+#
+#     return None
 
-    # ploting results
-    model_names = tuple(table.index)
-    metrics = list(table.keys())
-    x = np.arange(len(table))
-    for i in metrics:
-        y = list(table[i])
-        axes_names = ['Models', i]
-
-        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names)
-
-    return None
-
-
-def plot_j(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None and date is None:
-        date = datetime.now()
-        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    elif path is None and date is not None:
-        log = join('./results/russian/vkusvill/', date)
-    elif date is None and path is not None:
-        date = datetime.now()
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    else:
-        log = join(path, date + '.txt')
-
-    # reading and scrabbing data
-    info = scrab_data(log)
-
-    # make dataframe table
-    table, best_model = get_table(info, savepath=path)
-
-    # ploting results
-    model_names = tuple(table.index)
-    metrics = list(table.keys())
-    x = np.arange(len(table))
-
-    for n in model_names:
-        I = info[n]['index_of_best']
-        important_categories = list(info[n]['list'][I]['results']['classes'].keys())
-        important_categories = np.array([int(x) for x in important_categories])
-        matrix = np.array(info[n]['list'][I]['results']['confusion_matrix'])
-
-        plot_confusion_matrix(matrix, important_categories,
-                              plot_name='Confusion Matrix of {}'.format(n),
-                              axis_names=['Prediction label', 'True label'])
-
-    return None
-
-
-def plot_k(date=None, path=None, savepath='./results/russian/images/'):
-    if path is None and date is None:
-        date = datetime.now()
-        path = join('./results/russian/vkusvill/', '{}-{}-{}'.format(date.year, date.month, date.day))
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    elif path is None and date is not None:
-        log = join('./results/russian/vkusvill/', date)
-    elif date is None and path is not None:
-        date = datetime.now()
-        log = join(path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-    else:
-        log = join(path, date + '.txt')
-
-    # reading and scrabbing data
-    info = scrab_data(log)
-
-    # make dataframe table
-    table, best_model = get_table(info, path)
-
-    # ploting results
-    model_names = tuple(table.index)
-    metrics = list(table.keys())
-    x = np.arange(len(table))
-
-    best_model_name, stat = best_model
-    classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
-    for i in stat.keys():
-        axes_names = ['Classes', i]
-        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names)
-
-    return None
+######################################################################################
 
 
 def results_summarization(root, date=None, language='russian', dataset_name='vkusvill'):
