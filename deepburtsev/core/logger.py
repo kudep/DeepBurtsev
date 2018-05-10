@@ -2,7 +2,7 @@ import json
 import os
 
 from collections import OrderedDict
-from os.path import join, isdir
+from os.path import join, isdir, isfile
 
 
 class Logger(object):
@@ -47,8 +47,43 @@ class Logger(object):
         self.ops = {}
 
     def save(self):
-        with open(self.log_file, 'w') as log_file:
-            json.dump(self.log, log_file)
+        if not isfile(self.log_file):
+            with open(self.log_file, 'w') as log_file:
+                json.dump(self.log, log_file)
+        else:
+            with open(self.log_file, 'r') as old_file:
+                old_log = json.load(old_file)
+                old_file.close()
+
+            self.log = self.merge_logs(old_log, self.log)
+            with open(self.log_file, 'w') as log_file:
+                json.dump(self.log, log_file)
+
+    @staticmethod
+    def merge_logs(old_log, new_log):
+        new_models_names = list(new_log['experiments'].keys())
+
+        for name in new_models_names:
+            if name not in old_log['experiments'].keys():
+                old_log['experiments'][name] = new_log['experiments'][name]
+            else:
+                old_npipe = len(old_log['experiments'][name]) - 1
+                for nkey, nval in new_log['experiments'][name].items():
+                    match = False
+                    for okey, oval in old_log['experiments'][name].items():
+                        if nval['config'] == oval['config']:
+                            old_log['experiments'][name][okey] = new_log['experiments'][name][nkey]
+                            match = True
+                        else:
+                            pass
+
+                    if not match:
+                        old_log['experiments'][name][str(old_npipe+1)] = new_log['experiments'][name][nkey]
+
+        old_log['experiment_info']['full_time'] = old_log['experiment_info']['full_time'] + ' + ' + \
+                                                  new_log['experiment_info']['full_time']
+
+        return old_log
 
     def add_metrics(self, metrics):
         if isinstance(metrics, str):
@@ -104,9 +139,7 @@ class Logger(object):
                                                                   'ops_time': ops_times,
                                                                   'results': self.pipe_res}
 
+        self.log['experiment_info']['metrics'] = self.metrics
+
         self.tmp_reset()
         return self
-
-    def results_analysis(self):
-
-        pass

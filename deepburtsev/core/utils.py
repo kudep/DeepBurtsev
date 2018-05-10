@@ -37,7 +37,7 @@ def normal_time(z):
         s = z % 3600 % 60
         t = '%i:%i:%i' % (h, m, s)
     else:
-        t = z
+        t = str(z)
     return t
 
 
@@ -263,6 +263,45 @@ def logging(res, pipe_conf, name, language='russian', dataset_name='vkusvill', r
 # -------------------------- Results visualization ----------------------------------
 
 
+def results_analizator(log, target_metric='f1_weighted', num_best=3):
+    models_names = list(log['experiments'].keys())
+    metrics = log['experiment_info']['metrics']
+    if target_metric not in metrics:
+        print("Warning: Target metric '{}' not in log. The fisrt metric in log will be use as target metric.".format(
+            target_metric))
+        target_metric = metrics[0]
+
+    main = {}
+    for name in models_names:
+        main[name] = {}
+        for met in metrics:
+            main[name][met] = []
+
+    for name in models_names:
+        for key, val in log['experiments'][name].items():
+            for met in metrics:
+                main[name][met].append(val['results'][met])
+
+    for name in models_names:
+        for key, val in log['experiments'][name].items():
+            for met in metrics:
+                tmp = np.sort(main[name][met])[-num_best:]
+                main[name][met] = tmp[::-1]
+
+    m = 0
+    mxname = ''
+    for name in models_names:
+        if main[name][target_metric][0] > m:
+            m = main[name][target_metric][0]
+            mxname = name
+
+    main['best_model'] = mxname
+    main['target_metric'] = target_metric
+    main['best_score'] = m
+
+    return main
+
+
 def scrab_data(path):
     # reading data
     info = {}
@@ -388,6 +427,7 @@ def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6
         mkdir(savepath)
     adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
     fig.savefig(adr, dpi=100)
+    plt.close(fig)
 
     return None
 
@@ -418,6 +458,7 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
 
     adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
     plt.savefig(adr)
+    plt.close(fig)
 
     return None
 

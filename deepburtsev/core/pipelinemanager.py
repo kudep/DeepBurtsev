@@ -91,5 +91,10 @@ class PipelineManager(object):
             self.logger.pipe_res = dataset_i.data['results']
             self.logger.get_pipe_log()
 
-        self.logger.exp_inf['full_time'] = normal_time(time() - self.start_exp)
+        self.logger.log['experiment_info']['full_time'] = normal_time(time() - self.start_exp)
+        self.logger.save()
+
+        # TODO refactor this function
+        # results_summarization()
+
         return None
