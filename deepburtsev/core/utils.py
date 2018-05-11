@@ -9,7 +9,6 @@ import json
 import requests
 import tarfile
 import itertools
-from datetime import datetime
 import matplotlib.pyplot as plt
 
 from copy import deepcopy
@@ -554,81 +553,6 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
 #     return None
 
 ######################################################################################
-
-
-def results_summarization(root, date=None, language='russian', dataset_name='vkusvill'):
-    path = join('./results/', language, dataset_name)
-
-    if date is None:
-        date = datetime.now()
-        date_path = join(path, '{}-{}-{}'.format(date.year, date.month, date.day))
-        if not isdir(date_path):
-            os.makedirs(date_path)
-
-        image_path = join(date_path, 'images')
-        if not isdir(image_path):
-            os.makedirs(image_path)
-
-        log = join(date_path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-        if not isfile(log):
-            # with open(log, 'w') as log_file:
-            #     log_file.close()
-            raise FileExistsError('File with results {}'
-                                  ' is not exist'.format('{}-{}-{}.txt'.format(date.year, date.month, date.day)))
-
-    else:
-        date_path = join(path, '{}-{}-{}'.format(date.year, date.month, date.day))
-        if not isdir(date_path):
-            os.makedirs(date_path)
-
-        image_path = join(date_path, 'images')
-        if not isdir(image_path):
-            os.makedirs(image_path)
-
-        log = join(date_path, '{}-{}-{}.txt'.format(date.year, date.month, date.day))
-
-        if not isfile(log):
-            # with open(log, 'w') as log_file:
-            #     log_file.close()
-            raise FileExistsError('File with results {} is not exist'.format('{}-{}-{}.txt'.format(date.year,
-                                                                                                   date.month,
-                                                                                                   date.day)))
-
-    # reading and scrabbing data
-    info = scrab_data(log)
-
-    # make dataframe table
-    table, best_model = get_table(info, date_path, root)
-
-    # ploting results
-    model_names = tuple(table.index)
-    metrics = list(table.keys())
-    x = np.arange(len(table))
-    for i in metrics:
-        y = list(table[i])
-        axes_names = ['Models', i]
-
-        ploting_hist(x, y, plot_name=i, axes_names=axes_names, x_lables=model_names, savepath=image_path)
-
-    for n in model_names:
-        I = info[n]['index_of_best']
-        important_categories = list(info[n]['list'][I]['results']['classes'].keys())
-        important_categories = np.array([int(x) for x in important_categories])
-        matrix = np.array(info[n]['list'][I]['results']['confusion_matrix'])
-
-        plot_confusion_matrix(matrix, important_categories,
-                              plot_name='Confusion Matrix of {}'.format(n),
-                              axis_names=['Prediction label', 'True label'],
-                              savepath=image_path)
-
-    best_model_name, stat = best_model
-    classes_names = list(info[model_names[0]]['list'][0]['results']['classes'].keys())
-    for i in stat.keys():
-        axes_names = ['Classes', i]
-        ploting_hist(np.arange(len(stat[i])), stat[i], plot_name=i, axes_names=axes_names, x_lables=classes_names,
-                     savepath=image_path)
-
-    return None
 
 
 # -------------------------- Utils ----------------------------------

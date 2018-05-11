@@ -3,7 +3,7 @@ from datetime import datetime
 from .pipegen import PipelineGenerator
 from .logger import Logger
 from .watcher import Watcher
-from .utils import normal_time
+from .utils import normal_time, results_visualization
 from os.path import join
 
 
@@ -111,7 +111,7 @@ class PipelineManager(object):
         self.logger.log['experiment_info']['full_time'] = normal_time(time() - self.start_exp)
         self.logger.save()
 
-        # TODO refactor this function
-        # results_summarization()
+        # visualization of results
+        results_visualization(self.root, join(self.root, 'results', 'images'))
 
         return None
