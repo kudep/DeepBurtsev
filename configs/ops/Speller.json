@@ -1,7 +1,0 @@
-{
-  "op_type": "transformer",
-  "name": "Speller",
-  "request_names": ["base"],
-  "new_names": ["base"],
-  "path": "./DeepPavlov/deeppavlov/configs/error_model/brillmoore_kartaslov_ru.json"
-}

@@ -1,8 +1,0 @@
-{
-  "tol": {"range": [0.0001, 0.1]},
-  "C": {"range": [0.5, 2.0]},
-  "fit_intercept": {"bool": true},
-  "solver": ["liblinear", "newton-cg", "lbfgs", "sag", "saga"],
-  "max_iter": [100, 150, 200],
-  "warm_start": {"bool": true}
-}

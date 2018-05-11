@@ -1,6 +1,0 @@
-{
-  "n_estimators": [10, 12, 14, 16 ,18, 20],
-  "criterion": ["gini", "entropy"],
-  "max_features": ["auto", "sqrt", "log2", null],
-  "oob_score": {"bool": true}
-}

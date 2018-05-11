@@ -483,6 +483,19 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
     return None
 
 
+def results_visualization(root, savepath):
+    save_path = join(root, 'results')
+    with open(join(root, root.split('/')[-2] + '.json'), 'r') as log_file:
+        log = json.load(log_file)
+        log_file.close()
+
+    # reading and scrabbing data
+    info = results_analizator(log)
+    plot_res(info, savepath)
+
+    return None
+
+
 def plot_confusion_matrix(matrix, important_categories, plot_name='confusion matrix',
                           plot_size=(30, 30), fontsize=16, ticks_size=10,
                           axis_names=['X', 'Y'], ext='png', savepath='./results/images/'):
