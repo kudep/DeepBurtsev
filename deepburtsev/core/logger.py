@@ -114,11 +114,15 @@ class Logger(object):
             name = self.ops[str(i)]['op_name']
 
             # add metrics
-            if name == 'ResultsCollector':
-                self.add_metrics(self.ops[str(i)]['metrics'])
+            if self.ops[str(i)] == 'ResultsCollector':
+                self.metrics = self.ops[str(i)]['metrics']
+            else:
+                pass
             # find main model
             if self.ops[str(i)]['op_type'] == 'model':
-                self.model = name
+                self.model = self.ops[str(i)]['op_name']
+            else:
+                pass
 
             self.pipe_conf[name] = {'conf': self.ops[str(i)]}
             ops_times[name] = time

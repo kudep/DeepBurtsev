@@ -86,6 +86,12 @@ class PipelineManager(object):
                     op_start = time()
                     conf = pipe.get_op_config(j)
                     self.logger.ops[str(j)] = conf
+                    ##############################
+                    # if conf['op_type'] == 'model':
+                    #     self.logger.model = conf['op_name']
+                    # elif conf['op_name'] == 'ResultsCollector':
+                    #     self.logger.log['experiment_info']['metrics'] = conf['metrics']
+                    ##############################
 
                     if self.add_watcher:
                         test = watcher.test_config(conf, dataset_i)
@@ -105,13 +111,14 @@ class PipelineManager(object):
                     raise
 
             self.logger.pipe_time = normal_time(time() - pipe_start)
-            self.logger.pipe_res = dataset_i.data['results']
+            self.logger.pipe_res = dataset_i['results']
             self.logger.get_pipe_log()
 
         self.logger.log['experiment_info']['full_time'] = normal_time(time() - self.start_exp)
         self.logger.save()
 
         # visualization of results
-        results_visualization(self.root, join(self.root, 'results', 'images'))
+        path = join(self.root, '{0}-{1}-{2}'.format(self.date.year, self.date.month, self.date.day), self.exp_name)
+        results_visualization(path, join(self.root, 'results', 'images'))
 
         return None

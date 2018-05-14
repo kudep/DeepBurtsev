@@ -264,8 +264,8 @@ class TextConcat(BaseTransformer):
 
 
 class ResultsCollector(BaseTransformer):
-    def __init__(self, request_names='test', new_names='results', y_pred='y_pred', y_true='y_true',
-                 op_type='transformer', op_name='ResultsCollector', metrics=None):
+    def __init__(self, request_names='pred_test', new_names='results', y_pred='y_pred', y_true='y_true',
+                 op_type='transformer', op_name='ResultsCollector', metrics=['accuracy', 'f1_macro', 'f1_weighted']):
         super().__init__(request_names, new_names, op_type, op_name)
 
         self.y_pred = y_pred
@@ -302,7 +302,8 @@ class ResultsCollector(BaseTransformer):
             self._check_data_format(real_data)
 
             # get amount of classes as list
-            self.category_description = [i for i in range(len(dictionary[self.request_names[1]][0]))]
+            # self.category_description = [i for i in range(len(dictionary[self.request_names[1]][0]))]
+            self.category_description = list(set(dictionary['train']['y']))
 
             # protector from excess batch elements
             pred_data = pred_data[:len(real_data)]

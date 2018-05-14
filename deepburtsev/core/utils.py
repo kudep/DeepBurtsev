@@ -484,7 +484,7 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
 
 def results_visualization(root, savepath):
     save_path = join(root, 'results')
-    with open(join(root, root.split('/')[-2] + '.json'), 'r') as log_file:
+    with open(join(root, root.split('/')[-1] + '.json'), 'r') as log_file:
         log = json.load(log_file)
         log_file.close()
 
@@ -617,7 +617,7 @@ def split(data, prop):
     valid = list()
     test = list()
 
-    for x, y in zip(data['request'], data['class']):
+    for x, y in zip(data['x'], data['y']):
         if y not in dd.keys():
             dd[y] = list()
             cd[y] = 0
@@ -663,14 +663,12 @@ def split(data, prop):
             n.append(x[0])
             c.append(x[1])
 
-    train = pd.DataFrame({'request': utrain,
-                          'class': ctrain})
-    valid = pd.DataFrame({'request': uvalid,
-                          'class': cvalid})
-    test = pd.DataFrame({'request': utest,
-                         'class': ctest})
+    dataset = dict()
+    dataset['train'] = {'x': utrain, 'y': ctrain}
+    dataset['valid'] = {'x': uvalid, 'y': cvalid}
+    dataset['test'] = {'x': utest, 'y': ctest}
 
-    return train, valid, test
+    return dataset
 
 
 def labels2onehot(labels, classes):

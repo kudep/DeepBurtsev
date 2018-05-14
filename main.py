@@ -1,42 +1,34 @@
-import sys
-from collections import OrderedDict
+import json
 from os.path import join
 
-from deepburtsev.core.pipeline_manager import PipelineManager
-from dataset_readers import read_sber_dataset
-
-language = sys.argv[1]
-dataset_name = sys.argv[2]
-file_name = sys.argv[3]
-emb_name = sys.argv[4]
-emb_dim = sys.argv[5]
-
-neural_struct = {'Lemmatizer': [False, True], 'model': ['CNN']}
-neural_pipe = OrderedDict(Tokenizer=True,
-                          Lemmatizer=True,
-                          vectorizer='FasttextVectorizer',
-                          model='CNN',
-                          Resulter='Resulter')
-
-linear_struct = {'Lemmatizer': [False, True],
-                 'vectorizer': ['tf-idf', 'count'],
-                 'model': ['LogisticRegression']}
-# 'model': ['LogisticRegression',
-#           'RandomForestClassifier',
-#           'LGBMClassifier',
-#           'LinearSVC']}
-linear_pipe = OrderedDict(Tokenizer=True,
-                          Lemmatizer=True,
-                          Textсoncatenator=True,
-                          vectorizer='tf-idf',
-                          model='LogisticRegression',
-                          Resulter='Resulter')
+from deepburtsev.core.pipelinemanager import PipelineManager
+from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector
+from deepburtsev.models.intent_classification.WCNN import WCNN
+from deepburtsev.models.skmodels.linear_models import LinearRegression
+from deepburtsev.core.sktransformers import Tfidf as tfidf
+from deepburtsev.core.sktransformers import Count as count
 
 
+# data prepare
 root = '/home/mks/projects/DeepBurtsev/'
-file_path = join(root, 'data', language, dataset_name, 'data', file_name)
-pure_data = read_sber_dataset(file_path)
+file_path = join(root, 'data', 'english', 'new_group', 'dataset.json')
+with open(file_path, 'r') as f:
+    dataset = json.load(f)
+    f.close()
 
-Manager = PipelineManager(language, dataset_name, emb_name, emb_dim, hyper_search=False, root=root)
-Manager.run(linear_pipe, linear_struct, 'linear', pure_data)
-# Manager.run(neural_pipe, neural_struct, 'neural', pure_data)
+# create structure for pipeline manager
+fasttext = FasttextVectorizer(request_names=['train', 'valid', 'test'],
+                              new_names=['train', 'valid', 'test'],
+                              dimension=100,
+                              model_path='./embeddings/wordpunct_tok_reddit_comments_2017_11_100.bin')
+
+neural_struct = [fasttext, WCNN, ResultsCollector]
+
+linear_struct = [[tfidf, count], LinearRegression, ResultsCollector]
+
+
+neural_man = PipelineManager(dataset, neural_struct, 'skill_manager')
+neural_man.run()
+
+# linear_man = PipelineManager(dataset, linear_struct, 'skill_manager')
+# linear_man.run()

@@ -112,7 +112,7 @@ class Dataset(object):
 
 class WCNN(BaseModel):
     def __init__(self, fit_name="train", predict_names=["test", "valid"], new_names=["pred_test", "pred_valid"],
-                 op_type='keras_model', op_name='WCNN',
+                 op_type='model', op_name='WCNN',
                  checkpoint_path="./data/russian/vkusvill/checkpoints/CNN/",
                  kernel_sizes_cnn="1 2 3",
                  filters_cnn=256,

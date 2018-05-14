@@ -16,7 +16,7 @@ class Watcher(object):
         self.save_path = join(self.conf_dict, 'data')
 
     def add_config(self, conf):
-        name = conf['name']
+        name = conf['op_name']
         op_type = conf['op_type']
         self.pipeline_config[name + '_' + op_type] = conf
         return self

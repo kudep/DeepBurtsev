@@ -11,14 +11,13 @@ class PipelineGenerator(object):
         self.N = n
         self.pipes = []
 
+        # self.length = self.get_len()
         self.generator = self.pipeline_gen()
-        self.length = self.get_len()
 
     def get_len(self):
         k = 0
-        for x in self.generator:
+        for x in self.pipeline_gen():
             k += 1
-
         return k
 
     def __call__(self, *args, **kwargs):
