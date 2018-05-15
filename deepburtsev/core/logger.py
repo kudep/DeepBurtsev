@@ -85,27 +85,6 @@ class Logger(object):
 
         return old_log
 
-    def add_metrics(self, metrics):
-        if isinstance(metrics, str):
-            if len(self.metrics) == 0:
-                self.metrics.append(metrics)
-            else:
-                if metrics not in self.metrics:
-                    self.metrics.append(metrics)
-                else:
-                    pass
-        elif isinstance(metrics, list):
-            if len(self.metrics) == 0:
-                self.metrics.extend(metrics)
-            else:
-                for x in metrics:
-                    if x not in self.metrics:
-                        self.metrics.append(x)
-                    else:
-                        pass
-
-        return self
-
     def get_pipe_log(self):
         ops_times = {}
         self.pipe_conf = OrderedDict()
@@ -142,8 +121,6 @@ class Logger(object):
                                                                   'time': self.pipe_time,
                                                                   'ops_time': ops_times,
                                                                   'results': self.pipe_res}
-
-        self.log['experiment_info']['metrics'] = self.metrics
 
         self.tmp_reset()
         return self

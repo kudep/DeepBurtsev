@@ -9,7 +9,7 @@ from os.path import join
 
 class PipelineManager(object):
     def __init__(self, dataset, structure, exp_name, info=None, root='./experiments/', analitic_func=None, k_fold=None, k_num=1,
-                 seed=42, hyper_search='random', sample_num=10, add_watcher=True):
+                 seed=42, hyper_search='random', sample_num=10, add_watcher=True, metrics='f1_weighted'):
         self.dataset = dataset
         self.structure = structure
         self.exp_name = exp_name
@@ -36,6 +36,14 @@ class PipelineManager(object):
 
         self.logger = Logger(exp_name, root, self.info, self.date)
         self.start_exp = time()
+
+        self.metrics = metrics
+        if isinstance(self.metrics, str):
+            self.logger.log['experiment_info']['metrics'] = list().append(self.metrics)
+        elif isinstance(self.metrics, list):
+            self.logger.log['experiment_info']['metrics'] = self.metrics
+        else:
+            raise ValueError("Metrics must be a string or a list of strings.")
 
     def check_dataset(self):
         if isinstance(self.dataset, dict):
@@ -86,12 +94,6 @@ class PipelineManager(object):
                     op_start = time()
                     conf = pipe.get_op_config(j)
                     self.logger.ops[str(j)] = conf
-                    ##############################
-                    # if conf['op_type'] == 'model':
-                    #     self.logger.model = conf['op_name']
-                    # elif conf['op_name'] == 'ResultsCollector':
-                    #     self.logger.log['experiment_info']['metrics'] = conf['metrics']
-                    ##############################
 
                     if self.add_watcher:
                         test = watcher.test_config(conf, dataset_i)
@@ -106,6 +108,9 @@ class PipelineManager(object):
 
                     t = {'time': normal_time(time() - op_start)}
                     self.logger.ops[str(j)].update(**t)
+
+
+
                 except:
                     print('Operation with number {0};'.format(i + 1))
                     raise

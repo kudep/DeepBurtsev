@@ -265,7 +265,7 @@ class TextConcat(BaseTransformer):
 
 class ResultsCollector(BaseTransformer):
     def __init__(self, request_names='pred_test', new_names='results', y_pred='y_pred', y_true='y_true',
-                 op_type='transformer', op_name='ResultsCollector', metrics=['accuracy', 'f1_macro', 'f1_weighted']):
+                 op_type='transformer', op_name='ResultsCollector', metrics=None):
         super().__init__(request_names, new_names, op_type, op_name)
 
         self.y_pred = y_pred
@@ -278,7 +278,7 @@ class ResultsCollector(BaseTransformer):
         else:
             for metric in metrics:
                 if metric not in self.available_metrics:
-                    raise ValueError('Sorry {} metrics is not implemented yet.'.format(metric))
+                    raise ValueError('Sorry {0} metrics is not implemented yet.'.format(metric))
             self.metrics = metrics
 
     def _check_data_format(self, data):

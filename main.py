@@ -22,7 +22,7 @@ fasttext = FasttextVectorizer(request_names=['train', 'valid', 'test'],
                               dimension=100,
                               model_path='./embeddings/wordpunct_tok_reddit_comments_2017_11_100.bin')
 
-neural_struct = [fasttext, WCNN, ResultsCollector]
+neural_struct = [fasttext, (WCNN, {'batch_size': 32}), ResultsCollector]
 
 linear_struct = [[tfidf, count], LinearRegression, ResultsCollector]
 
