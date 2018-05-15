@@ -6,13 +6,11 @@ from os.path import join, isdir, isfile
 
 
 class Logger(object):
-    def __init__(self, name, root, info, date, target_metric='f1_weighted'):
+    def __init__(self, name, root, info, date):
         self.exp_name = name
         self.exp_inf = info
         self.root = root
         self.date = date
-        self.target_metric = target_metric
-        self.metrics = []
 
         # tmp parameters
         self.pipe_ind = 0
@@ -92,11 +90,6 @@ class Logger(object):
             time = self.ops[str(i)].pop('time')
             name = self.ops[str(i)]['op_name']
 
-            # add metrics
-            if self.ops[str(i)] == 'ResultsCollector':
-                self.metrics = self.ops[str(i)]['metrics']
-            else:
-                pass
             # find main model
             if self.ops[str(i)]['op_type'] == 'model':
                 self.model = self.ops[str(i)]['op_name']

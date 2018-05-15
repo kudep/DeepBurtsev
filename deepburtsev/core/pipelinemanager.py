@@ -8,8 +8,19 @@ from os.path import join
 
 
 class PipelineManager(object):
-    def __init__(self, dataset, structure, exp_name, info=None, root='./experiments/', analitic_func=None, k_fold=None, k_num=1,
-                 seed=42, hyper_search='random', sample_num=10, add_watcher=True, metrics='f1_weighted'):
+    def __init__(self, dataset, structure, exp_name,
+                 info=None,
+                 root='./experiments/',
+                 analitic_func=None,
+                 k_fold=None,
+                 k_num=1,
+                 seed=42,
+                 hyper_search='random',
+                 sample_num=10,
+                 add_watcher=True,
+                 metrics=None,
+                 target_metric='f1_weighted'):
+
         self.dataset = dataset
         self.structure = structure
         self.exp_name = exp_name
@@ -22,6 +33,7 @@ class PipelineManager(object):
         self.sample_num = sample_num
         self.date = datetime.now()
         self.add_watcher = add_watcher
+        self.target_metric = target_metric
 
         self.root = root
         self.pipeline_generator = None
@@ -37,13 +49,16 @@ class PipelineManager(object):
         self.logger = Logger(exp_name, root, self.info, self.date)
         self.start_exp = time()
 
-        self.metrics = metrics
-        if isinstance(self.metrics, str):
-            self.logger.log['experiment_info']['metrics'] = list().append(self.metrics)
-        elif isinstance(self.metrics, list):
-            self.logger.log['experiment_info']['metrics'] = self.metrics
+        if metrics is not None:
+            if isinstance(metrics, list):
+                self.metrics = metrics
+            else:
+                raise ValueError("Metrics must be a list of strings.")
         else:
-            raise ValueError("Metrics must be a string or a list of strings.")
+            self.metrics = ['accuracy', 'f1_macro', 'f1_weighted']
+
+        self.logger.log['experiment_info']['metrics'] = self.metrics
+        self.logger.log['experiment_info']['target_metric'] = self.target_metric
 
     def check_dataset(self):
         if isinstance(self.dataset, dict):
@@ -124,6 +139,6 @@ class PipelineManager(object):
 
         # visualization of results
         path = join(self.root, '{0}-{1}-{2}'.format(self.date.year, self.date.month, self.date.day), self.exp_name)
-        results_visualization(path, join(self.root, 'results', 'images'))
+        results_visualization(path, join(path, 'results', 'images'), self.target_metric)
 
         return None

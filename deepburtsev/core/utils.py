@@ -294,9 +294,9 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
             m = main[name][target_metric][0]
             mxname = name
 
-    main['best_model'] = mxname
-    main['target_metric'] = target_metric
-    main['best_score'] = m
+    # main['best_model'] = mxname
+    # main['target_metric'] = target_metric
+    # main['best_score'] = m
 
     return main
 
@@ -365,7 +365,7 @@ def plot_res_table(info, save=False, savepath='./', width=0.35, ext='png'):
         if i == 0:
             bars.append(ax.bar(x, y, width, color=colors[i]))
         else:
-            bars.append(ax.bar(x + width, y, width, color=colors[i]))
+            bars.append(ax.bar(x + i*width, y, width, color=colors[i]))
 
     # Plot bars and create text labels for the table
     cell_text = []
@@ -425,6 +425,8 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
     metrics = list(info[models[0]].keys())
     n = len(metrics)
 
+    # print(models)
+
     for met in metrics:
         tmp = []
         for model in models:
@@ -446,10 +448,10 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
         if i == 0:
             bars.append(ax.bar(x, y, width, color=colors[i]))
         else:
-            bars.append(ax.bar(x + width, y, width, color=colors[i]))
+            bars.append(ax.bar(x + i*width, y, width, color=colors[i]))
 
     # plot x sticks and labels
-    ax.set_xticks(ind - width / 2 + n * width / 2)
+    ax.set_xticks(x - width / 2 + n * width / 2)
     ax.set_xticklabels(tuple(models))
 
     # plot legend
@@ -476,21 +478,21 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
         if not isdir(savepath):
             mkdir(savepath)
         adr = join(savepath, '{0}.{1}'.format('main_hist', ext))
-        fig.savefig(adr, dpi=100)
+        fig.savefig(adr, dpi=200)
         plt.close(fig)
 
     return None
 
 
-def results_visualization(root, savepath):
+def results_visualization(root, savepath, target_metric=None):
     save_path = join(root, 'results')
     with open(join(root, root.split('/')[-1] + '.json'), 'r') as log_file:
         log = json.load(log_file)
         log_file.close()
 
     # reading and scrabbing data
-    info = results_analizator(log)
-    plot_res(info, savepath)
+    info = results_analizator(log, target_metric=target_metric)
+    plot_res(info, savepath=savepath)
 
     return None
 
