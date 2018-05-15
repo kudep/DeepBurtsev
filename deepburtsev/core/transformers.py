@@ -295,9 +295,13 @@ class ResultsCollector(BaseTransformer):
     def _transform(self, dictionary, request_names=None, new_names=None):
         self._fill_names(request_names, new_names)
 
+        print(dictionary['pred_test'])
+
         for name, new_name in zip(self.request_names, self.new_names):
+            # TODO fix here
             pred_data = dictionary[name][self.y_pred]
             real_data = dictionary[name][self.y_true]
+
             self._check_data_format(pred_data)
             self._check_data_format(real_data)
 

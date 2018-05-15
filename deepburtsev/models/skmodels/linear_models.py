@@ -3,7 +3,7 @@ from sklearn.linear_model.logistic import LogisticRegression
 
 class LinearRegression(LogisticRegression):
     def __init__(self, fit_name='train', pred_name='test', op_type='model', op_name='LogisticRegression',
-                 new_name='prediction', **kwargs):
+                 new_name='pred_test', **kwargs):
         super().__init__(**kwargs)
         self.fit_name = fit_name
         self.pred_name = pred_name
