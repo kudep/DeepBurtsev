@@ -16,7 +16,7 @@ class PipelineManager(object):
                  k_fold=None,
                  k_num=1,
                  seed=42,
-                 hyper_search='random',
+                 hyper_search='grid',
                  sample_num=10,
                  add_watcher=True,
                  metrics=None,
@@ -83,16 +83,14 @@ class PipelineManager(object):
 
         # TODO make grid_search and fix it
         # create PipelineGenerator
-        # if self.hyper_search == 'random':
-        #     self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list')
-        # if self.hyper_search == 'grid':
-        #     # self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list')
-        #     raise ValueError("Grid search not implemented yet.")
-        # else:
-        #     raise ValueError("{} search not implemented.".format(self.hyper_search))
-
-        # it just zaglushka
-        self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list')
+        if self.hyper_search == 'random':
+            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+                                                        search=self.hyper_search)
+        elif self.hyper_search == 'grid':
+            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+                                                        search=self.hyper_search)
+        else:
+            raise ValueError("{} search not implemented.".format(self.hyper_search))
 
         # Start generating pipelines configs
         for i, pipe in enumerate(self.pipeline_generator()):

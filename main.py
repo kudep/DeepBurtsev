@@ -25,7 +25,7 @@ fasttext = FasttextVectorizer(request_names=['train', 'valid', 'test'],
 tfidf = Tfidf(request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'])
 count = Count(request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'])
 
-neural_struct = [fasttext, (WCNN, {'search': True, 'batch_size': 32,'epochs': [3, 5, 8, 10, 12, 14, 16, 18, 20]}),
+neural_struct = [fasttext, (WCNN, {'search': True, 'batch_size': 32, 'epochs': [3, 5, 8, 10, 12, 14, 16, 18, 20]}),
                  ResultsCollector]
 
 linear_struct = [[tfidf, count],
