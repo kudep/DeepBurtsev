@@ -40,9 +40,6 @@ class Tfidf(TfidfVectorizer):
             X = dataset[name]['x']
             Y = dataset[name]['y']
             if name == 'train':
-                ########
-                print(X)
-                ########
                 dataset[new_name]['x'] = super().fit_transform(X, Y)
             else:
                 dataset[new_name]['x'] = super().transform(X)
@@ -90,9 +87,6 @@ class Count(CountVectorizer):
             Y = dataset[name]['y']
 
             if name == 'train':
-                ########
-                print(X)
-                ########
                 dataset[new_name]['x'] = super().fit_transform(X, Y)
             else:
                 dataset[new_name]['x'] = super().transform(X)
