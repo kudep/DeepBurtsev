@@ -5,6 +5,7 @@ from .logger import Logger
 from .watcher import Watcher
 from .utils import normal_time, results_visualization
 from os.path import join
+from copy import deepcopy
 
 
 class PipelineManager(object):
@@ -97,13 +98,13 @@ class PipelineManager(object):
         for i, pipe in enumerate(self.pipeline_generator()):
             self.logger.pipe_ind = i
             pipe_start = time()
-            dataset_i = self.dataset
 
             # add watcher if need
             if self.add_watcher:
                 watcher = Watcher(join(self.root, '{0}-{1}-{2}'.format(self.date.year, self.date.month, self.date.day),
                                        self.exp_name), self.seed)
 
+            dataset_i = deepcopy(self.dataset)
             for j in range(pipe.length):
                 try:
                     op_start = time()
@@ -123,8 +124,6 @@ class PipelineManager(object):
 
                     t = {'time': normal_time(time() - op_start)}
                     self.logger.ops[str(j)].update(**t)
-
-
 
                 except:
                     print('Operation with number {0};'.format(i + 1))
