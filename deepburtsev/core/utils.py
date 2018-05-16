@@ -418,7 +418,7 @@ def plot_res_table(info, save=False, savepath='./', width=0.35, ext='png'):
     return None
 
 
-def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
+def plot_res(info, save=True, savepath='./', width=0.1, ext='png'):
     # prepeare data
     bar_list = []
     models = list(info.keys())
@@ -485,7 +485,6 @@ def plot_res(info, save=True, savepath='./', width=0.35, ext='png'):
 
 
 def results_visualization(root, savepath, target_metric=None):
-    save_path = join(root, 'results')
     with open(join(root, root.split('/')[-1] + '.json'), 'r') as log_file:
         log = json.load(log_file)
         log_file.close()

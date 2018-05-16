@@ -128,7 +128,7 @@ class PipelineManager(object):
                     self.logger.ops[str(j)].update(**t)
 
                 except:
-                    print('Operation with number {0};'.format(i + 1))
+                    print('Operation with number {0};'.format(j + 1))
                     raise
 
             self.logger.pipe_time = normal_time(time() - pipe_start)

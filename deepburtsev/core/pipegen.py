@@ -1,3 +1,4 @@
+import numpy as np
 from itertools import product
 from deepburtsev.core.utils import HyperPar
 from deepburtsev.core.pipeline import Pipeline
@@ -51,6 +52,11 @@ class PipelineGenerator(object):
                         op = x[0]
                         lst.remove(x)
                         for conf in conf_gen:
+                            #######################################
+                            for key in conf.keys():
+                                if isinstance(conf[key], np.int64):
+                                    conf[key] = int(conf[key])
+                            #######################################
                             lst.append((op, conf))
 
         return product(*self.pipes)
