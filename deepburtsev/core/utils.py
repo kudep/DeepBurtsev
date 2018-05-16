@@ -340,7 +340,7 @@ def get_table(dang, savepath, root, filename='report', ext='pdf'):
     return table, [name_best_model, best_model]
 
 
-def plot_res_table(info, save=False, savepath='./', width=0.35, ext='png'):
+def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
     # prepeare data
     bar_list = []
     models = list(info.keys())
@@ -418,7 +418,7 @@ def plot_res_table(info, save=False, savepath='./', width=0.35, ext='png'):
     return None
 
 
-def plot_res(info, save=True, savepath='./', width=0.1, ext='png'):
+def plot_res(info, save=True, savepath='./', width=0.2, ext='png'):
     # prepeare data
     bar_list = []
     models = list(info.keys())
