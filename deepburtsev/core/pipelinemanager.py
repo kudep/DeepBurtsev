@@ -13,8 +13,6 @@ class PipelineManager(object):
                  info=None,
                  root='./experiments/',
                  analitic_func=None,
-                 k_fold=None,
-                 k_num=1,
                  seed=42,
                  hyper_search='grid',
                  sample_num=10,
@@ -27,8 +25,6 @@ class PipelineManager(object):
         self.exp_name = exp_name
         self.info = info
         self.data_func = analitic_func
-        self.k_fold = k_fold
-        self.k_num = k_num
         self.seed = seed
         self.hyper_search = hyper_search
         self.sample_num = sample_num
@@ -128,6 +124,7 @@ class PipelineManager(object):
                     print('Operation with number {0};'.format(j + 1))
                     raise
 
+            # TODO add saving best models
             self.logger.pipe_time = normal_time(time() - pipe_start)
             self.logger.pipe_res = dataset_i['results']
             self.logger.get_pipe_log()
