@@ -44,15 +44,6 @@ class Dataset(object):
 
         self.data = data
 
-        # if data.get('train') is not None:
-        #     self.data['train'] = data.get('train')
-        # elif data.get('test') is not None:
-        #     self.data['test'] = data.get('test')
-        # elif data.get('valid') is not None:
-        #     self.data['valid'] = data.get('valid')
-        # else:
-        #     self.data['base'] = data
-
         self.classes_description = classes_description
 
     def iter_batch(self, batch_size: int, data_type: str = 'base', shuffle: bool = True,

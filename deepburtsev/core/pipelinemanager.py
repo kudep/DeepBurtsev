@@ -81,7 +81,6 @@ class PipelineManager(object):
             self.logger.log['dataset']['time'] = normal_time(time() - an_start)
             self.logger.log['dataset'].update(**data_info)
 
-        # TODO make grid_search and fix it
         # create PipelineGenerator
         if self.hyper_search == 'random':
             self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
