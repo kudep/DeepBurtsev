@@ -29,8 +29,8 @@ neural_struct = [fasttext, (WCNN, {'batch_size': 32}), ResultsCollector]
 
 linear_struct = [[tfidf, count], LinearRegression, ResultsCollector]
 
-neural_man = PipelineManager(dataset, neural_struct, 'skill_manager', add_watcher=False)
+neural_man = PipelineManager(dataset, neural_struct, 'skill_manager')
 neural_man.run()
 
-linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', add_watcher=False)
+linear_man = PipelineManager(dataset, linear_struct, 'skill_manager')
 linear_man.run()

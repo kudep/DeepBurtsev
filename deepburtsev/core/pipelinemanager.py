@@ -116,6 +116,8 @@ class PipelineManager(object):
                         if test is False:
                             dataset_i = pipe.step(j, dataset_i)
                             watcher.save_data(dataset_i)
+                        elif test is True:
+                            dataset_i = pipe.step(j, dataset_i)
                         else:
                             dataset_i = test
 

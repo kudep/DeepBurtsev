@@ -19,22 +19,27 @@ class Watcher(object):
         name = conf['op_name']
         op_type = conf['op_type']
         self.pipeline_config[name + '_' + op_type] = conf
-        return self
+        return name, op_type
 
     def test_config(self, conf, dictionary):
-        self.add_config(conf)
-        status = self.check_config(self.pipeline_config)
-
-        if isinstance(status, bool):
-            if status:
-                # self.save_data(self.pipeline_config)
-                return False
-        elif isinstance(status, str):
-            d = self.load_data(status, dictionary)
-            return d
+        name, op_type = self.add_config(conf)
+        if name == 'ResultsCollector':
+            return True
+        elif op_type == 'model' or op_type == 'vectorizer':
+            return True
         else:
-            print(type(status))
-            raise ValueError('Incorrect')
+            status = self.check_config(self.pipeline_config)
+
+            if isinstance(status, bool):
+                if status:
+                    # self.save_data(self.pipeline_config)
+                    return False
+            elif isinstance(status, str):
+                d = self.load_data(status, dictionary)
+                return d
+            else:
+                print(type(status))
+                raise ValueError('Incorrect')
 
         return self
 
