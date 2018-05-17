@@ -13,13 +13,48 @@ class PipelineGenerator(object):
         self.search = search
         self.pipes = []
 
-        # self.length = self.get_len()
+        self.length = self.get_len()
         self.generator = self.pipeline_gen()
 
     def get_len(self):
         k = 0
-        for x in self.pipeline_gen():
-            k += 1
+        for x in self.structure:
+            if isinstance(x, list):
+                for y in x:
+                    if not isinstance(y, tuple):
+                        k += 1
+                    else:
+                        if 'search' not in y[1].keys():
+                            k += 1
+                        else:
+                            if self.search == 'grid':
+                                for key in y[1].keys():
+                                    if key == 'search':
+                                        pass
+                                    elif isinstance(y[1][key], list):
+                                        k += len(y[1][key])
+                                    else:
+                                        pass
+                            else:
+                                k += self.N
+            else:
+                if not isinstance(x, tuple):
+                    pass
+                else:
+                    if 'search' not in x[1].keys():
+                        k += 1
+                    else:
+                        if self.search == 'grid':
+                            for key in x[1].keys():
+                                if key == 'search':
+                                    pass
+                                elif isinstance(x[1][key], list):
+                                    k += len(x[1][key])
+                                else:
+                                    pass
+                        else:
+                            k += self.N
+
         return k
 
     def __call__(self, *args, **kwargs):

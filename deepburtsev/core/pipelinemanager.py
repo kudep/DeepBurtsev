@@ -94,7 +94,14 @@ class PipelineManager(object):
             raise ValueError("{} search not implemented.".format(self.hyper_search))
 
         # Start generating pipelines configs
+        print('[ Experiment start ... ]')
+        exp_start_time = time()
         for i, pipe in enumerate(self.pipeline_generator()):
+            # print progress
+            if i != 0:
+                itime = normal_time(((time() - exp_start_time) / i) * (self.pipeline_generator.length - i))
+                print('[ Progress: pipe {0}/{1}; Time left: {2}; ]'.format(i+1, self.pipeline_generator.length, itime))
+
             self.logger.pipe_ind = i
             pipe_start = time()
 
@@ -130,13 +137,11 @@ class PipelineManager(object):
                     print('Operation with number {0};'.format(j + 1))
                     raise
 
-            # TODO add saving best models
             # save best models
             self.logger.pipe_time = normal_time(time() - pipe_start)
             self.logger.pipe_res = dataset_i['results']
             self.logger.get_pipe_log()
 
-            #####################################################################
             model = pipe.get_last_model()
             model_name = model.op_name
             if model_name not in best_models.keys():
@@ -155,7 +160,6 @@ class PipelineManager(object):
                         os.makedirs(fname)
 
                     _ = joblib.dump(model, join(fname, model_name + '.pkl'), compress=9)
-            #####################################################################
 
         # save log
         self.logger.log['experiment_info']['full_time'] = normal_time(time() - self.start_exp)
