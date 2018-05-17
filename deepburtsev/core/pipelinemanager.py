@@ -1,11 +1,13 @@
+import os
 from time import time
 from datetime import datetime
 from .pipegen import PipelineGenerator
 from .logger import Logger
 from .watcher import Watcher
 from .utils import normal_time, results_visualization
-from os.path import join
+from os.path import join, isdir
 from copy import deepcopy
+from sklearn.externals import joblib
 
 
 class PipelineManager(object):
@@ -31,9 +33,10 @@ class PipelineManager(object):
         self.date = datetime.now()
         self.add_watcher = add_watcher
         self.target_metric = target_metric
-
         self.root = root
         self.pipeline_generator = None
+        self.save_path = join(self.root, '{}-{}-{}'.format(self.date.year, self.date.month, self.date.day),
+                              self.exp_name, 'checkpoints')
 
         if isinstance(self.structure, list):
             self.structure_type = 'list'
@@ -68,6 +71,9 @@ class PipelineManager(object):
         return self
 
     def run(self):
+
+        best_models = {}
+
         self.check_dataset()
 
         # analytics of dataset
@@ -125,10 +131,33 @@ class PipelineManager(object):
                     raise
 
             # TODO add saving best models
+            # save best models
             self.logger.pipe_time = normal_time(time() - pipe_start)
             self.logger.pipe_res = dataset_i['results']
             self.logger.get_pipe_log()
 
+            #####################################################################
+            model = pipe.get_last_model()
+            model_name = model.op_name
+            if model_name not in best_models.keys():
+                best_models[model_name] = 0
+
+            if dataset_i['results'][self.target_metric] > best_models[model_name]:
+                best_models[model_name] = dataset_i['results'][self.target_metric]
+                if hasattr(model, 'save'):
+                    model.save(join(self.save_path, model_name))
+                else:
+                    # only for sklearn models
+                    fname = join(self.save_path, model_name)
+                    if isdir(fname):
+                        pass
+                    else:
+                        os.makedirs(fname)
+
+                    _ = joblib.dump(model, join(fname, model_name + '.pkl'), compress=9)
+            #####################################################################
+
+        # save log
         self.logger.log['experiment_info']['full_time'] = normal_time(time() - self.start_exp)
         self.logger.save()
 

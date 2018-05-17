@@ -494,7 +494,7 @@ class WCNN(BaseModel):
             print('epochs_done: {}'.format(epochs_done))
 
         self.trained = True
-        self.save()
+        # self.save()
 
         return self
 
