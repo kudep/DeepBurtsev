@@ -32,8 +32,8 @@ linear_struct = [[tfidf, count],
                  [LinearRegression, LinearSVM, RandomForest],
                  ResultsCollector]
 
-neural_man = PipelineManager(dataset, neural_struct, 'skill_manager', target_metric='f1_macro')
-neural_man.run()
+# neural_man = PipelineManager(dataset, neural_struct, 'skill_manager', target_metric='f1_macro')
+# neural_man.run()
 
-linear_man = PipelineManager(dataset, linear_struct, 'skill_manager')
+linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', target_metric='f1_macro')
 linear_man.run()

@@ -418,7 +418,7 @@ def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
     return None
 
 
-def plot_res(info, save=True, savepath='./', width=0.2, ext='png'):
+def plot_res(info, save=True, savepath='./', width=0.2, fheight=8, fwidth=12, ext='png'):
     # prepeare data
     bar_list = []
     models = list(info.keys())
@@ -437,11 +437,13 @@ def plot_res(info, save=True, savepath='./', width=0.2, ext='png'):
 
     # ploting
     fig, ax = plt.subplots()
+    fig.set_figheight(fheight)
+    fig.set_figwidth(fwidth)
 
     colors = plt.cm.Paired(np.linspace(0, 0.5, len(bar_list)))
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Scores')
-    ax.set_title('Scores by metric')
+    ax.set_ylabel('Scores').set_fontsize(20)
+    ax.set_title('Scores by metric').set_fontsize(20)
 
     bars = []
     for i, y in enumerate(bar_list):
@@ -452,24 +454,30 @@ def plot_res(info, save=True, savepath='./', width=0.2, ext='png'):
 
     # plot x sticks and labels
     ax.set_xticks(x - width / 2 + n * width / 2)
-    ax.set_xticklabels(tuple(models))
+    ax.set_xticklabels(tuple(models), fontsize=15)
+
+    yticks = ax.get_yticks()
+    ax.set_yticklabels(['{0:.2}'.format(float(y)) for y in yticks], fontsize=15)
+
+    ax.grid(True, linestyle='--', color='b', alpha=0.1)
 
     # plot legend
+    # ax.legend(tuple([bar[0] for bar in bars]), tuple(metrics), loc='upper left', bbox_to_anchor=(1, 1))
     ax.legend(tuple([bar[0] for bar in bars]), tuple(metrics))
 
     # auto lables
-    def autolabel(bars):
+    def autolabel(columns):
         """
         Attach a text label above each bar displaying its height
         """
-        for rects in bars:
+        for rects in columns:
             for rect in rects:
                 height = rect.get_height()
-                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
-                        '%d' % int(height),
-                        ha='center', va='bottom')
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height, '{0:.2}'.format(float(height)),
+                        ha='center', va='bottom', fontsize=12)
 
     autolabel(bars)
+    plt.ylim(0, 1.1)
 
     # show the picture
     if not save:
@@ -478,7 +486,7 @@ def plot_res(info, save=True, savepath='./', width=0.2, ext='png'):
         if not isdir(savepath):
             mkdir(savepath)
         adr = join(savepath, '{0}.{1}'.format('main_hist', ext))
-        fig.savefig(adr, dpi=200)
+        fig.savefig(adr, dpi=100)
         plt.close(fig)
 
     return None
