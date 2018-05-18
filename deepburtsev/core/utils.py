@@ -270,78 +270,57 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
             target_metric))
         target_metric = metrics[0]
 
-    main = {}
+    main = {'models': {}, 'best_model': {}}
     for name in models_names:
-        main[name] = {}
+        main['models'][name] = {}
         for met in metrics:
-            main[name][met] = []
+            main['models'][name][met] = []
+        main['models'][name]['pipe_conf'] = []
 
     for name in models_names:
         for key, val in log['experiments'][name].items():
             for met in metrics:
-                main[name][met].append(val['results'][met])
-
-    for name in models_names:
-        for key, val in log['experiments'][name].items():
-            for met in metrics:
-                tmp = np.sort(main[name][met])[-num_best:]
-                main[name][met] = tmp[::-1]
+                main['models'][name][met].append(val['results'][met])
+            main['models'][name]['pipe_conf'].append(val['config'])
 
     m = 0
     mxname = ''
-    for name in models_names:
-        if main[name][target_metric][0] > m:
-            m = main[name][target_metric][0]
-            mxname = name
+    best_pipeline = None
 
-    # main['best_model'] = mxname
-    # main['target_metric'] = target_metric
-    # main['best_score'] = m
+    sort_met = {}
+
+    for name in models_names:
+        sort_met[name] = {}
+        for met in metrics:
+            tmp = np.sort(main['models'][name][met])[-num_best:]
+            sort_met[name][met] = tmp[::-1]
+            if tmp[0] > m:
+                m = tmp[0]
+                mxname = name
+                best_pipeline = main['models'][name]['pipe_conf'][main['models'][name][met].index(m)]
+
+    main['best_model']['name'] = mxname
+    main['best_model']['score'] = m
+    main['best_model']['target_metric'] = target_metric
+    main['best_model']['target_metric'] = best_pipeline
+
+    main['sorted'] = sort_met
 
     return main
 
 
-def get_table(dang, savepath, root, filename='report', ext='pdf'):
+def get_table(info, savepath, filename='report', ext='xlsx'):
     # make dataframe table
-    fun_0 = lambda p: [dang[x][p] for x in dang.keys()]
-    table = pd.DataFrame({'Models': list(dang.keys()),
-                          'Accuracy': fun_0('max_acc'),
-                          'F1 macro': fun_0('max_f1_macro'),
-                          'F1 weighted': fun_0('max_f1_weighted')})
-
-    table = pd.pivot_table(table, index='Models', values=['Accuracy', 'F1 macro', 'F1 weighted'], fill_value=0)
-
-    # best model
-    name_best_model = list(table[table['F1 weighted'] == table['F1 weighted'].max()].index)[0]
-    I = dang[name_best_model]['index_of_best']
-    best_model = {}
-    a = dang[name_best_model]['list'][I]['results']['classes']
-    for x in a.keys():
-        for y in a[x].keys():
-            if y not in best_model.keys():
-                best_model[y] = list()
-                best_model[y].append(a[x][y])
-            else:
-                best_model[y].append(a[x][y])
-
-    # create pdf table
-    print(root)
-    env = Environment(loader=FileSystemLoader(root))
-    template = env.get_template("./deepburtsev/core/template.html")
-    template_vars = {"title": "Results ",
-                     "national_pivot_table": table.to_html()}
-
-    html_out = template.render(template_vars)
-
-    adr = join(savepath, '{0}.{1}'.format(filename, ext))
-
-    HTML(string=html_out).write_pdf(adr)
-
-    return table, [name_best_model, best_model]
+    writer = pd.ExcelWriter(join(savepath, '.'.join([filename, ext])))
+    df = pd.DataFrame(info['models'])
+    df.to_excel(writer, 'Sheet1')
+    writer.save()
+    return None
 
 
 def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
     # prepeare data
+    info = info['sorted']
     bar_list = []
     models = list(info.keys())
     metrics = list(info[models[0]].keys())
@@ -420,6 +399,8 @@ def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
 
 def plot_res(info, save=True, savepath='./', width=0.2, fheight=8, fwidth=12, ext='png'):
     # prepeare data
+    info = info['sorted']
+
     bar_list = []
     models = list(info.keys())
     metrics = list(info[models[0]].keys())
@@ -500,6 +481,7 @@ def results_visualization(root, savepath, target_metric=None):
     # reading and scrabbing data
     info = results_analizator(log, target_metric=target_metric)
     plot_res(info, savepath=savepath)
+    get_table(info, join(root, 'results'))
 
     return None
 
@@ -533,35 +515,6 @@ def plot_confusion_matrix(matrix, important_categories, plot_name='confusion mat
     plt.close(fig)
 
     return None
-
-
-######################################################################################
-
-# # data
-# N = 5
-# ind = np.arange(N)
-#
-# men_means = (20, 35, 30, 35, 27)
-# women_means = (25, 32, 34, 20, 25)
-#
-# info = {}
-# for i, x in enumerate(ind):
-#     info[str(x)] = {'Men': [men_means[i]], 'Women': [women_means[i]]}
-# #     info[str(x)] = {'Men': [men_means[i]]}
-#
-# def results_visualization(root):
-#     save_path = join(root, 'results')
-#     with open(join(root, root.split('/')[-1] + '.json'), 'r') as log_file:
-#         log = json.load(log_file)
-#         log_file.close()
-#
-#     # reading and scrabbing data
-#     info = results_analizator(log)
-#     plot_res(info, save_path)
-#
-#     return None
-
-######################################################################################
 
 
 # -------------------------- Utils ----------------------------------

@@ -18,3 +18,4 @@ weasyprint
 tensorflow_hub
 kenlm
 lxml
+openpyxl
