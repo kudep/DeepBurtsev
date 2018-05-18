@@ -523,11 +523,15 @@ def results_visualization(root, savepath, target_metric=None):
     plot_res(info, savepath=savepath)
     get_table(info, join(root, 'results'))
 
-    classes_names = list(info['best_model']['classes'].keys())
-    stat = info['best_model']['classes']
-    axes_names = ['Classes', info['best_model']['target_metric']]
-    ploting_hist(np.arange(len(stat)), stat[i], plot_name='', axes_names=axes_names, x_lables=classes_names,
-                 savepath=join(root, 'results', 'images'))
+    # #
+    # print(info['best_model'].keys())
+    #
+    # classes_names = list(info['best_model']['classes'].keys())
+    # x = np.arange(len(classes_names))
+    # y = [v['f1'] for k, v in info['best_model']['classes'].items()]
+    # axes_names = ['Classes', info['best_model']['target_metric']]
+    # ploting_hist(x, y, plot_name='', axes_names=axes_names, x_lables=classes_names,
+    #              savepath=join(root, 'results', 'images'))
 
     return None
 
