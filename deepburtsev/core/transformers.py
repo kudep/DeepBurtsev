@@ -314,7 +314,7 @@ class ResultsCollector(BaseTransformer):
         return dictionary
 
     def get_results(self, y_pred, y_true):
-
+        y_true = np.array(y_true)
         results = dict()
         results['classes'] = {}
         for metr in self.metrics:
@@ -323,7 +323,8 @@ class ResultsCollector(BaseTransformer):
         for i in range(len(self.category_description)):
             y_bin_pred = np.zeros(y_pred.shape)
             y_bin_pred[y_pred == i] = 1
-            y_bin_answ = np.zeros(y_pred.shape)
+
+            y_bin_answ = np.zeros(y_true.shape)
             y_bin_answ[y_true == i] = 1
 
             precision_tmp = precision_score(y_bin_answ, y_bin_pred)
