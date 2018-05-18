@@ -286,7 +286,6 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
     m = 0
     mxname = ''
     best_pipeline = None
-
     sort_met = {}
 
     for name in models_names:
@@ -299,12 +298,16 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
                 mxname = name
                 best_pipeline = main['models'][name]['pipe_conf'][main['models'][name][met].index(m)]
 
+    main['sorted'] = sort_met
+
     main['best_model']['name'] = mxname
     main['best_model']['score'] = m
     main['best_model']['target_metric'] = target_metric
-    main['best_model']['target_metric'] = best_pipeline
+    main['best_model']['best_pipeline'] = best_pipeline
 
-    main['sorted'] = sort_met
+    for key, val in log['experiments'][main['best_model']['name']].items():
+        if val['results'][main['best_model']['target_metric']] == main['best_model']['score']:
+            main['best_model']['classes'] = val['results']['classes']
 
     return main
 
@@ -315,6 +318,43 @@ def get_table(info, savepath, filename='report', ext='xlsx'):
     df = pd.DataFrame(info['models'])
     df.to_excel(writer, 'Sheet1')
     writer.save()
+    return None
+
+
+def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6), axes_names=['X', 'Y'],
+                 x_lables=None, y_lables=None, xticks=True, legend=True, ext='png', savepath='./results/images/'):
+    fig, ax = plt.subplots(figsize=plot_size)
+    rects = ax.bar(x, y, width, color=color)
+
+    # add some text for labels, title and axes ticks
+    ax.set_xlabel(axes_names[0])
+    ax.set_ylabel(axes_names[1])
+    ax.set_title(plot_name)
+
+    if xticks and x_lables is not None:
+        ax.set_xticks(x)
+        ax.set_xticklabels(x_lables)
+
+    if legend and y_lables is not None:
+        ax.legend((rects[0],), y_lables)
+
+    def autolabel(rects):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width() / 2., 1.01 * height,
+                    '{0:.3}'.format(float(height)),
+                    ha='center', va='bottom')
+
+    autolabel(rects)
+
+    if not isdir(savepath):
+        mkdir(savepath)
+    adr = join(savepath, '{0}.{1}'.format(plot_name, ext))
+    fig.savefig(adr, dpi=200)
+    fig.close()
     return None
 
 
@@ -482,6 +522,12 @@ def results_visualization(root, savepath, target_metric=None):
     info = results_analizator(log, target_metric=target_metric)
     plot_res(info, savepath=savepath)
     get_table(info, join(root, 'results'))
+
+    classes_names = list(info['best_model']['classes'].keys())
+    stat = info['best_model']['classes']
+    axes_names = ['Classes', info['best_model']['target_metric']]
+    ploting_hist(np.arange(len(stat)), stat[i], plot_name='', axes_names=axes_names, x_lables=classes_names,
+                 savepath=join(root, 'results', 'images'))
 
     return None
 
