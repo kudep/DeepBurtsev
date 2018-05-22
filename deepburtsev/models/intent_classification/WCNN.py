@@ -542,7 +542,7 @@ class WCNN(BaseModel):
                         predictions.append(prediction)
                         k += 1
 
-                    print(k)
+                    # print(k)
 
                     # create one list of predictions from list of batches
                     preds = predictions[0]
