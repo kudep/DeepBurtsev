@@ -100,6 +100,8 @@ class PipelineManager(object):
             # print progress
             if i != 0:
                 itime = normal_time(((time() - exp_start_time) / i) * (self.pipeline_generator.length - i))
+                print('\n')
+                print('\n')
                 print('[ Progress: pipe {0}/{1}; Time left: {2}; ]'.format(i+1, self.pipeline_generator.length, itime))
 
             self.logger.pipe_ind = i
