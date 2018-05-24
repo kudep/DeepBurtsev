@@ -14,8 +14,6 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 from time import time
 from tqdm import tqdm
-from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
 from os.path import join, isdir, isfile
 from os import mkdir
 
@@ -25,6 +23,9 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
+
+# from jinja2 import Environment, FileSystemLoader
+# from weasyprint import HTML
 
 morph = pymorphy2.MorphAnalyzer()
 

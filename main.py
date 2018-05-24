@@ -43,30 +43,3 @@ neural_man.run()
 
 linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', target_metric='f1_macro')
 linear_man.run()
-
-
-
-# import json
-# import os
-# from os.path import join
-# import csv
-#
-# path = './data/russian/sber_faq/'
-# path_list = os.listdir(path)
-#
-# dataset = dict()
-#
-# for p in path_list:
-#     name = p.split('_')[-1].split('.')[0]
-#     dataset[name] = dict()
-#     with open(join(path, p)) as csvfile:
-#         spamreader = csv.reader(csvfile, delimiter='\t', quotechar='|')
-#         dataset[name]['x'] = []
-#         dataset[name]['y'] = []
-#         for row in spamreader:
-#             dataset[name]['x'].append(row[0])
-#             dataset[name]['y'].append(int(row[1]))
-#
-# with open(join(path, 'sber_faq.json'), 'w') as f:
-#     json.dump(dataset, f)
-#     f.close()

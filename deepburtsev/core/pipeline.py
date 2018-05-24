@@ -11,7 +11,11 @@ class Pipeline(object):
             if not hasattr(element[0], '__call__'):
                 op = element[0].set_params(**element[1])
             else:
-                op = element[0](**element[1])
+                try:
+                    op = element[0](**element[1])
+                except TypeError:
+                    print(element[1])
+                    raise
         else:
             if not hasattr(element, '__call__'):
                 op = element

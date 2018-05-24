@@ -82,6 +82,8 @@ class PipelineGenerator(object):
                         raise ValueError("Configuration of operation or search must have a dict type.")
 
                     if 'search' not in x[1].keys():
+                        print("fuck {}".format(x[0]))
+                        print(x[1].keys())
                         pass
                     else:
                         if self.search == 'random':

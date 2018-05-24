@@ -84,14 +84,19 @@ class PipelineManager(object):
             self.logger.log['dataset'].update(**data_info)
 
         # create PipelineGenerator
-        if self.hyper_search == 'random':
-            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
-                                                        search=self.hyper_search)
-        elif self.hyper_search == 'grid':
-            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
-                                                        search=self.hyper_search)
-        else:
-            raise ValueError("{} search not implemented.".format(self.hyper_search))
+        # TODO it can be simpler
+        assert self.hyper_search in ['random', 'grid']
+        self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+                                                    search=self.hyper_search)
+
+        # if self.hyper_search == 'random':
+        #     self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+        #                                                 search=self.hyper_search)
+        # elif self.hyper_search == 'grid':
+        #     self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+        #                                                 search=self.hyper_search)
+        # else:
+        #     raise ValueError("{} search not implemented.".format(self.hyper_search))
 
         # Start generating pipelines configs
         print('[ Experiment start ... ]')
