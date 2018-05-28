@@ -113,7 +113,6 @@ class Pipeline(object):
     def get_models(self):
         return self.models
 
-    # TODO think about
     def fit(self, dataset):
         out = self.run(dataset)
         del out

@@ -28,11 +28,13 @@ tfidf = Tfidf(request_names=names, new_names=names)
 count = Count(request_names=names, new_names=names)
 
 neural_struct = [fasttext,
-                 [(WCNN(new_names=["pred_test", "pred_val"], predict_names=["test", "val"]),
-                   {'search': True, 'batch_size': [32, 64], 'epochs': 1}),
-                  (DCNN(new_names=["pred_test", "pred_val"], predict_names=["test", "val"]),
-                   {'batch_size': 32, 'epochs': 1, 'op_name': 'DCNN'})],
+                 (WCNN(new_names=["pred_test", "pred_val"], predict_names=["test", "val"]),
+                  {'search': True, 'batch_size': [32, 64], 'epochs': 1}),
                  ResultsCollector]
+
+# (DCNN(new_names=["pred_test", "pred_val"], predict_names=["test", "val"]),
+#                    {'batch_size': 32, 'epochs': 1, 'op_name': 'DCNN'}),
+
 
 linear_struct = [[tfidf, count],
                  [LinearRegression, LinearSVM, RandomForest],
@@ -41,5 +43,5 @@ linear_struct = [[tfidf, count],
 neural_man = PipelineManager(dataset, neural_struct, 'skill_manager', target_metric='f1_macro')
 neural_man.run()
 
-linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', target_metric='f1_macro')
-linear_man.run()
+# linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', target_metric='f1_macro')
+# linear_man.run()

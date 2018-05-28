@@ -243,7 +243,9 @@ class WCNN(BaseModel):
         if self.metrics_names is None:
             metrics_funcs = getattr(keras.metrics, self.lear_metrics, None)
         else:
-            self.metrics_names = self.metrics_names.split(' ')
+            if isinstance(self.metrics_names, str):
+                self.metrics_names = self.metrics_names.split(' ')
+
             metrics_funcs = []
             for i in range(len(self.metrics_names)):
                 metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
@@ -584,4 +586,15 @@ class WCNN(BaseModel):
 
         self.fit(dictionary)
         out = self.predict(dictionary)
+
         return out
+
+    def set_params(self, **params):
+        super().set_params(**params)
+        self.model_init = False
+        if self.classes is not None:
+            self.n_classes = np.array(self.classes.split(" ")).shape[0]
+            self.model = self.cnn_model()
+            self.init_model_from_scratch(add_metrics_file=metrics_file)
+            self.model_init = True
+        return self

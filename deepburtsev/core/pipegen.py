@@ -91,11 +91,11 @@ class PipelineGenerator(object):
                             op = x[0]
                             lst.remove(x)
                             for conf in conf_gen:
-                                #######################################
+                                # fix dtype for json dump
                                 for key in conf.keys():
                                     if isinstance(conf[key], np.int64):
                                         conf[key] = int(conf[key])
-                                #######################################
+
                                 lst.append((op, conf))
                         elif self.search == 'grid':
                             conf_gen = self.grid_param_gen(x[1])
