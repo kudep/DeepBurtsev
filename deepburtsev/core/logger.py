@@ -3,6 +3,7 @@ import os
 
 from collections import OrderedDict
 from os.path import join, isdir, isfile
+from deepburtsev.core.utils import normal_time
 
 
 class Logger(object):
@@ -26,6 +27,7 @@ class Logger(object):
 
         if not isdir(self.log_path):
             os.makedirs(self.log_path)
+        if not isdir(join(self.log_path, 'results', 'images')):
             os.makedirs(join(self.log_path, 'results', 'images'))
 
         self.log = OrderedDict(experiment_info=OrderedDict(date='{0}-{1}-{2}'.format(date.year, date.month, date.day),
@@ -78,8 +80,12 @@ class Logger(object):
                     if not match:
                         old_log['experiments'][name][str(old_npipe+1)] = new_log['experiments'][name][nkey]
 
-        old_log['experiment_info']['full_time'] = old_log['experiment_info']['full_time'] + ' + ' + \
-                                                  new_log['experiment_info']['full_time']
+        # addition time
+        t_old = old_log['experiment_info']['full_time'].split(':')
+        t_new = new_log['experiment_info']['full_time'].split(':')
+        sec = int(t_old[2]) + int(t_new[2]) + (int(t_old[1]) + int(t_new[1]))*60 + (int(t_old[0]) + int(t_new[0]))*3600
+
+        old_log['experiment_info']['full_time'] = normal_time(sec)
 
         return old_log
 

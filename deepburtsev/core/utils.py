@@ -37,7 +37,7 @@ def normal_time(z):
         s = z % 3600 % 60
         t = '%i:%i:%i' % (h, m, s)
     else:
-        t = str(z)
+        t = '{0:.2}'.format(z)
     return t
 
 
@@ -359,7 +359,7 @@ def ploting_hist(x, y, plot_name='Plot', color='y', width=0.35, plot_size=(10, 6
     return None
 
 
-def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
+def plot_res_table(info, save=True, savepath='./', width=0.2, fheight=8, fwidth=12, ext='png'):
     # prepeare data
     info = info['sorted']
     bar_list = []
@@ -377,15 +377,26 @@ def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
 
     # ploting
     fig, ax = plt.subplots()
+    fig.set_figheight(fheight)
+    fig.set_figwidth(fwidth)
 
     colors = plt.cm.Paired(np.linspace(0, 0.5, len(bar_list)))
+
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Scores').set_fontsize(20)
+    ax.set_title('Scores by metric').set_fontsize(20)
 
     bars = []
     for i, y in enumerate(bar_list):
         if i == 0:
             bars.append(ax.bar(x, y, width, color=colors[i]))
         else:
-            bars.append(ax.bar(x + i*width, y, width, color=colors[i]))
+            bars.append(ax.bar(x + i * width, y, width, color=colors[i]))
+
+    yticks = ax.get_yticks()
+    ax.set_yticklabels(['{0:.2}'.format(float(y)) for y in yticks], fontsize=15)
+
+    ax.grid(True, linestyle='--', color='b', alpha=0.1)
 
     # Plot bars and create text labels for the table
     cell_text = []
@@ -413,24 +424,24 @@ def plot_res_table(info, save=False, savepath='./', width=0.2, ext='png'):
     ax.legend(tuple([bar[0] for bar in bars]), tuple(metrics))
 
     # auto lables
-    def autolabel(bars):
+    def autolabel(columns):
         """
         Attach a text label above each bar displaying its height
         """
-        for rects in bars:
+        for rects in columns:
             for rect in rects:
                 height = rect.get_height()
-                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
-                        '%d' % int(height),
-                        ha='center', va='bottom')
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height, '{0:.2}'.format(float(height)),
+                        ha='center', va='bottom', fontsize=12)
 
     autolabel(bars)
+    plt.ylim(0, 1.1)
 
     # show the picture
     if save:
         if not isdir(savepath):
             mkdir(savepath)
-        adr = join(savepath, '{0}.{1}'.format('main_hist', ext))
+        adr = join(savepath, '{0}.{1}'.format('main_hist_tab', ext))
         fig.savefig(adr, dpi=100)
         plt.close(fig)
     else:
@@ -522,6 +533,7 @@ def results_visualization(root, savepath, target_metric=None):
     # reading and scrabbing data
     info = results_analizator(log, target_metric=target_metric)
     plot_res(info, savepath=savepath)
+    plot_res_table(info, savepath=savepath)
     get_table(info, join(root, 'results'))
 
     # #

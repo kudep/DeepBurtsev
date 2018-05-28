@@ -169,11 +169,14 @@ class BaseTransformer(BaseClass):
                 if name not in dictionary.keys():
                     raise KeyError('Key {} not found in input dictionary.'.format(name))
                 else:
-                    self.request_names.append(name)
+                    if name not in self.request_names:
+                        self.request_names.append(name)
+                    else:
+                        pass
         else:
             self.worked_names = ['base', 'train', 'valid', 'test']
             for name in self.worked_names:
-                if name in dictionary.keys():
+                if name in dictionary.keys() and name not in self.request_names:
                     self.request_names.append(name)
             if len(self.request_names) == 0:
                 raise KeyError('Keys from {} not found in input dictionary.'.format(self.worked_names))

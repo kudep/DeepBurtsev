@@ -3,7 +3,6 @@ from os.path import join
 
 from deepburtsev.core.pipelinemanager import PipelineManager
 from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector
-from deepburtsev.models.intent_classification.DCNN import DCNN
 from deepburtsev.models.intent_classification.WCNN import WCNN
 from deepburtsev.models.skmodels.linear_models import LinearRegression, LinearSVM, RandomForest
 from deepburtsev.core.sktransformers import Tfidf
