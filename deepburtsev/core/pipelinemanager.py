@@ -1,7 +1,7 @@
 import os
 from time import time
 from datetime import datetime
-from .pipegen import PipelineGenerator
+from .pipegen import GridGenerator, RandomGenerator
 from .logger import Logger
 from .watcher import Watcher
 from .utils import normal_time, results_visualization
@@ -84,12 +84,15 @@ class PipelineManager(object):
             self.logger.log['dataset'].update(**data_info)
 
         # create PipelineGenerator
+        # TODO it can be simpler
+        # assert self.hyper_search in ['random', 'grid']
+        # self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
+        #                                             search=self.hyper_search)
+
         if self.hyper_search == 'random':
-            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
-                                                        search=self.hyper_search)
+            self.pipeline_generator = RandomGenerator(self.structure, n=self.sample_num)
         elif self.hyper_search == 'grid':
-            self.pipeline_generator = PipelineGenerator(self.structure, n=self.sample_num, dtype='list',
-                                                        search=self.hyper_search)
+            self.pipeline_generator = GridGenerator(self.structure)
         else:
             raise ValueError("{} search not implemented.".format(self.hyper_search))
 
@@ -99,10 +102,9 @@ class PipelineManager(object):
         for i, pipe in enumerate(self.pipeline_generator()):
             # print progress
             if i != 0:
-                itime = normal_time(((time() - exp_start_time) / i) * (self.pipeline_generator.length - i))
+                itime = normal_time(((time() - exp_start_time) / i) * (self.pipeline_generator.len - i))
                 print('\n')
-                print('\n')
-                print('[ Progress: pipe {0}/{1}; Time left: {2}; ]'.format(i+1, self.pipeline_generator.length, itime))
+                print('[ Progress: pipe {0}/{1}; Time left: {2}; ]'.format(i+1, self.pipeline_generator.len, itime))
 
             self.logger.pipe_ind = i
             pipe_start = time()

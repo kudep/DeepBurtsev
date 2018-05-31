@@ -1,5 +1,7 @@
 import numpy as np
 from itertools import product
+from copy import deepcopy
+
 from deepburtsev.core.utils import HyperPar
 from deepburtsev.core.pipeline import Pipeline
 
@@ -8,61 +10,81 @@ class PipelineGenerator(object):
     def __init__(self, structure, n=10, dtype='list', search='grid'):
         self.structure = structure
         self.dtype = dtype
-        self.check_struct()
         self.N = n
         self.search = search
-        self.pipes = []
 
-        self.length = self.get_len()
-        self.generator = self.pipeline_gen()
-
-    def get_len(self):
-        k = 0
-        for x in self.structure:
-            if isinstance(x, list):
-                for y in x:
-                    if not isinstance(y, tuple):
-                        k += 1
-                    else:
-                        if 'search' not in y[1].keys():
-                            k += 1
-                        else:
-                            if self.search == 'grid':
-                                for key in y[1].keys():
-                                    if key == 'search':
-                                        pass
-                                    elif isinstance(y[1][key], list):
-                                        k += len(y[1][key])
-                                    else:
-                                        pass
-                            else:
-                                k += self.N
-            else:
-                if not isinstance(x, tuple):
-                    pass
-                else:
-                    if 'search' not in x[1].keys():
-                        k += 1
-                    else:
-                        if self.search == 'grid':
-                            for key in x[1].keys():
-                                if key == 'search':
-                                    pass
-                                elif isinstance(x[1][key], list):
-                                    k += len(x[1][key])
-                                else:
-                                    pass
-                        else:
-                            k += self.N
-
-        return k
+        if self.search == 'grid':
+            self.generator = GridGenerator(self.structure)
+            self.length = self.generator.len
+        elif self.search == 'random':
+            self.generator = RandomGenerator(self.structure, self.N)
+            self.length = self.generator.len
+        else:
+            raise ValueError("{} search type not implemented.".format(self.search))
 
     def __call__(self, *args, **kwargs):
         return self.generator
 
-    def check_struct(self):
-        if not isinstance(self.structure, list):
-            raise ValueError("Input must be a list.")
+
+class RandomGenerator(object):
+    def __init__(self, structure, n=10):
+        self.structure = structure
+        self.N = n
+        self.pipes = []
+        self.len = 0
+
+        self.get_len()
+        self.generator = self.pipeline_gen()
+
+    def __call__(self, *args, **kwargs):
+        return self.generator
+
+    def get_len(self):
+        test = []
+        lst = []
+
+        for x in self.structure:
+            if not isinstance(x, list):
+                if not isinstance(x, tuple):
+                    test.append([False])
+                else:
+                    assert len(x) == 2
+                    assert isinstance(x[1], dict)
+                    if "search" not in x[1].keys():
+                        test.append([False])
+                    else:
+                        test.append([True])
+            else:
+                ln = []
+                for y in x:
+                    if not isinstance(y, tuple):
+                        ln.append(False)
+                    else:
+                        assert len(y) == 2
+                        assert isinstance(y[1], dict)
+                        if "search" not in y[1].keys():
+                            ln.append(False)
+                        else:
+                            ln.append(True)
+                test.append(ln)
+
+        zgen = product(*test)
+        for x in zgen:
+            lst.append(x)
+
+        ks = 0
+        k = 0
+        for x in lst:
+            if True not in x:
+                k += 1
+            else:
+                ks += 1
+
+        self.len = k + ks * self.N
+
+        del test, lst, zgen
+
+        return self
 
     # generation
     def conf_gen(self):
@@ -72,37 +94,104 @@ class PipelineGenerator(object):
             else:
                 self.pipes.append([x])
 
-        for lst in self.pipes:
-            for x in lst:
-                if not isinstance(x, tuple):
-                    pass
-                else:
-                    assert len(x) == 2
-                    if not isinstance(x[1], dict):
-                        raise ValueError("Configuration of operation or search must have a dict type.")
+        lgen = product(*self.pipes)
+        for pipe in lgen:
+            search = False
+            pipe = list(pipe)
 
-                    if 'search' not in x[1].keys():
-                        pass
+            for op in pipe:
+                if isinstance(op, tuple) and "search" in op[1].keys():
+                    search = True
+                    break
+
+            if search:
+                for i in range(self.N):
+                    for j, op in enumerate(pipe):
+                        if isinstance(op, tuple) and "search" in op[1].keys():
+                            search_conf = deepcopy(op[1])
+                            del search_conf['search']
+
+                            conf = HyperPar(**search_conf).sample_params()
+                            # fix dtype for json dump
+                            for key in conf.keys():
+                                if isinstance(conf[key], np.int64):
+                                    conf[key] = int(conf[key])
+
+                            pipe[j] = (op[0], conf)
+
+                    yield pipe
+            else:
+                yield pipe
+
+    def pipeline_gen(self):
+        pipe_gen = self.conf_gen()
+        for pipe in pipe_gen:
+            yield Pipeline(list(pipe))
+
+
+class GridGenerator(object):
+    def __init__(self, structure):
+        self.structure = structure
+        self.pipes = []
+        self.len = 1
+
+        self.get_len()
+        self.generator = self.pipeline_gen()
+
+    def get_len(self):
+        leng = []
+
+        for x in self.structure:
+            if not isinstance(x, list):
+                leng.append(1)
+            else:
+                k = 0
+                for y in x:
+                    if not isinstance(y, tuple):
+                        k += 1
                     else:
-                        if self.search == 'random':
-                            conf_gen = self.rand_param_gen(x[1])
-                            op = x[0]
-                            lst.remove(x)
-                            for conf in conf_gen:
-                                #######################################
-                                for key in conf.keys():
-                                    if isinstance(conf[key], np.int64):
-                                        conf[key] = int(conf[key])
-                                #######################################
-                                lst.append((op, conf))
-                        elif self.search == 'grid':
-                            conf_gen = self.grid_param_gen(x[1])
-                            op = x[0]
-                            lst.remove(x)
-                            for conf in conf_gen:
-                                lst.append((op, conf))
+                        assert len(y) == 2
+                        assert isinstance(y[1], dict)
+                        if 'search' in y[1].keys():
+                            for key, it in y[1].items():
+                                if key == 'search':
+                                    pass
+                                else:
+                                    if isinstance(it, list):
+                                        k += len(it)
+                                    else:
+                                        pass
                         else:
-                            raise NotImplementedError("'{}' search are not implement.".format(self.search))
+                            k += 1
+                leng.append(k)
+
+        for x in leng:
+            self.len *= x
+
+        return self
+
+    # generation
+    def conf_gen(self):
+
+        def update(el):
+            lst = []
+            if not isinstance(el, tuple):
+                lst.append(el)
+            else:
+                if 'search' not in el[1].keys():
+                    lst.append(el)
+                else:
+                    lst.extend(self.grid_param_gen(el))
+            return lst
+
+        for i, x in enumerate(self.structure):
+            if not isinstance(x, list):
+                self.pipes.append(update(x))
+            else:
+                ln = []
+                for y in x:
+                    ln.extend(update(y))
+                self.pipes.append(ln)
 
         return product(*self.pipes)
 
@@ -111,17 +200,16 @@ class PipelineGenerator(object):
         for pipe in pipe_gen:
             yield Pipeline(list(pipe))
 
-    def rand_param_gen(self, conf):
-        search_conf = conf
-        del search_conf['search']
-
-        param_gen = HyperPar(**search_conf)
-        for i in range(self.N):
-            yield param_gen.sample_params()
+    def __call__(self, *args, **kwargs):
+        return self.generator
 
     @staticmethod
-    def grid_param_gen(conf):
-        search_conf = conf
+    def grid_param_gen(element):
+        op = element[0]
+        search_conf = element[1]
+        list_of_var = []
+
+        # delete "search" key and element
         del search_conf['search']
 
         values = list()
@@ -150,5 +238,6 @@ class PipelineGenerator(object):
         for val in valgen:
             for i in range(len(keys)):
                 config[keys[i]] = val[i]
+            list_of_var.append((op, config))
 
-            yield config
+        return list_of_var

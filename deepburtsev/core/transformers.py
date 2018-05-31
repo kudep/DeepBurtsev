@@ -169,11 +169,14 @@ class BaseTransformer(BaseClass):
                 if name not in dictionary.keys():
                     raise KeyError('Key {} not found in input dictionary.'.format(name))
                 else:
-                    self.request_names.append(name)
+                    if name not in self.request_names:
+                        self.request_names.append(name)
+                    else:
+                        pass
         else:
             self.worked_names = ['base', 'train', 'valid', 'test']
             for name in self.worked_names:
-                if name in dictionary.keys():
+                if name in dictionary.keys() and name not in self.request_names:
                     self.request_names.append(name)
             if len(self.request_names) == 0:
                 raise KeyError('Keys from {} not found in input dictionary.'.format(self.worked_names))
@@ -196,7 +199,7 @@ class BaseTransformer(BaseClass):
 
 
 class Tokenizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Tokenizer'):
+    def __init__(self, request_names='base', new_names='base', op_type='Tokenizer', op_name='NLTK_tokenizer'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
@@ -220,7 +223,7 @@ class Tokenizer(BaseTransformer):
 
 
 class Lemmatizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lemmatizer'):
+    def __init__(self, request_names='base', new_names='base', op_type='Lemmatizer', op_name='Pymorphy'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.morph = pymorphy2.MorphAnalyzer()
 
@@ -314,7 +317,7 @@ class ResultsCollector(BaseTransformer):
         return dictionary
 
     def get_results(self, y_pred, y_true):
-
+        y_true = np.array(y_true)
         results = dict()
         results['classes'] = {}
         for metr in self.metrics:
@@ -323,7 +326,8 @@ class ResultsCollector(BaseTransformer):
         for i in range(len(self.category_description)):
             y_bin_pred = np.zeros(y_pred.shape)
             y_bin_pred[y_pred == i] = 1
-            y_bin_answ = np.zeros(y_pred.shape)
+
+            y_bin_answ = np.zeros(y_true.shape)
             y_bin_answ[y_true == i] = 1
 
             precision_tmp = precision_score(y_bin_answ, y_bin_pred)
@@ -359,7 +363,7 @@ class ResultsCollector(BaseTransformer):
 
 class FasttextVectorizer(BaseTransformer):
     def __init__(self, request_names=None, new_names=None, classes_name='classes', op_type='vectorizer',
-                 op_name='fasttext', dimension=300, file_type='bin',
+                 op_name='FastText', dimension=300, file_type='bin',
                  model_path='./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.file_type = file_type
@@ -502,7 +506,7 @@ class Splitter(BaseTransformer):
 
 
 class Speller(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Speller',
+    def __init__(self, request_names='base', new_names='base', op_type='Speller', op_name='Alex_model',
                  dict_path='./downloads/error_model/',
                  model_save_path='./downloads/error_model/',
                  model_load_path='./downloads/error_model/'):

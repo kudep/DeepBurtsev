@@ -65,6 +65,11 @@ class BaseModel(BaseClass):
             else:
                 raise ValueError('New names must be a string or a list of strings.')
 
+        if isinstance(self.new_names, str):
+            self.new_names = [self.new_names]
+        if isinstance(self.request_names, str):
+            self.request_names = [self.request_names]
+
         if len(self.new_names) != len(self.request_names):
             raise ValueError('Lists with predicted names and new names must have equal length.')
         return self
