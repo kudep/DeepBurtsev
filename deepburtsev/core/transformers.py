@@ -274,7 +274,7 @@ class ResultsCollector(BaseTransformer):
         self.y_true = y_true
         self.category_description = None
 
-        self.available_metrics = ['accuracy', 'f1_macro', 'f1_weighted']
+        self.available_metrics = ['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix']
         if metrics is None:
             self.metrics = self.available_metrics
         else:
