@@ -24,8 +24,8 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
-# from jinja2 import Environment, FileSystemLoader
-# from weasyprint import HTML
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -313,11 +313,83 @@ def results_analizator(log, target_metric='f1_weighted', num_best=3):
     return main
 
 
-def get_table(info, savepath, filename='report', ext='xlsx'):
-    # make dataframe table
-    writer = pd.ExcelWriter(join(savepath, '.'.join([filename, ext])))
-    df = pd.DataFrame(info['models'])
-    df.to_excel(writer, 'Sheet1')
+def get_table(log, savepath, target_metric='f1_weighted', num_best=None):
+    metrics = log['experiment_info']['metrics']
+    if target_metric not in metrics:
+        print("Warning: Target metric '{}' not in log. The fisrt metric in log will be use as target metric.".format(
+            target_metric))
+        target_metric = metrics[0]
+
+    pd_main = {"Model": [], "Speller": [], "Tokenizer": [], "Lemmatizer": [], "Vectorizer": []}
+    for met in metrics:
+        pd_main[met] = []
+
+    for name in log['experiments'].keys():
+        for key, val in log['experiments'][name].items():
+            pd_main['Model'].append(name)
+            ops = val['light_config'].split('-->')
+
+            for met in metrics:
+                pd_main[met].append(val['results'][met])
+
+            spel = False
+            tok = False
+            lem = False
+            vec = False
+
+            for op in ops:
+                op_name, op_type = op.split('_')
+                if op_type == 'Speller':
+                    pd_main["Speller"].append(op_name)
+                    spel = True
+                elif op_type == 'Tokenizer':
+                    pd_main["Tokenizer"].append(op_name)
+                    tok = True
+                elif op_type == 'Lemmatizer':
+                    pd_main["Lemmatizer"].append(op_name)
+                    lem = True
+                elif op_type == 'vectorizer':
+                    pd_main["Vectorizer"].append(op_name)
+                    vec = True
+                else:
+                    pass
+
+            if not spel:
+                pd_main["Speller"].append("None")
+            if not tok:
+                pd_main["Tokenizer"].append("None")
+            if not lem:
+                pd_main["Lemmatizer"].append("None")
+            if not vec:
+                pd_main["Vectorizer"].append("None")
+
+    pdf = pd.DataFrame(pd_main)
+    pdf = pdf.sort_values(target_metric, ascending=False)
+
+    # get slice if need
+    if num_best is not None:
+        pdf = pdf[:num_best+1]
+
+    #     pt = pd.pivot_table(pdf, index=["Speller", "Tokenizer", "Lemmatizer", "Vectorizer", "Model"])
+    pt = pd.pivot_table(pdf,
+                        index=["Model", "Speller", "Tokenizer", "Lemmatizer", "Vectorizer"])
+    pt = pt.reindex(pt.sort_values(by=target_metric, ascending=False).index)
+
+    # save it as pdf
+    # env = Environment(loader=FileSystemLoader('.'))
+    # template = env.get_template("./deepburtsev/core/template.html")
+    # template_vars = {"title": "Results ",
+    #                  "national_pivot_table": pt.to_html()}
+    #
+    # html_out = template.render(template_vars)
+    #
+    # adr = join(savepath, '{0}.{1}'.format('Report', 'pdf'))
+    #
+    # HTML(string=html_out).write_pdf(adr)
+
+    # save it as excel
+    writer = pd.ExcelWriter(join(savepath, 'report.xlsx'))
+    pt.to_excel(writer, 'Sheet1')
     writer.save()
     return None
 
@@ -533,18 +605,8 @@ def results_visualization(root, savepath, target_metric=None):
     # reading and scrabbing data
     info = results_analizator(log, target_metric=target_metric)
     plot_res(info, savepath=savepath)
-    plot_res_table(info, savepath=savepath)
-    get_table(info, join(root, 'results'))
-
-    # #
-    # print(info['best_model'].keys())
-    #
-    # classes_names = list(info['best_model']['classes'].keys())
-    # x = np.arange(len(classes_names))
-    # y = [v['f1'] for k, v in info['best_model']['classes'].items()]
-    # axes_names = ['Classes', info['best_model']['target_metric']]
-    # ploting_hist(x, y, plot_name='', axes_names=axes_names, x_lables=classes_names,
-    #              savepath=join(root, 'results', 'images'))
+    # plot_res_table(info, savepath=savepath)
+    get_table(log, target_metric=target_metric, savepath=join(root, 'results'))
 
     return None
 

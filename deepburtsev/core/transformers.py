@@ -199,7 +199,7 @@ class BaseTransformer(BaseClass):
 
 
 class Tokenizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Tokenizer'):
+    def __init__(self, request_names='base', new_names='base', op_type='Tokenizer', op_name='NLTK_tokenizer'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
@@ -223,7 +223,7 @@ class Tokenizer(BaseTransformer):
 
 
 class Lemmatizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lemmatizer'):
+    def __init__(self, request_names='base', new_names='base', op_type='Lemmatizer', op_name='Pymorphy'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.morph = pymorphy2.MorphAnalyzer()
 
@@ -363,7 +363,7 @@ class ResultsCollector(BaseTransformer):
 
 class FasttextVectorizer(BaseTransformer):
     def __init__(self, request_names=None, new_names=None, classes_name='classes', op_type='vectorizer',
-                 op_name='fasttext', dimension=300, file_type='bin',
+                 op_name='FastText', dimension=300, file_type='bin',
                  model_path='./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.file_type = file_type
@@ -506,7 +506,7 @@ class Splitter(BaseTransformer):
 
 
 class Speller(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Speller',
+    def __init__(self, request_names='base', new_names='base', op_type='Speller', op_name='Alex_model',
                  dict_path='./downloads/error_model/',
                  model_save_path='./downloads/error_model/',
                  model_load_path='./downloads/error_model/'):

@@ -102,10 +102,10 @@ class Logger(object):
             else:
                 pass
 
-            self.pipe_conf[name] = {'conf': self.ops[str(i)]}
+            self.pipe_conf[name + '_' + self.ops[str(i)]['op_type']] = {'conf': self.ops[str(i)]}
             ops_times[name] = time
 
-        pipe_name = '-->'.join([x.split('_')[0] for x in list(self.pipe_conf.keys())])
+        pipe_name = '-->'.join([x for x in list(self.pipe_conf.keys())[:-1]])
 
         if self.model not in self.log['experiments'].keys():
             self.log['experiments'][self.model] = OrderedDict()

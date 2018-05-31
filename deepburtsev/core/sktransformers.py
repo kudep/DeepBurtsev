@@ -48,7 +48,7 @@ class Tfidf(TfidfVectorizer):
 
 
 class Count(CountVectorizer):
-    def __init__(self, request_names='base', new_names='base', op_type='vectorizer', op_name='count-vectorizer',
+    def __init__(self, request_names='base', new_names='base', op_type='vectorizer', op_name='count',
                  **kwargs):
         super().__init__(**kwargs)
 
