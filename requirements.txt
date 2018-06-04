@@ -19,3 +19,4 @@ tensorflow_hub
 kenlm
 lxml
 openpyxl
+googletrans

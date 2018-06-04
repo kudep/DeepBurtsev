@@ -23,6 +23,9 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
 
+nltk.download('punkt')
+
+
 class BaseClass(object):
     # def get_params(self):
     #     return self.config
@@ -200,7 +203,7 @@ class BaseTransformer(BaseClass):
 
 class Tokenizer(BaseTransformer):
     def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
-                 op_type='Tokenizer', op_name='NLTK_tokenizer'):
+                 op_type='Tokenizer', op_name='NLTK'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):

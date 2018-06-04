@@ -4,7 +4,7 @@ from os.path import join
 from deepburtsev.core.pipelinemanager import PipelineManager
 from deepburtsev.core.sktransformers import Count
 from deepburtsev.core.sktransformers import Tfidf
-from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector
+from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector, Tokenizer
 from deepburtsev.models.intent_classificators import WCNN, DCNN
 from deepburtsev.models.skmodels import LinearRegression, LinearSVM, RandomForest
 
@@ -22,9 +22,9 @@ fasttext = FasttextVectorizer(dimension=300,
 tfidf = Tfidf()
 count = Count()
 
-neural_struct = [fasttext,
-                 [(WCNN(), {'search': True, 'batch_size': [32, 64], 'epochs': 1}),
-                  (DCNN(), {"search": True, 'batch_size': [32, 64], 'epochs': 1, 'op_name': 'DCNN'})],
+neural_struct = [Tokenizer, fasttext,
+                 [(WCNN(), {'search': True, 'batch_size': [32, 64], 'epochs': 5, 'val_every_n_epochs': 2}),
+                  (DCNN(), {"search": True, 'batch_size': [32, 64], 'epochs': 5, 'op_name': 'DCNN'})],
                  ResultsCollector]
 
 linear_struct = [[tfidf, count],
@@ -33,8 +33,10 @@ linear_struct = [[tfidf, count],
                   (LinearSVM, {"search": True, "loss": ["squared_hinge", "hinge"]})],
                  ResultsCollector(metrics=['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix'])]
 
-neural_man = PipelineManager(dataset, neural_struct, 'skill_manager', target_metric='f1_macro', hyper_search='grid')
+neural_man = PipelineManager(dataset, neural_struct, 'test', target_metric='f1_macro', hyper_search='grid',
+                             add_watcher=False)
 neural_man.run()
 
-linear_man = PipelineManager(dataset, linear_struct, 'skill_manager', target_metric='f1_macro', hyper_search='grid')
-linear_man.run()
+linear_man = PipelineManager(dataset, linear_struct, 'test', target_metric='f1_macro', hyper_search='grid',
+                             add_watcher=False)
+linear_man.run()  # skill_manager

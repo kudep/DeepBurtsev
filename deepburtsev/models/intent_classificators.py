@@ -126,7 +126,7 @@ class WCNN(BaseModel):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -413,7 +413,7 @@ class WCNN(BaseModel):
             loss and metrics values on the given batch, if labels are given
             predictions, otherwise
         """
-        if labels:
+        if labels is not None:
             features = batch
             onehot_labels = labels
             metrics_values = self.model.test_on_batch(features, onehot_labels.reshape(-1, self.n_classes))
@@ -626,7 +626,7 @@ class DCNN(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -744,7 +744,7 @@ class MAPCNN(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -868,7 +868,7 @@ class BiLSTM(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -977,7 +977,7 @@ class BiBiLSTM(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -1093,7 +1093,7 @@ class BiGRU(BiLSTM):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -1201,7 +1201,7 @@ class SelfAttMultBiLSTM(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -1315,7 +1315,7 @@ class SelfAttAddBiLSTM(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -1429,7 +1429,7 @@ class CNN_BiLSTM(WCNN):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
@@ -1555,7 +1555,7 @@ class BiLSTM_CNN(CNN_BiLSTM):
                  dense_size=100,
                  model_name="cnn_model",
                  batch_size=64,
-                 val_every_n_epochs=30,
+                 val_every_n_epochs=5,
                  verbose=True,
                  val_patience=5,
                  classes=None,
