@@ -199,7 +199,8 @@ class BaseTransformer(BaseClass):
 
 
 class Tokenizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='Tokenizer', op_name='NLTK_tokenizer'):
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='Tokenizer', op_name='NLTK_tokenizer'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
@@ -223,7 +224,8 @@ class Tokenizer(BaseTransformer):
 
 
 class Lemmatizer(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='Lemmatizer', op_name='Pymorphy'):
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='Lemmatizer', op_name='Pymorphy'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.morph = pymorphy2.MorphAnalyzer()
 
@@ -245,7 +247,8 @@ class Lemmatizer(BaseTransformer):
 
 
 class TextConcat(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Concatenator'):
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='transformer', op_name='Concatenator'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
@@ -362,8 +365,8 @@ class ResultsCollector(BaseTransformer):
 
 
 class FasttextVectorizer(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, classes_name='classes', op_type='vectorizer',
-                 op_name='FastText', dimension=300, file_type='bin',
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 classes_name='classes', op_type='vectorizer', op_name='FastText', dimension=300, file_type='bin',
                  model_path='./data/russian/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin'):
         super().__init__(request_names, new_names, op_type, op_name)
         self.file_type = file_type
@@ -400,7 +403,8 @@ class FasttextVectorizer(BaseTransformer):
 
 
 class SentEmbedder(BaseTransformer):
-    def __init__(self, request_names=None, new_names=None, op_type='vectorizer', op_name='GoogleSentEmbedder',
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='vectorizer', op_name='GoogleSentEmbedder',
                  model_path="https://tfhub.dev/google/universal-sentence-encoder/1"):
         super().__init__(request_names, new_names, op_type, op_name)
         self.model_path = model_path
@@ -424,8 +428,8 @@ class SentEmbedder(BaseTransformer):
 
 # TODO fix
 class Splitter(BaseTransformer):
-    def __init__(self, split_names='base', new_names=['train', 'test'], op_type='transformer', op_name='Splitter',
-                 splitting_proportions=[0.9, 0.1], delete_parent=True, classes_name='classes'):
+    def __init__(self, split_names='base', new_names=['train', 'valid', 'test'], op_type='transformer',
+                 op_name='Splitter', splitting_proportions=[0.9, 0.1], delete_parent=True, classes_name='classes'):
         super().__init__(split_names, new_names, op_type, op_name)
         self.splitting_proportions = splitting_proportions
         self.delete_parent = delete_parent
@@ -506,7 +510,8 @@ class Splitter(BaseTransformer):
 
 
 class Speller(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='Speller', op_name='Alex_model',
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='Speller', op_name='Alex_model',
                  dict_path='./downloads/error_model/',
                  model_save_path='./downloads/error_model/',
                  model_load_path='./downloads/error_model/'):
@@ -539,7 +544,8 @@ class Speller(BaseTransformer):
 
 
 class Lower(BaseTransformer):
-    def __init__(self, request_names='base', new_names='base', op_type='transformer', op_name='Lowercase'):
+    def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
+                 op_type='transformer', op_name='Lowercase'):
         super().__init__(request_names, new_names, op_type, op_name)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
