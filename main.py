@@ -2,13 +2,11 @@ import json
 from os.path import join
 
 from deepburtsev.core.pipelinemanager import PipelineManager
-from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector
-from deepburtsev.models.intent_classification.WCNN import WCNN
-from deepburtsev.models.intent_classification.DCNN import DCNN
-from deepburtsev.models.skmodels.linear_models import LinearRegression, LinearSVM, RandomForest
-from deepburtsev.core.sktransformers import Tfidf
 from deepburtsev.core.sktransformers import Count
-
+from deepburtsev.core.sktransformers import Tfidf
+from deepburtsev.core.transformers import FasttextVectorizer, ResultsCollector
+from deepburtsev.models.intent_classificators import WCNN, DCNN
+from deepburtsev.models.skmodels import LinearRegression, LinearSVM, RandomForest
 
 # data prepare
 root = '/home/mks/projects/DeepBurtsev/'
