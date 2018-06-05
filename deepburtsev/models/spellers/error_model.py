@@ -110,27 +110,71 @@ class ErrorModel(object):
 
     def _infer_instance(self, instance: str):
         corrected = []
-        for incorrect in instance.split():
-            if any([c not in self.dictionary.alphabet for c in incorrect]):
-                corrected.append(incorrect)
-            else:
-                res = self.find_candidates(incorrect, k=1, prop_threshold=1e-6)
-                corrected.append(res[0][0] if res else incorrect)
+
+        # old version
+        # for incorrect in instance.split():
+        #     if any([c not in self.dictionary.alphabet for c in incorrect]):
+        #         corrected.append(incorrect)
+        #     else:
+        #         res = self.find_candidates(incorrect, k=1, prop_threshold=1e-6)
+        #         corrected.append(res[0][0] if res else incorrect)
+
+        if isinstance(instance, str):
+            for incorrect in instance.split():
+                if any([c not in self.dictionary.alphabet for c in incorrect]):
+                    corrected.append(incorrect)
+                else:
+                    res = self.find_candidates(incorrect, k=1, prop_threshold=1e-6)
+                    corrected.append(res[0][0] if res else incorrect)
+        else:
+            for incorrect in instance:
+                if any([c not in self.dictionary.alphabet for c in incorrect]):
+                    corrected.append(incorrect)
+                else:
+                    res = self.find_candidates(incorrect, k=1, prop_threshold=1e-6)
+                    corrected.append(res[0][0] if res else incorrect)
         return ' '.join(corrected)
 
     def _infer_instance_lm(self, instance: str):
         candidates = []
-        for incorrect in instance.split():
-            if any([c not in self.dictionary.alphabet for c in incorrect]):
-                candidates.append([(0, incorrect)])
-            else:
-                res = self.find_candidates(incorrect, k=self.candidates_count, prop_threshold=1e-6)
-                if res:
-                    candidates.append([(score, candidate) for candidate, score in res])
-                else:
-                    candidates.append([(0, incorrect)])
-        candidates.append([(0, '</s>')])
 
+        # old version
+        # for incorrect in instance.split():
+        #     if any([c not in self.dictionary.alphabet for c in incorrect]):
+        #         candidates.append([(0, incorrect)])
+        #     else:
+        #         res = self.find_candidates(incorrect, k=self.candidates_count, prop_threshold=1e-6)
+        #         if res:
+        #             candidates.append([(score, candidate) for candidate, score in res])
+        #         else:
+        #             candidates.append([(0, incorrect)])
+        # candidates.append([(0, '</s>')])
+
+        # new version
+        if isinstance(instance, str):
+            for incorrect in instance.split():
+                if any([c not in self.dictionary.alphabet for c in incorrect]):
+                    candidates.append([(0, incorrect)])
+                else:
+                    res = self.find_candidates(incorrect, k=self.candidates_count, prop_threshold=1e-6)
+                    if res:
+                        candidates.append([(score, candidate) for candidate, score in res])
+                    else:
+                        candidates.append([(0, incorrect)])
+            candidates.append([(0, '</s>')])
+        else:
+            for incorrect in instance:
+                if any([c not in self.dictionary.alphabet for c in incorrect]):
+                    candidates.append([(0, incorrect)])
+                else:
+                    res = self.find_candidates(incorrect, k=self.candidates_count, prop_threshold=1e-6)
+                    if res:
+                        candidates.append([(score, candidate) for candidate, score in res])
+                    else:
+                        candidates.append([(0, incorrect)])
+            candidates.append([(0, '</s>')])
+
+        # next
         state = kenlm.State()
         self.lm.BeginSentenceWrite(state)
         beam = [(0, state, [])]

@@ -130,7 +130,7 @@ class WCNN(BaseModel):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names='fmeasure precision_K recall_K'):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -464,7 +464,14 @@ class WCNN(BaseModel):
                 updates += 1
 
                 if self.verbose and step % 500 == 0:
-                    log_metrics(names=self.metrics_names,
+                    names = ['loss']
+                    if isinstance(self.metrics_names, str):
+                        names.append(self.metrics_names)
+                    elif isinstance(self.metrics_names, list):
+                        for x in self.metrics_names:
+                            names.append(x)
+
+                    log_metrics(names=names,
                                 values=metrics_values,
                                 updates=updates,
                                 mode='train')
@@ -482,7 +489,15 @@ class WCNN(BaseModel):
                                                                         labels=valid_batch[1]))
 
                     valid_metrics_values = np.mean(np.asarray(valid_metrics_values), axis=0)
-                    log_metrics(names=self.metrics_names,
+
+                    names = ['loss']
+                    if isinstance(self.metrics_names, str):
+                        names.append(self.metrics_names)
+                    elif isinstance(self.metrics_names, list):
+                        for x in self.metrics_names:
+                            names.append(x)
+
+                    log_metrics(names=names,
                                 values=valid_metrics_values,
                                 mode='valid')
                     if valid_metrics_values[0] > val_loss:

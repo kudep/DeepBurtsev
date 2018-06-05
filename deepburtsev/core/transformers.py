@@ -516,17 +516,19 @@ class Speller(BaseTransformer):
     def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
                  op_type='Speller', op_name='Alex_model',
                  dict_path='./downloads/error_model/',
-                 model_save_path='./downloads/error_model/',
-                 model_load_path='./downloads/error_model/'):
+                 lm_model='./downloads/error_model/language_models/ru_wiyalen_no_punkt.arpa.binary',
+                 model_save_path='./downloads/error_model/error_model_ru.tsv',
+                 model_load_path='./downloads/error_model/error_model_ru.tsv'):
 
         super().__init__(request_names, new_names, op_type, op_name)
 
         self.save_path = model_save_path
         self.load_path = model_load_path
+        self.lm_model = lm_model
         self.dict_path = dict_path
 
         self.russian_word_dictionary = RussianWordsVocab(data_dir=self.dict_path)
-        self.speller = ErrorModel(self.russian_word_dictionary, lm_file='',
+        self.speller = ErrorModel(self.russian_word_dictionary, lm_file=self.lm_model,
                                   save_path=self.save_path, load_path=self.load_path)
 
     def _transform(self, dictionary, request_names=None, new_names=None):
@@ -558,7 +560,13 @@ class Lower(BaseTransformer):
         for name, new_name in zip(self.request_names, self.new_names):
             lower = []
             for x in dictionary[name]['x']:
-                lower.append(x.lower())
+                if isinstance(x, str):
+                    lower.append(x.lower())
+                elif isinstance(x, list):
+                    for j, y in enumerate(x):
+                        x[j] = y.lower()
+                    lower.append(x)
+
             dictionary[new_name] = {'x': lower, 'y': dictionary[name]['y']}
 
         return dictionary

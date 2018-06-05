@@ -727,7 +727,7 @@ def log_metrics(names, values, updates=None, mode='train'):
         print("updates: {}\t".format(updates), end="")
 
     for id in range(len(names)):
-        print("{}: {}\t".format(names[id], values[id]), end="")
+        print("{}: {:.4}\t".format(names[id], values[id]), end="")
     print(" ")  # , end='\r')
     return
 
