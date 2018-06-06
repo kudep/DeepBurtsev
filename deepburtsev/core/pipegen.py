@@ -138,31 +138,43 @@ class GridGenerator(object):
         self.get_len()
         self.generator = self.pipeline_gen()
 
+    @staticmethod
+    def get_p(z):
+        assert len(z) == 2
+        assert isinstance(z[1], dict)
+        if 'search' in z[1].keys():
+            l_ = list()
+            for key, it in z[1].items():
+                if key == 'search':
+                    pass
+                else:
+                    if isinstance(it, list):
+                        l_.append(len(it))
+                    else:
+                        pass
+            p = 1
+            for q in l_:
+                p *= q
+            return p
+        else:
+            return 1
+
     def get_len(self):
         leng = []
 
         for x in self.structure:
             if not isinstance(x, list):
-                leng.append(1)
+                if not isinstance(x, tuple):
+                    leng.append(1)
+                else:
+                    leng.append(self.get_p(x))
             else:
                 k = 0
                 for y in x:
                     if not isinstance(y, tuple):
                         k += 1
                     else:
-                        assert len(y) == 2
-                        assert isinstance(y[1], dict)
-                        if 'search' in y[1].keys():
-                            for key, it in y[1].items():
-                                if key == 'search':
-                                    pass
-                                else:
-                                    if isinstance(it, list):
-                                        k += len(it)
-                                    else:
-                                        pass
-                        else:
-                            k += 1
+                        k += self.get_p(y)
                 leng.append(k)
 
         for x in leng:
@@ -179,7 +191,9 @@ class GridGenerator(object):
                 lst.append(el)
             else:
                 if 'search' not in el[1].keys():
-                    lst.append(el)
+                    #######################################################
+                    lst.append(el)  # need set_params() on el[0]
+                    #######################################################
                 else:
                     lst.extend(self.grid_param_gen(el))
             return lst

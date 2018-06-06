@@ -402,6 +402,7 @@ class FasttextVectorizer(BaseTransformer):
         return dictionary
 
 
+# TODO fix
 class SentEmbedder(BaseTransformer):
     def __init__(self, request_names=['train', 'valid', 'test'], new_names=['train', 'valid', 'test'],
                  op_type='vectorizer', op_name='GoogleSentEmbedder',
