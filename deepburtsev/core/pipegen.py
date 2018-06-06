@@ -191,9 +191,7 @@ class GridGenerator(object):
                 lst.append(el)
             else:
                 if 'search' not in el[1].keys():
-                    #######################################################
-                    lst.append(el)  # need set_params() on el[0]
-                    #######################################################
+                    lst.append(el)
                 else:
                     lst.extend(self.grid_param_gen(el))
             return lst
@@ -220,7 +218,7 @@ class GridGenerator(object):
     @staticmethod
     def grid_param_gen(element):
         op = element[0]
-        search_conf = element[1]
+        search_conf = deepcopy(element[1])
         list_of_var = []
 
         # delete "search" key and element
@@ -231,9 +229,9 @@ class GridGenerator(object):
 
         static_keys = list()
         static_values = list()
-        for key in search_conf.keys():
+        for key, item in search_conf.items():
             if isinstance(search_conf[key], list):
-                values.append(search_conf[key])
+                values.append(item)
                 keys.append(key)
             elif isinstance(search_conf[key], dict):
                 raise ValueError("Grid search are not supported 'dict', that contain values of parameters.")
@@ -250,8 +248,9 @@ class GridGenerator(object):
             config[static_keys[i]] = static_values[i]
 
         for val in valgen:
-            for i in range(len(keys)):
-                config[keys[i]] = val[i]
-            list_of_var.append((op, config))
+            cop = deepcopy(config)
+            for i, v in enumerate(val):
+                cop[keys[i]] = v
+            list_of_var.append((op, cop))
 
         return list_of_var
