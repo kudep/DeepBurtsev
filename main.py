@@ -31,7 +31,7 @@ linear_struct = [[tfidf, count],
                  [(LinearRegression, {"search": True, "max_iter": [100, 150, 200]}),
                   RandomForest,
                   (LinearSVM, {"search": True, "loss": ["squared_hinge", "hinge"]})],
-                 ResultsCollector(metrics=['accuracy', 'f1_macro', 'f1_weighted', 'confusion_matrix'])]
+                 ResultsCollector(metrics=['accuracy', 'f1_macro', 'f1_weighted'])]
 
 neural_man = PipelineManager(dataset, neural_struct, 'test', target_metric='f1_macro', hyper_search='grid',
                              add_watcher=False)

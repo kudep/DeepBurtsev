@@ -1,3 +1,4 @@
+import numpy as np
 import json
 import os
 import random
@@ -130,7 +131,7 @@ class WCNN(BaseModel):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure precision_K recall_K'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -243,27 +244,27 @@ class WCNN(BaseModel):
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        if self.metrics_names is None:
-            metrics_funcs = getattr(keras.metrics, self.lear_metrics, None)
-        else:
-            if isinstance(self.metrics_names, str):
-                self.metrics_names = self.metrics_names.split(' ')
-
-            metrics_funcs = []
-            for i in range(len(self.metrics_names)):
-                metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
-                if callable(metrics_func):
-                    metrics_funcs.append(metrics_func)
-                else:
-                    metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
-                    if callable(metrics_func):
-                        metrics_funcs.append(metrics_func)
-                    else:
-                        raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
+        # if self.metrics_names is None:
+        #     metrics_funcs = getattr(keras.metrics, self.lear_metrics, None)
+        # else:
+        #     if isinstance(self.metrics_names, str):
+        #         self.metrics_names = self.metrics_names.split(' ')
+        #
+        #     metrics_funcs = []
+        #     for i in range(len(self.metrics_names)):
+        #         metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
+        #         if callable(metrics_func):
+        #             metrics_funcs.append(metrics_func)
+        #         else:
+        #             metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
+        #             if callable(metrics_func):
+        #                 metrics_funcs.append(metrics_func)
+        #             else:
+        #                 raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
 
         model.compile(optimizer=optimizer_,
                       loss=loss,
-                      metrics=metrics_funcs,
+                      metrics=None,  # metrics_funcs
                       loss_weights=loss_weights,
                       sample_weight_mode=sample_weight_mode)
         return model
@@ -314,22 +315,22 @@ class WCNN(BaseModel):
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        self.metrics_names = self.metrics_names.split(' ')
-        metrics_funcs = []
-        for i in range(len(self.metrics_names)):
-            metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
-            if callable(metrics_func):
-                metrics_funcs.append(metrics_func)
-            else:
-                metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
-                if callable(metrics_func):
-                    metrics_funcs.append(metrics_func)
-                else:
-                    raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
+        # self.metrics_names = self.metrics_names.split(' ')
+        # metrics_funcs = []
+        # for i in range(len(self.metrics_names)):
+        #     metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
+        #     if callable(metrics_func):
+        #         metrics_funcs.append(metrics_func)
+        #     else:
+        #         metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
+        #         if callable(metrics_func):
+        #             metrics_funcs.append(metrics_func)
+        #         else:
+        #             raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
 
         model.compile(optimizer=optimizer_,
                       loss=loss,
-                      metrics=metrics_funcs,
+                      metrics=None,  # metrics_funcs
                       loss_weights=loss_weights,
                       sample_weight_mode=sample_weight_mode)
         return model
@@ -413,10 +414,45 @@ class WCNN(BaseModel):
             loss and metrics values on the given batch, if labels are given
             predictions, otherwise
         """
+
+        def return_metric(metr, true, pred):
+            true = np.argmax(true, axis=1)
+            pred = np.argmax(pred, axis=1)
+            m_values = []
+            for met in metr:
+                if met == 'f1_macro':
+                    from sklearn.metrics import f1_score
+                    m_values.append(f1_score(true, pred, average='macro'))
+                elif met == 'f1_micro':
+                    from sklearn.metrics import f1_score
+                    m_values.append(f1_score(true, pred, average='micro'))
+                elif met == 'f1_weighted':
+                    from sklearn.metrics import f1_score
+                    m_values.append(f1_score(true, pred, average='weighted'))
+                elif met == 'accuracy':
+                    from sklearn.metrics import accuracy_score
+                    m_values.append(accuracy_score(true, pred))
+                else:
+                    raise ValueError("{} score is not implemented.".format(met))
+            return m_values
+
         if labels is not None:
             features = batch
             onehot_labels = labels
-            metrics_values = self.model.test_on_batch(features, onehot_labels.reshape(-1, self.n_classes))
+
+            y_true = onehot_labels.reshape(-1, self.n_classes)
+            y_pred = self.model.predict(features)
+            y_pred = y_pred.reshape(-1, self.n_classes)
+
+            if isinstance(self.metrics_names, list):
+                metrics_values = return_metric(self.metrics_names, y_true, y_pred)
+            elif isinstance(self.metrics_names, str):
+                metrics = self.metrics_names.split(' ')
+                metrics_values = return_metric(metrics, y_true, y_pred)
+            else:
+                raise ValueError("Parameter 'metrics names' in model {0} must be a list or str."
+                                 "But {1} type was found.".format(self.op_name, type(self.metrics_names)))
+
             return metrics_values
         else:
             predictions = self.model.predict(batch)
@@ -460,7 +496,7 @@ class WCNN(BaseModel):
 
             for step, batch in enumerate(batch_gen):
                 batch = self.batch_reformat(batch)
-                metrics_values = self.train_on_batch(batch)
+                loss = self.train_on_batch(batch)
                 updates += 1
 
                 if self.verbose and step % 500 == 0:
@@ -470,6 +506,9 @@ class WCNN(BaseModel):
                     elif isinstance(self.metrics_names, list):
                         for x in self.metrics_names:
                             names.append(x)
+
+                    metrics_values = self.infer_on_batch(batch[0], labels=batch[1])
+                    metrics_values.insert(0, loss)
 
                     log_metrics(names=names,
                                 values=metrics_values,
@@ -490,14 +529,14 @@ class WCNN(BaseModel):
 
                     valid_metrics_values = np.mean(np.asarray(valid_metrics_values), axis=0)
 
-                    names = ['loss']
-                    if isinstance(self.metrics_names, str):
-                        names.append(self.metrics_names)
-                    elif isinstance(self.metrics_names, list):
-                        for x in self.metrics_names:
-                            names.append(x)
+                    # names = ['loss']
+                    # if isinstance(self.metrics_names, str):
+                    #     names.append(self.metrics_names)
+                    # elif isinstance(self.metrics_names, list):
+                    #     for x in self.metrics_names:
+                    #         names.append(x)
 
-                    log_metrics(names=names,
+                    log_metrics(names=self.metrics_names,
                                 values=valid_metrics_values,
                                 mode='valid')
                     if valid_metrics_values[0] > val_loss:
@@ -645,7 +684,7 @@ class DCNN(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -763,7 +802,7 @@ class MAPCNN(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -887,7 +926,7 @@ class BiLSTM(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -996,7 +1035,7 @@ class BiBiLSTM(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -1112,7 +1151,7 @@ class BiGRU(BiLSTM):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -1220,7 +1259,7 @@ class SelfAttMultBiLSTM(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -1334,7 +1373,7 @@ class SelfAttAddBiLSTM(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -1448,7 +1487,7 @@ class CNN_BiLSTM(WCNN):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
@@ -1574,7 +1613,7 @@ class BiLSTM_CNN(CNN_BiLSTM):
                  verbose=True,
                  val_patience=5,
                  classes=None,
-                 metrics_names='fmeasure'):
+                 metrics_names=['f1_macro', 'f1_weighted']):
 
         super().__init__(fit_name, predict_names, new_names, op_type, op_name)
 
