@@ -6,26 +6,6 @@ from deepburtsev.core.utils import HyperPar
 from deepburtsev.core.pipeline import Pipeline
 
 
-class PipelineGenerator(object):
-    def __init__(self, structure, n=10, dtype='list', search='grid'):
-        self.structure = structure
-        self.dtype = dtype
-        self.N = n
-        self.search = search
-
-        if self.search == 'grid':
-            self.generator = GridGenerator(self.structure)
-            self.length = self.generator.len
-        elif self.search == 'random':
-            self.generator = RandomGenerator(self.structure, self.N)
-            self.length = self.generator.len
-        else:
-            raise ValueError("{} search type not implemented.".format(self.search))
-
-    def __call__(self, *args, **kwargs):
-        return self.generator
-
-
 class RandomGenerator(object):
     def __init__(self, structure, n=10):
         self.structure = structure
@@ -105,21 +85,27 @@ class RandomGenerator(object):
                     break
 
             if search:
-                for i in range(self.N):
-                    for j, op in enumerate(pipe):
-                        if isinstance(op, tuple) and "search" in op[1].keys():
-                            search_conf = deepcopy(op[1])
-                            del search_conf['search']
+                ops_samples = {}
+                for i, op in enumerate(pipe):
+                    if isinstance(op, tuple) and "search" in op[1].keys():
+                        search_conf = deepcopy(op[1])
+                        del search_conf['search']
 
-                            conf = HyperPar(**search_conf).sample_params()
+                        sample_gen = HyperPar(**search_conf)
+                        ops_samples[str(i)] = list()
+                        for j in range(self.N):
+                            conf = sample_gen.sample_params()
                             # fix dtype for json dump
                             for key in conf.keys():
                                 if isinstance(conf[key], np.int64):
                                     conf[key] = int(conf[key])
 
-                            pipe[j] = (op[0], conf)
+                            ops_samples[str(i)].append((op[0], conf))
 
-                    yield pipe
+                for i in range(self.N):
+                    for key, item in ops_samples.items():
+                        pipe[int(key)] = item[i]
+                        yield pipe
             else:
                 yield pipe
 
