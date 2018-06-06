@@ -23,9 +23,6 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
 
-nltk.download('punkt', download_dir='./downloads/')
-
-
 class BaseClass(object):
     # def get_params(self):
     #     return self.config

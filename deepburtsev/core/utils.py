@@ -24,8 +24,8 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
-from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
+# from jinja2 import Environment, FileSystemLoader
+# from weasyprint import HTML
 
 morph = pymorphy2.MorphAnalyzer()
 
