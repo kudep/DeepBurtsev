@@ -1,16 +1,15 @@
 import numpy as np
+import pandas as pd
 import json
 import os
-import random
+
 from os.path import join, isdir
 from pathlib import Path
-from typing import Generator
 
 import keras.metrics
 import keras.optimizers
-import numpy as np
-import pandas as pd
 import tensorflow as tf
+
 from keras.backend.tensorflow_backend import set_session
 from keras.layers import Dense, Input, concatenate, Activation, Concatenate, Reshape
 from keras.layers.convolutional import Conv1D
@@ -22,10 +21,10 @@ from keras.layers.wrappers import Bidirectional
 from keras.models import Model
 from keras.regularizers import l2
 
-from deepburtsev.core import metrics as metrics_file
 from deepburtsev.core.keras_layers import multiplicative_self_attention, additive_self_attention
-from deepburtsev.core.utils import log_metrics, labels2onehot_one
+from deepburtsev.core.utils import log_metrics, labels2onehot_one, return_metric
 from deepburtsev.wrappers.model_wrappers import BaseModel
+from deepburtsev.datasets.dataset_iterator import Dataset
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -33,75 +32,6 @@ config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
 SEED = 42
-
-
-class Dataset(object):
-
-    def __init__(self, data, seed=None, classes_description=None, *args, **kwargs):
-
-        self.main_names = ['x', 'y']
-        rs = random.getstate()
-        random.seed(seed)
-        self.random_state = random.getstate()
-        random.setstate(rs)
-
-        self.data = data
-
-        self.classes_description = classes_description
-
-    def iter_batch(self, batch_size: int, data_type: str = 'base', shuffle: bool = True,
-                   only_request: bool = False) -> Generator:
-        """This function returns a generator, which serves for generation of raw (no preprocessing such as tokenization)
-         batches
-        Args:
-            batch_size (int): number of samples in batch
-            data_type (str): can be either 'train', 'test', or 'valid'
-            shuffle (bool): shuffle trigger
-            only_request (bool): trigger that told what data will be returned
-        Returns:
-            batch_gen (Generator): a generator, that iterates through the part (defined by data_type) of the dataset
-        """
-        data = self.data[data_type]
-        data_len = len(data['x'])
-        order = list(range(data_len))
-
-        rs = random.getstate()
-        random.setstate(self.random_state)
-        if shuffle:
-            random.shuffle(order)
-        self.random_state = random.getstate()
-        random.setstate(rs)
-
-        # for i in range((data_len - 1) // batch_size + 1):
-        #     yield list(zip(*[data[o] for o in order[i * batch_size:(i + 1) * batch_size]]))
-        if not only_request:
-            for i in range((data_len - 1) // batch_size + 1):
-                # o = order[i * batch_size: (i + 1) * batch_size]
-                # print(type(o))
-                # print(o)
-
-                yield list((list(data[self.main_names[0]][i * batch_size: (i + 1) * batch_size]),
-                            list(data[self.main_names[1]][i * batch_size: (i + 1) * batch_size])))
-        else:
-            for i in range((data_len - 1) // batch_size + 1):
-                o = order[i * batch_size:(i + 1) * batch_size]
-                yield list((list(self.data[self.main_names[0]][o]),))
-
-    def iter_all(self, data_type: str = 'base', only_request: bool = False) -> Generator:
-        """
-        Iterate through all data. It can be used for building dictionary or
-        Args:
-            data_type (str): can be either 'train', 'test', or 'valid'
-            only_request (bool): trigger that told what data will be returned
-        Returns:
-            samples_gen: a generator, that iterates through the all samples in the selected data type of the dataset
-        """
-        data = self.data[data_type]
-        for x, y in zip(data[self.main_names[0]], data[self.main_names[1]]):
-            if not only_request:
-                yield (x, y)
-            else:
-                yield (x,)
 
 
 class WCNN(BaseModel):
@@ -176,7 +106,7 @@ class WCNN(BaseModel):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     # model graph
@@ -218,11 +148,10 @@ class WCNN(BaseModel):
         model = Model(inputs=inp, outputs=act_output)
         return model
 
-    def init_model_from_scratch(self, add_metrics_file=None, loss_weights=None, sample_weight_mode=None):
+    def init_model_from_scratch(self, loss_weights=None, sample_weight_mode=None):
         """
         Method initializes intent_model from scratch with given params
         Args:
-            add_metrics_file: file with additional metrics functions
             loss_weights: optional parameter as in keras.intent_model.compile
             sample_weight_mode: optional parameter as in keras.intent_model.compile
 
@@ -244,24 +173,6 @@ class WCNN(BaseModel):
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
 
-        # if self.metrics_names is None:
-        #     metrics_funcs = getattr(keras.metrics, self.lear_metrics, None)
-        # else:
-        #     if isinstance(self.metrics_names, str):
-        #         self.metrics_names = self.metrics_names.split(' ')
-        #
-        #     metrics_funcs = []
-        #     for i in range(len(self.metrics_names)):
-        #         metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
-        #         if callable(metrics_func):
-        #             metrics_funcs.append(metrics_func)
-        #         else:
-        #             metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
-        #             if callable(metrics_func):
-        #                 metrics_funcs.append(metrics_func)
-        #             else:
-        #                 raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
-
         model.compile(optimizer=optimizer_,
                       loss=loss,
                       metrics=None,  # metrics_funcs
@@ -269,11 +180,10 @@ class WCNN(BaseModel):
                       sample_weight_mode=sample_weight_mode)
         return model
 
-    def restore(self, add_metrics_file=None, loss_weights=None, sample_weight_mode=None):
+    def restore(self, loss_weights=None, sample_weight_mode=None):
         """
         Method initiliazes intent_model from saved params and weights
         Args:
-            add_metrics_file: file with additional metrics functions
             loss_weights: optional parameter as in keras.intent_model.compile
             sample_weight_mode: optional parameter as in keras.intent_model.compile
 
@@ -314,19 +224,6 @@ class WCNN(BaseModel):
             loss = loss_func
         else:
             raise AttributeError("Loss {} is not defined".format(self.loss))
-
-        # self.metrics_names = self.metrics_names.split(' ')
-        # metrics_funcs = []
-        # for i in range(len(self.metrics_names)):
-        #     metrics_func = getattr(keras.metrics, self.metrics_names[i], None)
-        #     if callable(metrics_func):
-        #         metrics_funcs.append(metrics_func)
-        #     else:
-        #         metrics_func = getattr(add_metrics_file, self.metrics_names[i], None)
-        #         if callable(metrics_func):
-        #             metrics_funcs.append(metrics_func)
-        #         else:
-        #             raise AttributeError("Metric {} is not defined".format(self.metrics_names[i]))
 
         model.compile(optimizer=optimizer_,
                       loss=loss,
@@ -415,27 +312,6 @@ class WCNN(BaseModel):
             predictions, otherwise
         """
 
-        def return_metric(metr, true, pred):
-            true = np.argmax(true, axis=1)
-            pred = np.argmax(pred, axis=1)
-            m_values = []
-            for met in metr:
-                if met == 'f1_macro':
-                    from sklearn.metrics import f1_score
-                    m_values.append(f1_score(true, pred, average='macro'))
-                elif met == 'f1_micro':
-                    from sklearn.metrics import f1_score
-                    m_values.append(f1_score(true, pred, average='micro'))
-                elif met == 'f1_weighted':
-                    from sklearn.metrics import f1_score
-                    m_values.append(f1_score(true, pred, average='weighted'))
-                elif met == 'accuracy':
-                    from sklearn.metrics import accuracy_score
-                    m_values.append(accuracy_score(true, pred))
-                else:
-                    raise ValueError("{} score is not implemented.".format(met))
-            return m_values
-
         if labels is not None:
             features = batch
             onehot_labels = labels
@@ -484,7 +360,7 @@ class WCNN(BaseModel):
         if not self.model_init:
             self.n_classes = len(list(set(dictionary[self.fit_name]['y'])))
             self.model = self.cnn_model()
-            self.init_model_from_scratch(add_metrics_file=metrics_file)
+            self.init_model_from_scratch()
             self.model_init = True
 
         # init dataset object
@@ -652,7 +528,7 @@ class WCNN(BaseModel):
         if self.classes is not None:
             self.n_classes = np.array(self.classes.split(" ")).shape[0]
             self.model = self.cnn_model()
-            self.init_model_from_scratch(add_metrics_file=metrics_file)
+            self.init_model_from_scratch()
             self.model_init = True
         return self
 
@@ -729,7 +605,7 @@ class DCNN(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -847,7 +723,7 @@ class MAPCNN(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -971,7 +847,7 @@ class BiLSTM(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1081,7 +957,7 @@ class BiBiLSTM(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1197,7 +1073,7 @@ class BiGRU(BiLSTM):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1306,7 +1182,7 @@ class SelfAttMultBiLSTM(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1420,7 +1296,7 @@ class SelfAttAddBiLSTM(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1535,7 +1411,7 @@ class CNN_BiLSTM(WCNN):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):
@@ -1661,7 +1537,7 @@ class BiLSTM_CNN(CNN_BiLSTM):
             if self.classes is not None:
                 self.n_classes = np.array(self.classes.split(" ")).shape[0]
                 self.model = self.cnn_model()
-                self.model = self.init_model_from_scratch(add_metrics_file=metrics_file)
+                self.model = self.init_model_from_scratch()
                 self.model_init = True
 
     def cnn_model(self):

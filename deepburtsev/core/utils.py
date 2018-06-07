@@ -98,6 +98,28 @@ class HyperPar:
 # -------------------------- Common ----------------------------------
 
 
+def return_metric(metr, true, pred):
+    true = np.argmax(true, axis=1)
+    pred = np.argmax(pred, axis=1)
+    m_values = []
+    for met in metr:
+        if met == 'f1_macro':
+            from sklearn.metrics import f1_score
+            m_values.append(f1_score(true, pred, average='macro'))
+        elif met == 'f1_micro':
+            from sklearn.metrics import f1_score
+            m_values.append(f1_score(true, pred, average='micro'))
+        elif met == 'f1_weighted':
+            from sklearn.metrics import f1_score
+            m_values.append(f1_score(true, pred, average='weighted'))
+        elif met == 'accuracy':
+            from sklearn.metrics import accuracy_score
+            m_values.append(accuracy_score(true, pred))
+        else:
+            raise ValueError("{} score is not implemented.".format(met))
+    return m_values
+
+
 def get_result(y_pred, y_test):
     category_description = list(set(y_test))
 
